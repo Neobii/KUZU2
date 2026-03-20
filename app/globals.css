@@ -1,0 +1,79 @@
+.table,
+.panel {
+  background: #100806;
+}
+
+.navs {
+  text-align: center;
+  margin-top: 65px;
+}
+
+.navs a {
+  color: #fff;
+  margin-top: 90px;
+  font-size: 21px;
+  letter-spacing: 0px;
+  text-transform: none;
+  font-family: Abel, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.2em;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+}
+
+ul li a {
+  margin: 0;
+  padding: 0;
+}
+
+.dropdown-menu {
+  margin: 0px;
+  padding: 0px;
+}
+
+.dropdown-menu > li > a {
+  color: #777 !important;
+}
+
+.form-holder {
+  background-color: #ccc;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.show-control-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+.special-track {
+  background-color: #333;
+}
+
+.track {
+  color: #fff;
+}
+
+.autoplay-label {
+  font-size: 18px;
+  display: inline-block;
+  color: #fff;
+  margin-right: 20px;
+}
+
+#page {
+  padding: 30px 34px 100px 34px !important;
+}
+
+.modal .table,
+.modal .panel {
+  background-color: #fff;
+}

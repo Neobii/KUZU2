@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  passwordHash     String?  @map("password_hash")
+  profile          Json?
+  producerProfile  Json?    @map("producer_profile")
+  isProducer       Boolean  @default(false) @map("is_producer")
+  isAdmin          Boolean  @default(false) @map("is_admin")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  shows     Show[]     @relation("ShowOwner")
+  showsHelp Show[]     @relation("ShowHelper")
+  messages  Message[]
+}
+
+model Show {
+  id                   String    @id @default(cuid())
+  showName             String    @map("show_name")
+  showStart            DateTime? @map("show_start")
+  showEnd              DateTime? @map("show_end")
+  autoStartEnd         Boolean   @default(false) @map("auto_start_end")
+  isArmedForAutoStart  Boolean   @default(false) @map("is_armed_for_auto_start")
+  defaultMeta          String?   @map("default_meta")
+  isShowingDefaultMeta Boolean   @default(false) @map("is_showing_default_meta")
+  userId               String    @map("user_id")
+  helperUserId         String?   @map("helper_user_id")
+  isActive             Boolean?
+  description         String?   @db.Text
+  isShowingDescription Boolean  @default(true) @map("is_showing_description")
+  isAutoPlaying       Boolean   @default(false) @map("is_auto_playing")
+  hasRadioLogikTracking Boolean @default(false) @map("has_radio_logik_tracking")
+  numTracks           Int       @default(0) @map("num_tracks")
+  hasMessagingEnabled Boolean   @default(false) @map("has_messaging_enabled")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  owner    User       @relation("ShowOwner", fields: [userId], references: [id])
+  helper   User?      @relation("ShowHelper", fields: [helperUserId], references: [id])
+  tracks   Tracklist[]
+  messages Message[]
+
+  @@index([userId, showStart])
+  @@index([showStart])
+  @@index([isActive])
+  @@index([isArmedForAutoStart])
+}
+
+model Tracklist {
+  id          String    @id @default(cuid())
+  trackType   String    @default("song") @map("track_type")
+  songTitle   String    @map("song_title")
+  artist      String?
+  album       String?
+  label       String?
+  trackLength String?   @map("track_length")
+  showId      String?   @map("show_id")
+  userId      String?   @map("user_id")
+  playDate    DateTime? @map("play_date")
+  isHighlighted Boolean @default(false) @map("is_highlighted")
+  indexNumber Int?      @map("index_number")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  show Show? @relation(fields: [showId], references: [id], onDelete: SetNull)
+
+  @@index([playDate])
+  @@index([showId])
+  @@index([showId, indexNumber])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  producerId String   @map("producer_id")
+  showId     String?  @map("show_id")
+  content    String   @db.Text
+  sentAt     DateTime @default(now()) @map("sent_at")
+  sentBy     String?  @map("sent_by")
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  producer User  @relation(fields: [producerId], references: [id])
+  show    Show? @relation(fields: [showId], references: [id], onDelete: SetNull)
+}
+
+model Post {
+  id       String   @id @default(cuid())
+  title    String
+  visibleBy Json?   @map("visible_by")
+  content  String   @db.Text
+  postDate DateTime @default(now()) @map("post_date")
+  createdAt DateTime @default(now()) @map("created_at")
+}
+
+model ProductionStatus {
+  id                      String   @id @default(cuid())
+  productionStatusName    String   @map("production_status_name")
+  metaData                String?  @map("meta_data")
+  isShowingMetaData       Boolean? @map("is_showing_meta_data")
+  additionalContent       String?  @db.Text @map("additional_content")
+  isShowingAdditionalContent Boolean? @map("is_showing_additional_content")
+  isActive                Boolean
+  userId                  String?  @map("user_id")
+  producersNote           String?  @db.Text @map("producers_note")
+  createdAt               DateTime @default(now()) @map("created_at")
+}
+
+model FeatureRequest {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @db.Text
+  userVotesUp Json?    @map("user_votes_up")
+  userVotesDown Json?  @map("user_votes_down")
+  userId      String?  @map("user_id")
+  totalScore  Int      @default(0) @map("total_score")
+  createdAt   DateTime @default(now()) @map("created_at")
+}
+
+model ListenerStat {
+  id         String   @id @default(cuid())
+  fetchDate  DateTime @default(now()) @map("fetch_date")
+  numListeners Int    @map("num_listeners")
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+model AutoDJPlaylist {
+  id            String   @id @default(cuid())
+  name          String
+  showSchedules Json?    @map("show_schedules")
+  createdAt     DateTime @default(now()) @map("created_at")
+}
