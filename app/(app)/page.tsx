@@ -22,37 +22,40 @@ export default async function HomePage() {
 
   return (
     <div>
-      <h2>Kuzu Updates</h2>
+      <h2 className="mb-4 text-xl font-semibold text-stone-100">Kuzu Updates</h2>
       {isAdmin && <HomePostsAdmin />}
       {visible.length === 0 && (
-        <div className="well" style={{ marginTop: 16 }}>
-          <p className="text-muted" style={{ marginBottom: 0 }}>
+        <div className="mt-4 rounded-lg border border-stone-700 bg-stone-900/40 p-4 text-stone-400">
+          <p className="mb-0 text-sm">
             No updates to show yet.
             {isAdmin && (
               <>
                 {' '}
                 Create one under <a href="/admin/posts/new">New post</a> or run{' '}
-                <code>npm run db:seed</code> for sample content.
+                <code className="text-amber-300">npm run db:seed</code> for sample content.
               </>
             )}
           </p>
         </div>
       )}
       {visible.map((post) => (
-        <div key={post.id}>
-          <h3>
+        <div key={post.id} className="mb-8">
+          <h3 className="text-lg font-medium text-stone-100">
             {post.title}
             {isAdmin && (
-              <span style={{ marginLeft: 12 }}>
-                <a href={`/admin/posts/${post.id}/edit`} className="btn btn-xs btn-primary">
+              <span className="ml-3">
+                <a
+                  href={`/admin/posts/${post.id}/edit`}
+                  className="inline-flex rounded-md bg-amber-600 px-2 py-0.5 text-xs font-medium text-white no-underline hover:bg-amber-700"
+                >
                   Edit
                 </a>
               </span>
             )}
             <br />
-            <small>{prettifyDate(post.postDate)}</small>
+            <span className="text-sm font-normal text-stone-500">{prettifyDate(post.postDate)}</span>
           </h3>
-          <hr />
+          <hr className="my-3 border-stone-700" />
           <div
             className="form-holder"
             dangerouslySetInnerHTML={{ __html: post.content }}

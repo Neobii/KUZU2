@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { btnXsSecondary, btnXsSuccess, inputClass } from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
 export function ProducerShowsActions({
   showId,
@@ -33,17 +35,16 @@ export function ProducerShowsActions({
   }
 
   return (
-    <span style={{ marginLeft: 8 }}>
-      <button type="button" className="btn btn-xs btn-success" onClick={() => void activate()}>
+    <span className="ml-2 inline-flex flex-wrap items-center gap-2">
+      <button type="button" className={btnXsSuccess} onClick={() => void activate()}>
         Go live
-      </button>{' '}
-      <button type="button" className="btn btn-xs btn-default" onClick={() => void duplicate()}>
+      </button>
+      <button type="button" className={btnXsSecondary} onClick={() => void duplicate()}>
         Duplicate
       </button>
       <input
         type="text"
-        className="form-control input-sm"
-        style={{ display: 'inline-block', width: 160, marginLeft: 8 }}
+        className={cn(inputClass, 'inline-block max-w-[10rem] text-xs')}
         value={dupName}
         onChange={(e) => setDupName(e.target.value)}
         placeholder="Duplicate name"

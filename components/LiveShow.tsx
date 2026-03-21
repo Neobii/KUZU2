@@ -5,11 +5,56 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { prettifySimpleTime } from '@/lib/utils-client'
+import {
+  btnPrimary,
+  btnSecondary,
+  btnSmDanger,
+  btnSmPrimary,
+  btnSmSuccess,
+  btnSmWarning,
+  btnSuccess,
+  btnWarning,
+  btnInfo,
+  btnDanger,
+  btnLink,
+  modalBackdropClass,
+  modalDialogClass,
+  modalDialogLgClass,
+  tableClass,
+  tableCellClass,
+  tableHeadClass,
+} from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
-const fetcher = (url: string) => fetch(url).then((r) => {
-  if (!r.ok) throw new Error('Failed')
-  return r.json()
-})
+const fetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error('Failed')
+    return r.json()
+  })
+
+function ChevronUp() {
+  return (
+    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+      <path d="M14.707 12.293a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" />
+    </svg>
+  )
+}
+function ChevronDown() {
+  return (
+    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+      <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+    </svg>
+  )
+}
+function StarIcon() {
+  return (
+    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden style={{ color: '#c0a821' }}>
+      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+    </svg>
+  )
+}
+
+const btnLg = (base: string) => cn(base, 'px-6 py-3 text-base')
 
 export function LiveShow() {
   const router = useRouter()
@@ -25,17 +70,19 @@ export function LiveShow() {
     { refreshInterval: msgOpen ? 5000 : 0 }
   )
 
-  const producerProfile = session?.user?.producerProfile as {
-    isAutomationUIEnabled?: boolean
-    isMessagingUIEnabled?: boolean
-  } | undefined
+  const producerProfile = session?.user?.producerProfile as
+    | {
+        isAutomationUIEnabled?: boolean
+        isMessagingUIEnabled?: boolean
+      }
+    | undefined
   const isAdmin = session?.user?.isAdmin
 
   if (error) {
-    return <p className="text-danger">Access denied or no active show.</p>
+    return <p className="text-red-400">Access denied or no active show.</p>
   }
   if (!data?.show) {
-    return <p>No active show. Start a show from My Shows.</p>
+    return <p className="text-stone-400">No active show. Start a show from My Shows.</p>
   }
 
   const show = data.show
@@ -65,145 +112,131 @@ export function LiveShow() {
   return (
     <div>
       {show.hasRadioLogikTracking && (
-        <div
-          style={{
-            backgroundColor: '#c0a821',
-            padding: '15px 5px',
-            textAlign: 'center',
-          }}
-        >
-          <h3>WARNING! Tracking is set to come from Radio Logik instead of the Kuzu App</h3>
+        <div className="bg-[#c0a821] px-2 py-4 text-center text-stone-900">
+          <h3 className="text-lg font-semibold">WARNING! Tracking is set to come from Radio Logik instead of the Kuzu App</h3>
         </div>
       )}
-      <h2>
+      <h2 className="mt-4 text-xl font-semibold text-stone-100">
         {show.showName} is live!{' '}
         <button
           type="button"
-          className="btn btn-primary btn-sm"
+          className={cn(btnSmPrimary, 'ml-2')}
           onClick={() => router.push(`/edit-show/${show.id}`)}
         >
           Edit
         </button>
       </h2>
-      <h3>
+      <h3 className="text-stone-300">
         {show.showStart ? prettifySimpleTime(show.showStart) : ''} -{' '}
         {show.showEnd ? prettifySimpleTime(show.showEnd) : ''}
       </h3>
-      <h3>{show.defaultMeta}</h3>
-      <hr />
-      <div className="row">
-        <section className="content">
-          <div className="col-md-8 col-md-offset-2">
-            <div className="panel panel-default">
-              <div className="panel-body">
-                <h3>Active show tracks</h3>
-                <table className="table table-filter">
-                  <tbody>
-                    {tracks.map((t) => (
-                      <tr
-                        key={t.id}
-                        className={`track ${t.trackType !== 'song' ? 'special-track' : ''}`}
-                      >
-                        <td style={{ width: 80 }}>
-                          {(t.indexNumber ?? 0) > 0 && (
-                            <button
-                              type="button"
-                              className="btn btn-link"
-                              onClick={() =>
-                                call(`/api/tracks/${t.id}/position`, {
-                                  body: JSON.stringify({ direction: 'up' }),
-                                })
-                              }
-                            >
-                              <span className="glyphicon glyphicon-chevron-up" />
-                            </button>
-                          )}
-                          <strong>{t.indexNumber}</strong>
-                          {(t.indexNumber ?? 0) !== highest && highest >= 0 && (
-                            <button
-                              type="button"
-                              className="btn btn-link"
-                              onClick={() =>
-                                call(`/api/tracks/${t.id}/position`, {
-                                  body: JSON.stringify({ direction: 'down' }),
-                                })
-                              }
-                            >
-                              <span className="glyphicon glyphicon-chevron-down" />
-                            </button>
-                          )}
-                        </td>
-                        <td style={{ width: 40 }}>
-                          {t.isHighlighted && (
-                            <span className="glyphicon glyphicon-star" style={{ color: '#c0a821' }} />
-                          )}
-                        </td>
-                        <td>
-                          <h3 className="title">
-                            {t.songTitle} - {t.artist}
-                          </h3>
-                          {t.playDate ? (
-                            <>
-                              <button
-                                type="button"
-                                className="btn btn-warning btn-sm"
-                                onClick={() => call(`/api/tracks/${t.id}/start`)}
-                              >
-                                Restart Track
-                              </button>
-                              {(isAdmin || producerProfile?.isAutomationUIEnabled) && (
-                                <button
-                                  type="button"
-                                  className="btn btn-danger btn-sm"
-                                  onClick={() =>
-                                    call(`/api/tracks/${t.id}/clear-playtime`)
-                                  }
-                                >
-                                  Clear Playtime
-                                </button>
-                              )}
-                            </>
-                          ) : (
-                            <button
-                              type="button"
-                              className="btn btn-success btn-sm"
-                              onClick={() => call(`/api/tracks/${t.id}/start`)}
-                            >
-                              Start Track
-                            </button>
-                          )}
+      <h3 className="text-stone-400">{show.defaultMeta}</h3>
+      <hr className="my-4 border-stone-700" />
+
+      <div className="mx-auto max-w-4xl">
+        <div className="rounded-lg border border-stone-700 bg-stone-900/40 p-4">
+          <h3 className="mb-3 text-lg font-medium text-stone-100">Active show tracks</h3>
+          <div className="overflow-x-auto">
+            <table className={cn(tableClass, 'table-filter')}>
+              <tbody>
+                {tracks.map((t) => (
+                  <tr
+                    key={t.id}
+                    className={cn('track border-b border-stone-800', t.trackType !== 'song' && 'special-track')}
+                  >
+                    <td className={cn(tableCellClass, 'w-20 align-top')}>
+                      {(t.indexNumber ?? 0) > 0 && (
+                        <button
+                          type="button"
+                          className={cn(btnLink, 'p-0')}
+                          onClick={() =>
+                            call(`/api/tracks/${t.id}/position`, {
+                              body: JSON.stringify({ direction: 'up' }),
+                            })
+                          }
+                        >
+                          <ChevronUp />
+                        </button>
+                      )}
+                      <strong className="text-stone-100">{t.indexNumber}</strong>
+                      {(t.indexNumber ?? 0) !== highest && highest >= 0 && (
+                        <button
+                          type="button"
+                          className={cn(btnLink, 'p-0')}
+                          onClick={() =>
+                            call(`/api/tracks/${t.id}/position`, {
+                              body: JSON.stringify({ direction: 'down' }),
+                            })
+                          }
+                        >
+                          <ChevronDown />
+                        </button>
+                      )}
+                    </td>
+                    <td className={cn(tableCellClass, 'w-10 align-top')}>
+                      {t.isHighlighted && <StarIcon />}
+                    </td>
+                    <td className={tableCellClass}>
+                      <h3 className="title text-lg font-medium text-stone-100">
+                        {t.songTitle} - {t.artist}
+                      </h3>
+                      {t.playDate ? (
+                        <>
                           <button
                             type="button"
-                            className="btn btn-primary btn-sm pull-right"
-                            onClick={() => router.push(`/edit-track/${t.id}`)}
+                            className={cn(btnSmWarning, 'mr-2 mt-2')}
+                            onClick={() => call(`/api/tracks/${t.id}/start`)}
                           >
-                            Edit
+                            Restart Track
                           </button>
-                          <h4>
-                            <span className="pull-right">Album: {t.album}</span>
-                            <h5>Length: {t.trackLength}</h5>
-                            Played at:{' '}
-                            {t.playDate ? prettifySimpleTime(t.playDate) : '-'}
-                          </h4>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                          {(isAdmin || producerProfile?.isAutomationUIEnabled) && (
+                            <button
+                              type="button"
+                              className={cn(btnSmDanger, 'mt-2')}
+                              onClick={() => call(`/api/tracks/${t.id}/clear-playtime`)}
+                            >
+                              Clear Playtime
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className={cn(btnSmSuccess, 'mt-2')}
+                          onClick={() => call(`/api/tracks/${t.id}/start`)}
+                        >
+                          Start Track
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={cn(btnSmPrimary, 'float-right mt-2')}
+                        onClick={() => router.push(`/edit-track/${t.id}`)}
+                      >
+                        Edit
+                      </button>
+                      <h4 className="clear-both mt-2 text-stone-300">
+                        <span className="float-right text-sm">Album: {t.album}</span>
+                        <h5 className="text-sm font-normal">Length: {t.trackLength}</h5>
+                        Played at: {t.playDate ? prettifySimpleTime(t.playDate) : '-'}
+                      </h4>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </section>
+        </div>
       </div>
 
-      <div className="show-control-panel" style={{ background: '#222', padding: 16 }}>
-        <div className="text-center">
+      <div className="show-control-panel bg-stone-900 p-4">
+        <div className="flex flex-wrap items-center justify-center gap-3 text-center">
           {data.hasNextTrack && (producerProfile?.isAutomationUIEnabled || isAdmin) && (
             <>
               {show.isAutoPlaying ? (
                 <button
                   type="button"
-                  className="btn btn-lg btn-info"
+                  className={btnLg(btnInfo)}
                   onClick={() => call('/api/live/autoplay', { body: JSON.stringify({ action: 'pause' }) })}
                 >
                   Pause Autoplay
@@ -211,7 +244,7 @@ export function LiveShow() {
               ) : (
                 <button
                   type="button"
-                  className="btn btn-lg btn-success"
+                  className={btnLg(btnSuccess)}
                   onClick={() => call('/api/live/autoplay', { body: JSON.stringify({}) })}
                 >
                   Autoplay
@@ -221,7 +254,7 @@ export function LiveShow() {
           )}
           <button
             type="button"
-            className="btn btn-lg btn-danger"
+            className={btnLg(btnDanger)}
             onClick={async () => {
               if (!confirm('Stop this show?')) return
               await call(`/api/shows/${show.id}/deactivate`)
@@ -233,7 +266,7 @@ export function LiveShow() {
           {show.isShowingDefaultMeta ? (
             <button
               type="button"
-              className="btn btn-lg btn-warning"
+              className={btnLg(btnWarning)}
               onClick={() =>
                 call('/api/live/show-meta', {
                   body: JSON.stringify({ showId: show.id, useDefaultMeta: false }),
@@ -245,7 +278,7 @@ export function LiveShow() {
           ) : (
             <button
               type="button"
-              className="btn btn-lg btn-primary"
+              className={btnLg(btnPrimary)}
               onClick={() =>
                 call('/api/live/show-meta', {
                   body: JSON.stringify({ showId: show.id, useDefaultMeta: true }),
@@ -258,7 +291,7 @@ export function LiveShow() {
           {producerProfile?.isMessagingUIEnabled && (
             <button
               type="button"
-              className="btn btn-lg btn-default"
+              className={btnLg(btnSecondary)}
               onClick={() => {
                 setMsgOpen(true)
                 void fetch('/api/messages/mark-show-read', { method: 'POST' })
@@ -269,17 +302,13 @@ export function LiveShow() {
             </button>
           )}
           {data.recentlyPlayed?.length > 0 && (
-            <button
-              type="button"
-              className="btn btn-lg btn-default"
-              onClick={() => setRecentOpen(true)}
-            >
+            <button type="button" className={btnLg(btnSecondary)} onClick={() => setRecentOpen(true)}>
               Recent Tracks
             </button>
           )}
           <button
             type="button"
-            className="btn btn-lg btn-success"
+            className={btnLg(btnSuccess)}
             onClick={() => router.push(`/addTrackToShow/${show.id}`)}
           >
             Add a new track
@@ -288,110 +317,126 @@ export function LiveShow() {
       </div>
 
       {msgOpen && (
-        <div className="modal show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <button type="button" className="close" onClick={() => setMsgOpen(false)}>
-                  &times;
+        <div className={modalBackdropClass} role="dialog" aria-modal="true">
+          <div className={modalDialogLgClass}>
+            <div className="border-b border-stone-200 p-4">
+              <div className="flex items-start justify-between">
+                <h4 className="text-lg font-semibold text-stone-900">Show Messages</h4>
+                <button
+                  type="button"
+                  className="rounded p-1 text-2xl text-stone-500 hover:bg-stone-100"
+                  onClick={() => setMsgOpen(false)}
+                  aria-label="Close"
+                >
+                  ×
                 </button>
-                <h4>Show Messages</h4>
               </div>
-              <div className="modal-body">
-                <table className="table" style={{ background: '#fff' }}>
-                  <thead>
-                    <tr>
-                      <th>Read</th>
-                      <th>Sent</th>
-                      <th>Content</th>
-                      <th>By</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {showMessages?.map(
-                      (m: {
-                        id: string
-                        isRead: boolean
-                        sentAt: string
-                        content: string
-                        sentBy: string | null
-                      }) => (
-                        <tr key={m.id}>
-                          <td>{m.isRead ? 'Yes' : 'No'}</td>
-                          <td>{prettifySimpleTime(m.sentAt)}</td>
-                          <td>{m.content}</td>
-                          <td>{m.sentBy}</td>
-                          <td>
-                            <button
-                              type="button"
-                              className="btn btn-warning btn-sm"
-                              onClick={async () => {
-                                await fetch(`/api/messages/${m.id}`, { method: 'DELETE' })
-                                void mutateMsg()
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            </div>
+            <div className="overflow-x-auto p-4">
+              <table className={cn(tableClass, 'bg-white text-stone-900')}>
+                <thead>
+                  <tr className={tableHeadClass}>
+                    <th className={tableCellClass}>Read</th>
+                    <th className={tableCellClass}>Sent</th>
+                    <th className={tableCellClass}>Content</th>
+                    <th className={tableCellClass}>By</th>
+                    <th className={tableCellClass} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {showMessages?.map(
+                    (m: {
+                      id: string
+                      isRead: boolean
+                      sentAt: string
+                      content: string
+                      sentBy: string | null
+                    }) => (
+                      <tr key={m.id}>
+                        <td className={tableCellClass}>{m.isRead ? 'Yes' : 'No'}</td>
+                        <td className={tableCellClass}>{prettifySimpleTime(m.sentAt)}</td>
+                        <td className={tableCellClass}>{m.content}</td>
+                        <td className={tableCellClass}>{m.sentBy}</td>
+                        <td className={tableCellClass}>
+                          <button
+                            type="button"
+                            className={btnSmWarning}
+                            onClick={async () => {
+                              await fetch(`/api/messages/${m.id}`, { method: 'DELETE' })
+                              void mutateMsg()
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       )}
 
       {recentOpen && (
-        <div className="modal show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <button type="button" className="close" onClick={() => setRecentOpen(false)}>
-                  &times;
-                </button>
-                <h4>Recently Played</h4>
-              </div>
-              <div className="modal-body">
-                <table className="table" style={{ background: '#fff' }}>
-                  <thead>
-                    <tr>
-                      <th>Artist</th>
-                      <th>Title</th>
-                      <th>Album</th>
-                      <th>Played</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.recentlyPlayed?.map(
-                      (t: { id: string; artist?: string; songTitle: string; album?: string; playDate?: string }) => (
-                        <tr key={t.id}>
-                          <td>{t.artist}</td>
-                          <td>{t.songTitle}</td>
-                          <td>{t.album}</td>
-                          <td>{t.playDate ? prettifySimpleTime(t.playDate) : ''}</td>
-                        </tr>
-                      )
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div className="modal-footer">
+        <div className={modalBackdropClass} role="dialog" aria-modal="true">
+          <div className={modalDialogClass}>
+            <div className="border-b border-stone-200 p-4">
+              <div className="flex items-start justify-between">
+                <h4 className="text-lg font-semibold text-stone-900">Recently Played</h4>
                 <button
                   type="button"
-                  className="btn btn-default"
-                  onClick={async () => {
-                    await call('/api/live/clear-highlighted')
-                    setRecentOpen(false)
-                    void mutate()
-                  }}
+                  className="rounded p-1 text-2xl text-stone-500 hover:bg-stone-100"
+                  onClick={() => setRecentOpen(false)}
+                  aria-label="Close"
                 >
-                  Close
+                  ×
                 </button>
               </div>
+            </div>
+            <div className="overflow-x-auto p-4">
+              <table className={cn(tableClass, 'bg-white text-stone-900')}>
+                <thead>
+                  <tr className={tableHeadClass}>
+                    <th className={tableCellClass}>Artist</th>
+                    <th className={tableCellClass}>Title</th>
+                    <th className={tableCellClass}>Album</th>
+                    <th className={tableCellClass}>Played</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recentlyPlayed?.map(
+                    (t: {
+                      id: string
+                      artist?: string
+                      songTitle: string
+                      album?: string
+                      playDate?: string
+                    }) => (
+                      <tr key={t.id}>
+                        <td className={tableCellClass}>{t.artist}</td>
+                        <td className={tableCellClass}>{t.songTitle}</td>
+                        <td className={tableCellClass}>{t.album}</td>
+                        <td className={tableCellClass}>{t.playDate ? prettifySimpleTime(t.playDate) : ''}</td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-end border-t border-stone-200 p-4">
+              <button
+                type="button"
+                className={btnSecondary}
+                onClick={async () => {
+                  await call('/api/live/clear-highlighted')
+                  setRecentOpen(false)
+                  void mutate()
+                }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

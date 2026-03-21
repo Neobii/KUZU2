@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { TrackImportsClient } from '@/components/TrackImportsClient'
+import { formGroupClass, inputClass, labelClass } from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
 export default function TrackImportsPage() {
   const [shows, setShows] = useState<{ id: string; showName: string }[]>([])
@@ -15,12 +17,11 @@ export default function TrackImportsPage() {
 
   return (
     <div>
-      <h2>Track Imports</h2>
-      <div className="form-group">
-        <label>Show</label>
+      <h2 className="mb-4 text-xl font-semibold text-stone-100">Track Imports</h2>
+      <div className={formGroupClass}>
+        <label className={labelClass}>Show</label>
         <select
-          className="form-control"
-          style={{ maxWidth: 400 }}
+          className={cn(inputClass, 'max-w-md')}
           value={sid}
           onChange={(e) => setSid(e.target.value)}
         >
@@ -32,7 +33,11 @@ export default function TrackImportsPage() {
           ))}
         </select>
       </div>
-      {sid ? <TrackImportsClient showId={sid} /> : <p>Choose a show to import tracks into.</p>}
+      {sid ? (
+        <TrackImportsClient showId={sid} />
+      ) : (
+        <p className="text-stone-400">Choose a show to import tracks into.</p>
+      )}
     </div>
   )
 }

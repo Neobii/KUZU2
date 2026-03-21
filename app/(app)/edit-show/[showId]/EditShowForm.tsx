@@ -6,6 +6,8 @@ import { showEditSchema } from '@/lib/schemas/forms'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { TipTapEditor } from '@/components/TipTapEditor'
+import { btnPrimary, checkboxRowClass, formGroupClass, inputClass, labelClass } from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
 type Form = z.infer<typeof showEditSchema>
 
@@ -59,26 +61,26 @@ export function EditShowForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} style={{ maxWidth: 720 }}>
-      <div className="form-group">
-        <label>Show name</label>
-        <input className="form-control" {...register('showName')} />
-        {errors.showName && <span className="text-danger">{errors.showName.message}</span>}
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl">
+      <div className={formGroupClass}>
+        <label className={labelClass}>Show name</label>
+        <input className={inputClass} {...register('showName')} />
+        {errors.showName && <span className="text-sm text-red-400">{errors.showName.message}</span>}
       </div>
-      <div className="form-group">
-        <label>Start (local)</label>
-        <input className="form-control" type="datetime-local" {...register('showStart')} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>Start (local)</label>
+        <input className={inputClass} type="datetime-local" {...register('showStart')} />
       </div>
-      <div className="form-group">
-        <label>End (local)</label>
-        <input className="form-control" type="datetime-local" {...register('showEnd')} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>End (local)</label>
+        <input className={inputClass} type="datetime-local" {...register('showEnd')} />
       </div>
-      <div className="form-group">
-        <label>Default meta</label>
-        <textarea className="form-control" rows={2} {...register('defaultMeta')} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>Default meta</label>
+        <textarea className={cn(inputClass, 'min-h-[5rem]')} rows={2} {...register('defaultMeta')} />
       </div>
-      <div className="form-group">
-        <label>Description</label>
+      <div className={formGroupClass}>
+        <label className={labelClass}>Description</label>
         <Controller
           name="description"
           control={control}
@@ -87,17 +89,19 @@ export function EditShowForm({
           )}
         />
       </div>
-      <div className="checkbox">
-        <label>
-          <input type="checkbox" {...register('hasRadioLogikTracking')} /> Radio Logik tracking
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
+          <input type="checkbox" className="rounded border-stone-600" {...register('hasRadioLogikTracking')} />
+          Radio Logik tracking
         </label>
       </div>
-      <div className="checkbox">
-        <label>
-          <input type="checkbox" {...register('hasMessagingEnabled')} /> Messaging enabled
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
+          <input type="checkbox" className="rounded border-stone-600" {...register('hasMessagingEnabled')} />
+          Messaging enabled
         </label>
       </div>
-      <button type="submit" className="btn btn-primary">
+      <button type="submit" className={btnPrimary}>
         Save
       </button>
     </form>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { btnPrimaryLg } from '@/lib/ui'
 
 export default function StartShowPage() {
   const router = useRouter()
@@ -16,9 +17,9 @@ export default function StartShowPage() {
 
   return (
     <div>
-      <h2>Start a new show</h2>
-      <p>This creates a show from your program defaults.</p>
-      <button type="button" className="btn btn-primary btn-lg" onClick={() => void createShow()}>
+      <h2 className="mb-2 text-xl font-semibold text-stone-100">Start a new show</h2>
+      <p className="mb-4 text-stone-400">This creates a show from your program defaults.</p>
+      <button type="button" className={btnPrimaryLg} onClick={() => void createShow()}>
         Create Show
       </button>
     </div>

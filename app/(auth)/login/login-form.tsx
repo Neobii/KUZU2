@@ -1,8 +1,10 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
-import { useState, useMemo, type CSSProperties, type FormEvent } from 'react'
+import { useState, useMemo, type FormEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { cn } from '@/lib/cn'
+import { btnPrimary, inputClass } from '@/lib/ui'
 
 function FacebookIcon() {
   return (
@@ -11,16 +13,6 @@ function FacebookIcon() {
     </svg>
   )
 }
-
-const tabStyle = (active: boolean): CSSProperties => ({
-  flex: 1,
-  padding: '10px 12px',
-  cursor: 'pointer',
-  border: '1px solid #ccc',
-  background: active ? '#f5f5f5' : '#fff',
-  fontWeight: active ? 600 : 400,
-  borderRadius: 6,
-})
 
 export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolean }) {
   const router = useRouter()
@@ -105,10 +97,18 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
     }
   }
 
+  const tabBtn = (active: boolean) =>
+    cn(
+      'flex-1 rounded-md border px-3 py-2.5 text-sm font-medium transition-colors',
+      active
+        ? 'border-amber-600 bg-stone-800 text-white'
+        : 'border-stone-600 bg-stone-900 text-stone-300 hover:bg-stone-800'
+    )
+
   return (
-    <div style={{ maxWidth: 400, margin: '80px auto', padding: 20 }}>
-      <h1 style={{ marginBottom: 8 }}>KUZU</h1>
-      <p style={{ marginTop: 0, marginBottom: 20, color: '#666' }}>{heading}</p>
+    <div className="mx-auto mt-16 max-w-md px-5 py-6">
+      <h1 className="mb-1 text-2xl font-semibold text-white">KUZU</h1>
+      <p className="mb-5 text-stone-400">{heading}</p>
 
       {facebookAuthEnabled && (
         <>
@@ -116,37 +116,19 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
             type="button"
             onClick={handleFacebook}
             disabled={oauthLoading}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              cursor: oauthLoading ? 'wait' : 'pointer',
-              background: '#1877F2',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 6,
-              fontSize: 16,
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-            }}
+            className="flex w-full items-center justify-center gap-2.5 rounded-md bg-[#1877F2] px-4 py-3 text-base font-semibold text-white hover:bg-[#166fe5] disabled:cursor-wait disabled:opacity-80"
             aria-label="Continue with Facebook"
           >
             <FacebookIcon />
             {oauthLoading ? 'Redirecting…' : 'Continue with Facebook'}
           </button>
-          <p style={{ textAlign: 'center', margin: '16px 0', color: '#888' }}>
+          <p className="my-4 text-center text-sm text-stone-500">
             New or existing account — we&apos;ll sign you in
           </p>
         </>
       )}
 
-      <div
-        role="tablist"
-        aria-label="Sign in or create account"
-        style={{ display: 'flex', gap: 8, marginBottom: 16 }}
-      >
+      <div role="tablist" aria-label="Sign in or create account" className="mb-4 flex gap-2">
         <button
           type="button"
           role="tab"
@@ -155,7 +137,7 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
             setMode('signin')
             setError('')
           }}
-          style={tabStyle(mode === 'signin')}
+          className={tabBtn(mode === 'signin')}
         >
           Sign in
         </button>
@@ -167,14 +149,14 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
             setMode('signup')
             setError('')
           }}
-          style={tabStyle(mode === 'signup')}
+          className={tabBtn(mode === 'signup')}
         >
           Sign up
         </button>
       </div>
 
       {mode === 'signin' ? (
-        <form onSubmit={handleSignIn} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <form onSubmit={handleSignIn} className="flex flex-col gap-3">
           <input
             type="email"
             placeholder="Email"
@@ -182,7 +164,7 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            style={{ padding: 10, color: '#000' }}
+            className={inputClass}
           />
           <input
             type="password"
@@ -191,15 +173,15 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
-            style={{ padding: 10, color: '#000' }}
+            className={inputClass}
           />
-          {error && <p style={{ color: '#e74c3c' }}>{error}</p>}
-          <button type="submit" disabled={submitLoading} style={{ padding: 12, cursor: 'pointer' }}>
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <button type="submit" disabled={submitLoading} className={cn(btnPrimary, 'w-full py-2.5')}>
             {submitLoading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
       ) : (
-        <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <form onSubmit={handleSignUp} className="flex flex-col gap-3">
           <input
             type="email"
             placeholder="Email"
@@ -207,7 +189,7 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            style={{ padding: 10, color: '#000' }}
+            className={inputClass}
           />
           <input
             type="password"
@@ -217,7 +199,7 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
             required
             minLength={8}
             autoComplete="new-password"
-            style={{ padding: 10, color: '#000' }}
+            className={inputClass}
           />
           <input
             type="password"
@@ -227,10 +209,10 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
             required
             minLength={8}
             autoComplete="new-password"
-            style={{ padding: 10, color: '#000' }}
+            className={inputClass}
           />
-          {error && <p style={{ color: '#e74c3c' }}>{error}</p>}
-          <button type="submit" disabled={submitLoading} style={{ padding: 12, cursor: 'pointer' }}>
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <button type="submit" disabled={submitLoading} className={cn(btnPrimary, 'w-full py-2.5')}>
             {submitLoading ? 'Creating account…' : 'Create account'}
           </button>
         </form>

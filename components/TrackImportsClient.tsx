@@ -29,10 +29,17 @@ export function TrackImportsClient({ showId }: { showId: string }) {
 
   return (
     <div>
-      <h2>Track import (Reaper / CSV)</h2>
-      <p>Upload a CSV with columns: Name, Meta, Album, Label, Length (Reaper export).</p>
-      <input type="file" accept=".csv" onChange={onFile} />
-      <p>{status}</p>
+      <h3 className="mb-2 text-lg font-medium text-stone-200">Track import (Reaper / CSV)</h3>
+      <p className="mb-3 text-sm text-stone-400">
+        Upload a CSV with columns: Name, Meta, Album, Label, Length (Reaper export).
+      </p>
+      <input
+        type="file"
+        accept=".csv"
+        className="text-sm text-stone-300 file:mr-3 file:rounded-md file:border-0 file:bg-amber-600 file:px-3 file:py-1.5 file:text-sm file:text-white hover:file:bg-amber-700"
+        onChange={onFile}
+      />
+      <p className="mt-2 text-sm text-stone-400">{status}</p>
     </div>
   )
 }

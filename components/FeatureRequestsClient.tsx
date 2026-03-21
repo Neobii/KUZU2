@@ -5,6 +5,19 @@ import { useSession } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import {
+  btnPrimary,
+  btnXsDanger,
+  btnXsSuccess,
+  btnXsWarning,
+  formGroupClass,
+  inputClass,
+  labelClass,
+  tableClass,
+  tableCellClass,
+  tableHeadClass,
+} from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
 const schema = z.object({
   name: z.string().min(1),
@@ -54,74 +67,64 @@ export function FeatureRequestsClient() {
 
   return (
     <div>
-      <h2>Feature Requests</h2>
-      <form onSubmit={handleSubmit(onSubmit)} style={{ maxWidth: 480, marginBottom: 24 }}>
-        <div className="form-group">
-          <label>Name</label>
-          <input className="form-control" {...register('name')} />
-          {errors.name && <span className="text-danger">{errors.name.message}</span>}
+      <h2 className="mb-4 text-xl font-semibold text-stone-100">Feature Requests</h2>
+      <form onSubmit={handleSubmit(onSubmit)} className="mb-6 max-w-md">
+        <div className={formGroupClass}>
+          <label className={labelClass}>Name</label>
+          <input className={inputClass} {...register('name')} />
+          {errors.name && <span className="text-sm text-red-400">{errors.name.message}</span>}
         </div>
-        <div className="form-group">
-          <label>Description</label>
-          <textarea className="form-control" rows={3} {...register('description')} />
+        <div className={formGroupClass}>
+          <label className={labelClass}>Description</label>
+          <textarea className={cn(inputClass, 'min-h-[5rem]')} rows={3} {...register('description')} />
         </div>
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className={btnPrimary}>
           Add
         </button>
       </form>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Score</th>
-            <th>Name</th>
-            <th>Description</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {items?.map(
-            (f: {
-              id: string
-              name: string
-              description: string
-              totalScore: number
-              userVotesUp: string[] | null
-              userVotesDown: string[] | null
-            }) => (
-              <tr key={f.id}>
-                <td>{f.totalScore}</td>
-                <td>{f.name}</td>
-                <td>{f.description}</td>
-                <td>
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-success"
-                    onClick={() => void vote(f.id, 'up')}
-                  >
-                    +
-                  </button>{' '}
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-danger"
-                    onClick={() => void vote(f.id, 'down')}
-                  >
-                    −
-                  </button>
-                  {session?.user?.isAdmin && (
-                    <button
-                      type="button"
-                      className="btn btn-xs btn-warning"
-                      onClick={() => void remove(f.id)}
-                    >
-                      Delete
+      <div className="overflow-x-auto">
+        <table className={tableClass}>
+          <thead>
+            <tr className={tableHeadClass}>
+              <th className={tableCellClass}>Score</th>
+              <th className={tableCellClass}>Name</th>
+              <th className={tableCellClass}>Description</th>
+              <th className={tableCellClass} />
+            </tr>
+          </thead>
+          <tbody>
+            {items?.map(
+              (f: {
+                id: string
+                name: string
+                description: string
+                totalScore: number
+                userVotesUp: string[] | null
+                userVotesDown: string[] | null
+              }) => (
+                <tr key={f.id}>
+                  <td className={tableCellClass}>{f.totalScore}</td>
+                  <td className={tableCellClass}>{f.name}</td>
+                  <td className={tableCellClass}>{f.description}</td>
+                  <td className={tableCellClass}>
+                    <button type="button" className={btnXsSuccess} onClick={() => void vote(f.id, 'up')}>
+                      +
+                    </button>{' '}
+                    <button type="button" className={btnXsDanger} onClick={() => void vote(f.id, 'down')}>
+                      −
                     </button>
-                  )}
-                </td>
-              </tr>
-            )
-          )}
-        </tbody>
-      </table>
+                    {session?.user?.isAdmin && (
+                      <button type="button" className={cn(btnXsWarning, 'ml-1')} onClick={() => void remove(f.id)}>
+                        Delete
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

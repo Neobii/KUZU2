@@ -3,6 +3,8 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { useEffect } from 'react'
+import { btnSecondary } from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
 export function TipTapEditor({
   value,
@@ -19,8 +21,9 @@ export function TipTapEditor({
     content: value || '',
     editorProps: {
       attributes: {
-        class: 'tiptap form-control',
-        style: `min-height:${minHeight}px;padding:12px;background:#fff;color:#111`,
+        class:
+          'tiptap max-w-none min-h-[120px] rounded-md border border-stone-600 bg-white px-3 py-2 text-sm text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-600',
+        style: `min-height:${minHeight}px`,
       },
     },
     onUpdate: ({ editor }) => {
@@ -34,21 +37,21 @@ export function TipTapEditor({
     }
   }, [value, editor])
 
-  if (!editor) return <div style={{ minHeight }}>Loading editor…</div>
+  if (!editor) return <div className="min-h-[120px] text-stone-500">Loading editor…</div>
 
   return (
     <div className="tiptap-wrap">
-      <div style={{ marginBottom: 8 }}>
+      <div className="mb-2 flex gap-2">
         <button
           type="button"
-          className="btn btn-default btn-xs"
+          className={cn(btnSecondary, 'px-2 py-1 text-xs')}
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
           Bold
-        </button>{' '}
+        </button>
         <button
           type="button"
-          className="btn btn-default btn-xs"
+          className={cn(btnSecondary, 'px-2 py-1 text-xs')}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           Italic

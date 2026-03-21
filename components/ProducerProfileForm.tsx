@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { TipTapEditor } from '@/components/TipTapEditor'
+import { btnPrimary, checkboxRowClass, formGroupClass, inputClass, labelClass } from '@/lib/ui'
 
 export function ProducerProfileForm() {
   const router = useRouter()
@@ -38,22 +39,27 @@ export function ProducerProfileForm() {
   }
 
   return (
-    <div style={{ maxWidth: 720 }}>
-      <div className="form-group">
-        <label>Display name</label>
-        <input className="form-control" value={name} onChange={(e) => setName(e.target.value)} />
+    <div className="max-w-3xl">
+      <div className={formGroupClass}>
+        <label className={labelClass}>Display name</label>
+        <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
       </div>
-      <div className="form-group">
-        <label>Bio</label>
+      <div className={formGroupClass}>
+        <label className={labelClass}>Bio</label>
         <TipTapEditor value={bio} onChange={setBio} minHeight={200} />
       </div>
-      <div className="checkbox">
-        <label>
-          <input type="checkbox" checked={isPioneer} onChange={(e) => setIsPioneer(e.target.checked)} />{' '}
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
+          <input
+            type="checkbox"
+            className="rounded border-stone-600"
+            checked={isPioneer}
+            onChange={(e) => setIsPioneer(e.target.checked)}
+          />
           Pioneer producer
         </label>
       </div>
-      <button type="button" className="btn btn-primary" onClick={() => void save()}>
+      <button type="button" className={btnPrimary} onClick={() => void save()}>
         Save
       </button>
     </div>

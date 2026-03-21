@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { btnPrimary, formGroupClass, inputClass, labelClass } from '@/lib/ui'
 
 export function AddTrackForm({ showId }: { showId: string }) {
   const router = useRouter()
@@ -34,10 +35,10 @@ export function AddTrackForm({ showId }: { showId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ maxWidth: 500 }}>
-      <div style={{ marginBottom: 8 }}>
-        <label>Track Type</label>
-        <select value={trackType} onChange={(e) => setTrackType(e.target.value)} style={{ display: 'block', width: '100%', padding: 8 }}>
+    <form onSubmit={handleSubmit} className="max-w-lg">
+      <div className={formGroupClass}>
+        <label className={labelClass}>Track Type</label>
+        <select className={inputClass} value={trackType} onChange={(e) => setTrackType(e.target.value)}>
           <option value="song">Song</option>
           <option value="talkingPoint">Talking Point</option>
           <option value="showMeta">Show Meta</option>
@@ -45,27 +46,41 @@ export function AddTrackForm({ showId }: { showId: string }) {
           <option value="kuzuDefault">Kuzu Default</option>
         </select>
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <label>Song Title</label>
-        <input type="text" value={songTitle} onChange={(e) => setSongTitle(e.target.value)} required style={{ display: 'block', width: '100%', padding: 8 }} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>Song Title</label>
+        <input
+          className={inputClass}
+          type="text"
+          value={songTitle}
+          onChange={(e) => setSongTitle(e.target.value)}
+          required
+        />
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <label>Artist</label>
-        <input type="text" value={artist} onChange={(e) => setArtist(e.target.value)} style={{ display: 'block', width: '100%', padding: 8 }} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>Artist</label>
+        <input className={inputClass} type="text" value={artist} onChange={(e) => setArtist(e.target.value)} />
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <label>Album</label>
-        <input type="text" value={album} onChange={(e) => setAlbum(e.target.value)} style={{ display: 'block', width: '100%', padding: 8 }} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>Album</label>
+        <input className={inputClass} type="text" value={album} onChange={(e) => setAlbum(e.target.value)} />
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <label>Label</label>
-        <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} style={{ display: 'block', width: '100%', padding: 8 }} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>Label</label>
+        <input className={inputClass} type="text" value={label} onChange={(e) => setLabel(e.target.value)} />
       </div>
-      <div style={{ marginBottom: 8 }}>
-        <label>Track Length (mm:ss)</label>
-        <input type="text" value={trackLength} onChange={(e) => setTrackLength(e.target.value)} placeholder="3:45" style={{ display: 'block', width: '100%', padding: 8 }} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>Track Length (mm:ss)</label>
+        <input
+          className={inputClass}
+          type="text"
+          value={trackLength}
+          onChange={(e) => setTrackLength(e.target.value)}
+          placeholder="3:45"
+        />
       </div>
-      <button type="submit" style={{ padding: 10, cursor: 'pointer' }}>Add Track</button>
+      <button type="submit" className={btnPrimary}>
+        Add Track
+      </button>
     </form>
   )
 }

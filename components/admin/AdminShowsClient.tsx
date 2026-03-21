@@ -5,6 +5,15 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { prettifyDate, prettifySimpleTime } from '@/lib/utils-client'
 import moment from 'moment'
+import {
+  btnSmDanger,
+  btnSmPrimary,
+  btnSmSecondary,
+  btnSmWarning,
+  formGroupClass,
+  inputClass,
+} from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -47,60 +56,59 @@ export function AdminShowsClient() {
 
   return (
     <div>
-      <div className="form-group">
+      <div className={formGroupClass}>
         <input
-          className="form-control"
+          className={cn(inputClass, 'max-w-md')}
           placeholder="Search shows…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          style={{ maxWidth: 400 }}
         />
       </div>
       {filtered.map((show) => {
         const endAfter = show.showEnd && moment(show.showEnd).add(10, 'minutes').isAfter(moment())
         return (
-          <div key={show.id} className="form-holder" style={{ marginBottom: 16 }}>
-            <h3>
+          <div key={show.id} className="form-holder mb-4">
+            <h3 className="text-lg font-semibold text-stone-100">
               {show.showName}
               <br />
-              <span className="small">
+              <span className="text-sm font-normal text-stone-400">
                 {show.showStart ? prettifyDate(show.showStart) : ''},{' '}
                 {show.showStart ? prettifySimpleTime(show.showStart) : ''} –{' '}
                 {show.showEnd ? prettifySimpleTime(show.showEnd) : ''}
               </span>
             </h3>
-            <p>
-              <Link href={`/show/${show.id}/tracks`} className="btn btn-sm btn-default">
+            <p className="mt-2 flex flex-wrap gap-2">
+              <Link href={`/show/${show.id}/tracks`} className={cn(btnSmSecondary, 'no-underline')}>
                 Tracks
               </Link>{' '}
               <a
                 href={`/api/export/shows/${show.id}/tracks`}
-                className="btn btn-sm btn-default"
+                className={cn(btnSmSecondary, 'no-underline')}
                 download
               >
                 Export TSV
               </a>{' '}
               {show.isActive ? (
-                <button type="button" className="btn btn-sm btn-warning" onClick={() => void deactivate(show.id)}>
+                <button type="button" className={btnSmWarning} onClick={() => void deactivate(show.id)}>
                   Stop show
                 </button>
               ) : (
-                <button type="button" className="btn btn-sm btn-primary" onClick={() => void activate(show.id)}>
+                <button type="button" className={btnSmPrimary} onClick={() => void activate(show.id)}>
                   Start show
                 </button>
               )}{' '}
               {!show.autoStartEnd && endAfter && (
-                <span className="text-muted">(auto start/end off)</span>
+                <span className="self-center text-sm text-stone-500">(auto start/end off)</span>
               )}{' '}
-              <Link href={`/edit-show/${show.id}`} className="btn btn-sm btn-primary">
+              <Link href={`/edit-show/${show.id}`} className={cn(btnSmPrimary, 'no-underline')}>
                 Edit
               </Link>{' '}
-              <button type="button" className="btn btn-sm btn-danger" onClick={() => void remove(show.id)}>
+              <button type="button" className={btnSmDanger} onClick={() => void remove(show.id)}>
                 Delete
               </button>
             </p>
-            {show.defaultMeta && <small>{show.defaultMeta}</small>}
-            <hr />
+            {show.defaultMeta && <small className="text-stone-400">{show.defaultMeta}</small>}
+            <hr className="my-3 border-stone-700" />
           </div>
         )
       })}

@@ -3,6 +3,14 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { TipTapEditor } from '@/components/TipTapEditor'
+import {
+  btnPrimary,
+  checkboxRowClass,
+  formGroupClass,
+  inputClass,
+  labelClass,
+} from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
 export function ProgramInformationForm() {
   const router = useRouter()
@@ -56,55 +64,58 @@ export function ProgramInformationForm() {
   }
 
   return (
-    <div style={{ maxWidth: 720 }}>
-      <div className="form-group">
-        <label>Default show name</label>
-        <input className="form-control" value={showName} onChange={(e) => setShowName(e.target.value)} />
+    <div className="max-w-3xl">
+      <div className={formGroupClass}>
+        <label className={labelClass}>Default show name</label>
+        <input className={inputClass} value={showName} onChange={(e) => setShowName(e.target.value)} />
       </div>
-      <div className="form-group">
-        <label>Default meta (media player)</label>
+      <div className={formGroupClass}>
+        <label className={labelClass}>Default meta (media player)</label>
         <textarea
-          className="form-control"
+          className={cn(inputClass, 'min-h-[4rem]')}
           rows={2}
           value={defaultMeta}
           onChange={(e) => setDefaultMeta(e.target.value)}
         />
       </div>
-      <div className="form-group">
-        <label>Default show description</label>
+      <div className={formGroupClass}>
+        <label className={labelClass}>Default show description</label>
         <TipTapEditor value={description} onChange={setDescription} minHeight={180} />
       </div>
-      <div className="checkbox">
-        <label>
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
           <input
             type="checkbox"
+            className="rounded border-stone-600"
             checked={isAutomationUIEnabled}
             onChange={(e) => setIsAutomationUIEnabled(e.target.checked)}
-          />{' '}
+          />
           Enable automation tools
         </label>
       </div>
-      <div className="checkbox">
-        <label>
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
           <input
             type="checkbox"
+            className="rounded border-stone-600"
             checked={isMessagingUIEnabled}
             onChange={(e) => setIsMessagingUIEnabled(e.target.checked)}
-          />{' '}
+          />
           Enable messaging tools
         </label>
       </div>
-      <div className="checkbox">
-        <label>
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
           <input
             type="checkbox"
+            className="rounded border-stone-600"
             checked={messagingEnabledOnShows}
             onChange={(e) => setMessagingEnabledOnShows(e.target.checked)}
-          />{' '}
+          />
           Messaging enabled by default on new shows
         </label>
       </div>
-      <button type="button" className="btn btn-primary" onClick={() => void save()}>
+      <button type="button" className={btnPrimary} onClick={() => void save()}>
         Save
       </button>
     </div>

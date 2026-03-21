@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { trackEditSchema } from '@/lib/schemas/forms'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
+import { btnPrimary, formGroupClass, inputClass, labelClass } from '@/lib/ui'
 
 type Form = z.infer<typeof trackEditSchema>
 
@@ -53,10 +54,10 @@ export function EditTrackForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} style={{ maxWidth: 560 }}>
-      <div className="form-group">
-        <label>Track type</label>
-        <select className="form-control" {...register('trackType')}>
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-xl">
+      <div className={formGroupClass}>
+        <label className={labelClass}>Track type</label>
+        <select className={inputClass} {...register('trackType')}>
           <option value="song">Song</option>
           <option value="talkingPoint">Talking Point</option>
           <option value="showMeta">Show Meta</option>
@@ -64,28 +65,28 @@ export function EditTrackForm({
           <option value="kuzuDefault">Kuzu Default</option>
         </select>
       </div>
-      <div className="form-group">
-        <label>Song title</label>
-        <input className="form-control" {...register('songTitle')} />
-        {errors.songTitle && <span className="text-danger">{errors.songTitle.message}</span>}
+      <div className={formGroupClass}>
+        <label className={labelClass}>Song title</label>
+        <input className={inputClass} {...register('songTitle')} />
+        {errors.songTitle && <span className="text-sm text-red-400">{errors.songTitle.message}</span>}
       </div>
-      <div className="form-group">
-        <label>Artist</label>
-        <input className="form-control" {...register('artist')} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>Artist</label>
+        <input className={inputClass} {...register('artist')} />
       </div>
-      <div className="form-group">
-        <label>Album</label>
-        <input className="form-control" {...register('album')} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>Album</label>
+        <input className={inputClass} {...register('album')} />
       </div>
-      <div className="form-group">
-        <label>Label</label>
-        <input className="form-control" {...register('label')} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>Label</label>
+        <input className={inputClass} {...register('label')} />
       </div>
-      <div className="form-group">
-        <label>Length (mm:ss)</label>
-        <input className="form-control" {...register('trackLength')} />
+      <div className={formGroupClass}>
+        <label className={labelClass}>Length (mm:ss)</label>
+        <input className={inputClass} {...register('trackLength')} />
       </div>
-      <button type="submit" className="btn btn-primary">
+      <button type="submit" className={btnPrimary}>
         Save
       </button>
     </form>

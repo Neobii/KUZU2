@@ -60,8 +60,8 @@ export function LayoutBanners() {
             href={layout.canLookAtLiveShow ? '/live-show' : '#'}
             onClick={(e) => !layout.canLookAtLiveShow && e.preventDefault()}
           >
-            <div className="container">
-              <h3 style={{ color: '#333', marginTop: 10 }}>
+            <div className="mx-auto max-w-4xl px-3">
+              <h3 className="mt-2.5 text-stone-800">
                 {layout.activeShow.showName} is Live from{' '}
                 {layout.activeShow.showStart
                   ? prettifySimpleTime(layout.activeShow.showStart)

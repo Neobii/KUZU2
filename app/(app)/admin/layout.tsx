@@ -10,22 +10,38 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
   return (
     <div>
-      <nav style={{ marginBottom: 16 }}>
-        <Link href="/admin/users">Users</Link>
-        {' · '}
-        <Link href="/admin/shows">Shows</Link>
-        {' · '}
-        <Link href="/admin/tracks">Tracks</Link>
-        {' · '}
-        <Link href="/admin/producers">Producers</Link>
-        {' · '}
-        <Link href="/admin/production-statuses">Statuses</Link>
-        {' · '}
-        <Link href="/admin/auto-dj-playlists">Auto DJ</Link>
-        {' · '}
-        <Link href="/admin/posts">Posts</Link>
-        {' · '}
-        <Link href="/">Home</Link>
+      <nav className="mb-4 flex flex-wrap gap-x-2 gap-y-1 text-sm text-amber-400">
+        <Link href="/admin/users" className="no-underline hover:text-amber-300">
+          Users
+        </Link>
+        <span className="text-stone-600">·</span>
+        <Link href="/admin/shows" className="no-underline hover:text-amber-300">
+          Shows
+        </Link>
+        <span className="text-stone-600">·</span>
+        <Link href="/admin/tracks" className="no-underline hover:text-amber-300">
+          Tracks
+        </Link>
+        <span className="text-stone-600">·</span>
+        <Link href="/admin/producers" className="no-underline hover:text-amber-300">
+          Producers
+        </Link>
+        <span className="text-stone-600">·</span>
+        <Link href="/admin/production-statuses" className="no-underline hover:text-amber-300">
+          Statuses
+        </Link>
+        <span className="text-stone-600">·</span>
+        <Link href="/admin/auto-dj-playlists" className="no-underline hover:text-amber-300">
+          Auto DJ
+        </Link>
+        <span className="text-stone-600">·</span>
+        <Link href="/admin/posts" className="no-underline hover:text-amber-300">
+          Posts
+        </Link>
+        <span className="text-stone-600">·</span>
+        <Link href="/" className="no-underline hover:text-amber-300">
+          Home
+        </Link>
       </nav>
       {children}
     </div>

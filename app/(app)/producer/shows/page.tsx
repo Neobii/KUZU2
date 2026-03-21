@@ -19,9 +19,13 @@ export default async function ProducerShowsPage() {
 
   return (
     <div>
-      <h2>My Shows</h2>
-      <p><Link href="/start-show">Create New Show</Link></p>
-      <ul>
+      <h2 className="mb-3 text-xl font-semibold text-stone-100">My Shows</h2>
+      <p className="mb-4">
+        <Link href="/start-show" className="no-underline">
+          Create New Show
+        </Link>
+      </p>
+      <ul className="list-inside list-disc space-y-3 text-stone-300">
         {shows.map((show) => (
           <li key={show.id}>
             <Link href={`/show/${show.id}/tracks`}>{show.showName}</Link>

@@ -24,39 +24,50 @@ export default async function ShowTracksPage({
 
   return (
     <div>
-      <h2>{show.showName} — Tracks</h2>
-      <p>
-        <Link href={`/addTrackToShow/${showId}`}>Add Track</Link>
-        {' | '}
-        <Link href={`/edit-show/${showId}`}>Edit Show</Link>
+      <h2 className="mb-2 text-xl font-semibold text-stone-100">{show.showName} — Tracks</h2>
+      <p className="mb-4 flex flex-wrap gap-2 text-amber-400">
+        <Link href={`/addTrackToShow/${showId}`} className="no-underline">
+          Add Track
+        </Link>
+        <span className="text-stone-600">|</span>
+        <Link href={`/edit-show/${showId}`} className="no-underline">
+          Edit Show
+        </Link>
       </p>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Title</th>
-            <th>Artist</th>
-            <th>Album</th>
-            <th>Label</th>
-            <th>Played</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tracks.map((track, i) => (
-            <tr key={track.id} className="track">
-              <td>{track.indexNumber ?? i + 1}</td>
-              <td>{track.songTitle}</td>
-              <td>{track.artist}</td>
-              <td>{track.album}</td>
-              <td>{track.label}</td>
-              <td>{track.playDate ? prettifySimpleTime(track.playDate) : '-'}</td>
-              <td>
-                <Link href={`/edit-track/${track.id}`}>Edit</Link>
-              </td>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-left text-sm text-stone-200">
+          <thead>
+            <tr className="border-b border-stone-600 bg-stone-900/80 text-stone-300">
+              <th className="border-b border-stone-700 px-3 py-2">#</th>
+              <th className="border-b border-stone-700 px-3 py-2">Title</th>
+              <th className="border-b border-stone-700 px-3 py-2">Artist</th>
+              <th className="border-b border-stone-700 px-3 py-2">Album</th>
+              <th className="border-b border-stone-700 px-3 py-2">Label</th>
+              <th className="border-b border-stone-700 px-3 py-2">Played</th>
+              <th className="border-b border-stone-700 px-3 py-2" />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {tracks.map((track, i) => (
+              <tr key={track.id} className="track border-b border-stone-800">
+                <td className="border-b border-stone-700 px-3 py-2">{track.indexNumber ?? i + 1}</td>
+                <td className="border-b border-stone-700 px-3 py-2">{track.songTitle}</td>
+                <td className="border-b border-stone-700 px-3 py-2">{track.artist}</td>
+                <td className="border-b border-stone-700 px-3 py-2">{track.album}</td>
+                <td className="border-b border-stone-700 px-3 py-2">{track.label}</td>
+                <td className="border-b border-stone-700 px-3 py-2">
+                  {track.playDate ? prettifySimpleTime(track.playDate) : '-'}
+                </td>
+                <td className="border-b border-stone-700 px-3 py-2">
+                  <Link href={`/edit-track/${track.id}`} className="no-underline">
+                    Edit
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

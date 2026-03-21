@@ -3,6 +3,17 @@
 import useSWR from 'swr'
 import { useState } from 'react'
 import { TipTapEditor } from '@/components/TipTapEditor'
+import {
+  btnPrimary,
+  btnSecondary,
+  btnXsDanger,
+  btnXsPrimary,
+  checkboxRowClass,
+  formGroupClass,
+  inputClassLight,
+  labelClassLight,
+} from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -23,9 +34,7 @@ export function AdminProductionStatusesClient() {
   const [creating, setCreating] = useState(false)
 
   async function save(row: Partial<Row> & { id?: string }) {
-    const url = row.id
-      ? `/api/admin/production-statuses/${row.id}`
-      : '/api/admin/production-statuses'
+    const url = row.id ? `/api/admin/production-statuses/${row.id}` : '/api/admin/production-statuses'
     const method = row.id ? 'PATCH' : 'POST'
     const res = await fetch(url, {
       method,
@@ -71,25 +80,25 @@ export function AdminProductionStatusesClient() {
 
   return (
     <div>
-      <p>
-        <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
+      <p className="mb-4">
+        <button type="button" className={btnPrimary} onClick={() => setCreating(true)}>
           New production status
         </button>
       </p>
       {form}
       {rows?.map((r) => (
-        <div key={r.id} className="media form-holder" style={{ marginBottom: 16 }}>
-          <div className="media-body">
-            <h4>
+        <div key={r.id} className="form-holder mb-4">
+          <div>
+            <h4 className="text-lg font-medium text-stone-100">
               {r.productionStatusName}{' '}
-              <button type="button" className="btn btn-xs btn-primary" onClick={() => setEditing(r)}>
+              <button type="button" className={btnXsPrimary} onClick={() => setEditing(r)}>
                 Edit
               </button>{' '}
-              <button type="button" className="btn btn-xs btn-danger" onClick={() => void remove(r.id)}>
+              <button type="button" className={btnXsDanger} onClick={() => void remove(r.id)}>
                 Delete
               </button>
             </h4>
-            <div dangerouslySetInnerHTML={{ __html: r.additionalContent ?? '' }} />
+            <div className="max-w-none text-sm text-stone-300" dangerouslySetInnerHTML={{ __html: r.additionalContent ?? '' }} />
           </div>
         </div>
       ))}
@@ -111,76 +120,77 @@ function StatusForm({
   const [v, setV] = useState(initial)
 
   return (
-    <div className="panel panel-default" style={{ marginBottom: 24 }}>
-      <div className="panel-heading">{title}</div>
-      <div className="panel-body" style={{ color: '#333' }}>
-        <div className="form-group">
-          <label>Name</label>
-          <input
-            className="form-control"
-            value={v.productionStatusName ?? ''}
-            onChange={(e) => setV({ ...v, productionStatusName: e.target.value })}
-          />
-        </div>
-        <div className="form-group">
-          <label>Meta data</label>
-          <input
-            className="form-control"
-            value={v.metaData ?? ''}
-            onChange={(e) => setV({ ...v, metaData: e.target.value })}
-          />
-        </div>
-        <div className="checkbox">
-          <label>
-            <input
-              type="checkbox"
-              checked={!!v.isShowingMetaData}
-              onChange={(e) => setV({ ...v, isShowingMetaData: e.target.checked })}
-            />{' '}
-            Show meta data
-          </label>
-        </div>
-        <div className="form-group">
-          <label>Additional content</label>
-          <TipTapEditor
-            value={v.additionalContent ?? ''}
-            onChange={(html) => setV({ ...v, additionalContent: html })}
-          />
-        </div>
-        <div className="checkbox">
-          <label>
-            <input
-              type="checkbox"
-              checked={!!v.isShowingAdditionalContent}
-              onChange={(e) => setV({ ...v, isShowingAdditionalContent: e.target.checked })}
-            />{' '}
-            Show additional content
-          </label>
-        </div>
-        <div className="checkbox">
-          <label>
-            <input
-              type="checkbox"
-              checked={!!v.isActive}
-              onChange={(e) => setV({ ...v, isActive: e.target.checked })}
-            />{' '}
-            Active
-          </label>
-        </div>
-        <div className="form-group">
-          <label>Producers note</label>
-          <TipTapEditor
-            value={v.producersNote ?? ''}
-            onChange={(html) => setV({ ...v, producersNote: html })}
-          />
-        </div>
-        <button type="button" className="btn btn-primary" onClick={() => onSave(v)}>
-          Save
-        </button>{' '}
-        <button type="button" className="btn btn-default" onClick={onCancel}>
-          Cancel
-        </button>
+    <div className="mb-6 rounded-lg border border-stone-600 bg-white p-4 text-stone-900 shadow-lg">
+      <div className={cn('mb-4 border-b border-stone-200 pb-2', 'text-lg font-semibold')}>{title}</div>
+      <div className={formGroupClass}>
+        <label className={labelClassLight}>Name</label>
+        <input
+          className={inputClassLight}
+          value={v.productionStatusName ?? ''}
+          onChange={(e) => setV({ ...v, productionStatusName: e.target.value })}
+        />
       </div>
+      <div className={formGroupClass}>
+        <label className={labelClassLight}>Meta data</label>
+        <input
+          className={inputClassLight}
+          value={v.metaData ?? ''}
+          onChange={(e) => setV({ ...v, metaData: e.target.value })}
+        />
+      </div>
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
+          <input
+            type="checkbox"
+            className="rounded border-stone-400"
+            checked={!!v.isShowingMetaData}
+            onChange={(e) => setV({ ...v, isShowingMetaData: e.target.checked })}
+          />
+          Show meta data
+        </label>
+      </div>
+      <div className={formGroupClass}>
+        <label className={labelClassLight}>Additional content</label>
+        <TipTapEditor
+          value={v.additionalContent ?? ''}
+          onChange={(html) => setV({ ...v, additionalContent: html })}
+        />
+      </div>
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
+          <input
+            type="checkbox"
+            className="rounded border-stone-400"
+            checked={!!v.isShowingAdditionalContent}
+            onChange={(e) => setV({ ...v, isShowingAdditionalContent: e.target.checked })}
+          />
+          Show additional content
+        </label>
+      </div>
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
+          <input
+            type="checkbox"
+            className="rounded border-stone-400"
+            checked={!!v.isActive}
+            onChange={(e) => setV({ ...v, isActive: e.target.checked })}
+          />
+          Active
+        </label>
+      </div>
+      <div className={formGroupClass}>
+        <label className={labelClassLight}>Producers note</label>
+        <TipTapEditor
+          value={v.producersNote ?? ''}
+          onChange={(html) => setV({ ...v, producersNote: html })}
+        />
+      </div>
+      <button type="button" className={btnPrimary} onClick={() => onSave(v)}>
+        Save
+      </button>{' '}
+      <button type="button" className={cn(btnSecondary, 'ml-2')} onClick={onCancel}>
+        Cancel
+      </button>
     </div>
   )
 }

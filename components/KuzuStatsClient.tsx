@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import moment from 'moment'
+import { btnPrimary, btnSecondary, inputClass } from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
 const HighchartsReact = dynamic(() => import('highcharts-react-official'), { ssr: false })
 
 export function KuzuStatsClient() {
-  const [from, setFrom] = useState(() =>
-    moment().subtract(2, 'hours').toISOString().slice(0, 16)
-  )
+  const [from, setFrom] = useState(() => moment().subtract(2, 'hours').toISOString().slice(0, 16))
   const [to, setTo] = useState(() => moment().toISOString().slice(0, 16))
   const [hoursResult, setHoursResult] = useState<number | null>(null)
   const [hc, setHc] = useState<typeof import('highcharts') | null>(null)
@@ -85,35 +85,41 @@ export function KuzuStatsClient() {
 
   return (
     <div>
-      <h2>Listener Stats</h2>
-      <div className="form-inline" style={{ marginBottom: 16 }}>
-        <label>From </label>
-        <input
-          type="datetime-local"
-          className="form-control"
-          value={from}
-          onChange={(e) => setFrom(e.target.value)}
-        />{' '}
-        <label>To </label>
-        <input
-          type="datetime-local"
-          className="form-control"
-          value={to}
-          onChange={(e) => setTo(e.target.value)}
-        />{' '}
-        <button type="button" className="btn btn-primary" onClick={() => void refreshChart()}>
+      <h2 className="mb-4 text-xl font-semibold text-stone-100">Listener Stats</h2>
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <label className="text-sm text-stone-300">
+          From{' '}
+          <input
+            type="datetime-local"
+            className={cn(inputClass, 'ml-1 max-w-[14rem]')}
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          />
+        </label>
+        <label className="text-sm text-stone-300">
+          To{' '}
+          <input
+            type="datetime-local"
+            className={cn(inputClass, 'ml-1 max-w-[14rem]')}
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
+        </label>
+        <button type="button" className={btnPrimary} onClick={() => void refreshChart()}>
           View range
         </button>
       </div>
       {opts && hc && <HighchartsReact highcharts={hc} options={opts} />}
-      <hr />
-      <h3>Listening hours (range)</h3>
-      <input id="dateFrom" type="date" className="form-control" style={{ maxWidth: 200 }} />
-      <input id="dateTo" type="date" className="form-control" style={{ maxWidth: 200 }} />
-      <button type="button" className="btn btn-default" onClick={() => void computeHours()}>
-        Get listening hours
-      </button>
-      {hoursResult != null && <p>Approximate hours: {hoursResult.toFixed(2)}</p>}
+      <hr className="my-6 border-stone-700" />
+      <h3 className="mb-3 text-lg font-medium text-stone-200">Listening hours (range)</h3>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <input id="dateFrom" type="date" className={cn(inputClass, 'max-w-[12rem]')} />
+        <input id="dateTo" type="date" className={cn(inputClass, 'max-w-[12rem]')} />
+        <button type="button" className={btnSecondary} onClick={() => void computeHours()}>
+          Get listening hours
+        </button>
+      </div>
+      {hoursResult != null && <p className="text-stone-300">Approximate hours: {hoursResult.toFixed(2)}</p>}
     </div>
   )
 }

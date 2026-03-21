@@ -7,7 +7,7 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **Po
 - **Framework:** Next.js 14 (App Router)
 - **Database:** PostgreSQL with Prisma ORM
 - **Auth:** NextAuth.js — **Sign in** / **Sign up** on `/login` (email + password), optional Facebook; `POST /api/auth/register` creates accounts (first user becomes admin).
-- **Styling:** Bootstrap 3 + custom CSS
+- **Styling:** **Tailwind CSS v4** + custom `globals.css` (KUZU dark theme)
 
 ## Setup
 

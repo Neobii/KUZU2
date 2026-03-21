@@ -38,7 +38,7 @@ export function CalendarView() {
   }
 
   return (
-    <div className="calendar-container" style={{ background: '#fff', padding: 16 }}>
+    <div className="calendar-container rounded-lg bg-white p-4 text-stone-900 shadow">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin]}
         initialView="dayGridMonth"
@@ -59,7 +59,7 @@ export function CalendarView() {
               <p>
                 {start} - {end}
               </p>
-              <p className="title">{arg.event.title}</p>
+              <p className="font-medium">{arg.event.title}</p>
             </div>
           )
         }}

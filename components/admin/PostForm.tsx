@@ -3,6 +3,15 @@
 import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { TipTapEditor } from '@/components/TipTapEditor'
+import {
+  btnDanger,
+  btnPrimary,
+  checkboxInlineClass,
+  formGroupClass,
+  inputClass,
+  labelClass,
+} from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
 const VIS_OPTIONS = [
   { value: 'admin', label: 'Admin' },
@@ -72,28 +81,29 @@ export function PostForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} style={{ maxWidth: 720 }}>
-      <div className="form-group">
-        <label>Title</label>
-        <input className="form-control" {...register('title', { required: true })} />
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl">
+      <div className={formGroupClass}>
+        <label className={labelClass}>Title</label>
+        <input className={inputClass} {...register('title', { required: true })} />
       </div>
-      <div className="form-group">
-        <label>Visible to</label>
-        <div>
+      <div className={formGroupClass}>
+        <label className={labelClass}>Visible to</label>
+        <div className="flex flex-wrap gap-2">
           {VIS_OPTIONS.map((o) => (
-            <label key={o.value} className="checkbox-inline" style={{ marginRight: 12 }}>
+            <label key={o.value} className={cn(checkboxInlineClass, 'text-sm text-stone-300')}>
               <input
                 type="checkbox"
+                className="rounded border-stone-600"
                 checked={selected.includes(o.value)}
                 onChange={() => toggleRole(o.value)}
-              />{' '}
+              />
               {o.label}
             </label>
           ))}
         </div>
       </div>
-      <div className="form-group">
-        <label>Content</label>
+      <div className={formGroupClass}>
+        <label className={labelClass}>Content</label>
         <Controller
           name="content"
           control={control}
@@ -103,11 +113,11 @@ export function PostForm({
           )}
         />
       </div>
-      <button type="submit" className="btn btn-primary">
+      <button type="submit" className={btnPrimary}>
         Save
       </button>
       {postId && (
-        <button type="button" className="btn btn-danger" style={{ marginLeft: 8 }} onClick={() => void onDelete()}>
+        <button type="button" className={cn(btnDanger, 'ml-2')} onClick={() => void onDelete()}>
           Delete
         </button>
       )}
