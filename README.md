@@ -1,12 +1,12 @@
 # KUZU — Next.js
 
-Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **MySQL**.
+Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **PostgreSQL** (e.g. [Neon](https://neon.tech)).
 
 ## Stack
 
 - **Framework:** Next.js 14 (App Router)
-- **Database:** MySQL with Prisma ORM
-- **Auth:** NextAuth.js with credentials
+- **Database:** PostgreSQL with Prisma ORM
+- **Auth:** NextAuth.js — **Sign in** / **Sign up** on `/login` (email + password), optional Facebook; `POST /api/auth/register` creates accounts (first user becomes admin).
 - **Styling:** Bootstrap 3 + custom CSS
 
 ## Setup
@@ -16,21 +16,23 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **My
    npm install
    ```
 
-2. **Environment variables**
+2. **Environment variables** (required — without `DATABASE_URL`, sign-up and most routes will error)
    ```bash
    cp .env.example .env.local
    ```
    Edit `.env.local` and set:
-   - `DATABASE_URL` — MySQL connection string (e.g. `mysql://root:password@localhost:3306/kuzu`)
+   - `DATABASE_URL` — **Pooled** Postgres URL (Neon dashboard → *Connection string* → *Pooled*)
+   - `DATABASE_URL_UNPOOLED` — **Direct** URL (same place → *Direct*) — required for `prisma db push` / migrations
    - `NEXTAUTH_SECRET` — Generate with `openssl rand -base64 32`
    - `NEXTAUTH_URL` — App URL (e.g. `http://localhost:3000`)
+   - **Facebook (optional)** — `FACEBOOK_CLIENT_ID` and `FACEBOOK_CLIENT_SECRET` from [Meta for Developers](https://developers.facebook.com/). Add **Valid OAuth Redirect URI**: `{NEXTAUTH_URL}/api/auth/callback/facebook` (e.g. `http://localhost:3000/api/auth/callback/facebook`). When set, the login page shows **Sign up with Facebook**; new users are created in the DB by email. **If the database has no users yet, the first person who signs up (e.g. via Facebook) becomes an admin** (same as running the seed for the first account).
 
-3. **Create database and run migrations**
+3. **Apply schema to the database**
    ```bash
-   # Create the database first (e.g. mysql -e "CREATE DATABASE kuzu")
    npm run db:push
    # Or use migrations: npm run db:migrate
    ```
+   (Neon creates the database for you; `db push` creates tables.)
 
 4. **Seed initial admin user (optional)**
    ```bash
@@ -72,6 +74,7 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **My
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
+| `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET` | — | Facebook OAuth; enables “Sign up with Facebook” on `/login` |
 | `ICECAST_STATUS_URL` | `http://138.197.2.189:8000/status-json.xsl` | Icecast JSON for listeners + “Radio Logik down” |
 | `ENABLE_CRON` | enabled | Set `false` to skip background jobs |
 | `LISTENER_POLL_MS` | `300000` | Listener poll interval (ms) |
@@ -85,6 +88,20 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **My
 | `npm run db:migrate` | Run migrations |
 | `npm run db:seed` | Seed admin user |
 | `npm run db:studio` | Open Prisma Studio (DB GUI) |
+
+### `DATABASE_URL` / “Environment variable not found”
+
+Next.js loads env from **`.env.local`** (or `.env`) in the project root.
+
+1. Run `cp .env.example .env.local` (if you haven’t).
+2. Set **`DATABASE_URL`** (pooled) and **`DATABASE_URL_UNPOOLED`** (direct) from your Neon project.
+3. Run `npm run db:push`, then restart `npm run dev`.
+
+**Prisma CLI** normally only reads `.env`, not `.env.local`. This repo’s `npm run db:*` and `build` use `scripts/prisma-env.cjs` to load **`.env` then `.env.local`** (same idea as Next.js), so `DATABASE_URL` / `DATABASE_URL_UNPOOLED` in `.env.local` work with `db:push`.
+
+### Connection / SSL errors (Neon)
+
+Use the exact strings from the Neon dashboard. If `db push` fails through the pooler, ensure **`DATABASE_URL_UNPOOLED`** is set to the **direct** connection string (non-pooler host).
 
 ## REST endpoints (external integrations)
 

@@ -2,9 +2,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Neon: pooled `DATABASE_URL` for runtime; `DATABASE_URL_UNPOOLED` for migrations / db push
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 model User {

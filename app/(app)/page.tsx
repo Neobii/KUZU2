@@ -10,7 +10,7 @@ export default async function HomePage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
   const posts = await prisma.post.findMany({
-    orderBy: { postDate: 'asc' },
+    orderBy: { postDate: 'desc' },
   })
   const viewer = session.user as {
     isAdmin?: boolean
@@ -24,6 +24,20 @@ export default async function HomePage() {
     <div>
       <h2>Kuzu Updates</h2>
       {isAdmin && <HomePostsAdmin />}
+      {visible.length === 0 && (
+        <div className="well" style={{ marginTop: 16 }}>
+          <p className="text-muted" style={{ marginBottom: 0 }}>
+            No updates to show yet.
+            {isAdmin && (
+              <>
+                {' '}
+                Create one under <a href="/admin/posts/new">New post</a> or run{' '}
+                <code>npm run db:seed</code> for sample content.
+              </>
+            )}
+          </p>
+        </div>
+      )}
       {visible.map((post) => (
         <div key={post.id}>
           <h3>
