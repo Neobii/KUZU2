@@ -1,3 +1,42 @@
+/* Navbar above banners (LayoutBanners uses negative margin and can cover the header) */
+nav.navbar.navbar-inverse {
+  position: relative;
+  z-index: 1030;
+}
+
+/* Hamburger must stay clickable above overlapping siblings / banners */
+.navbar-toggle {
+  position: relative;
+  z-index: 1031;
+}
+
+/*
+ * Bootstrap 3 collapse/dropdown JS is not loaded — control mobile menu in React.
+ * Without this, .in can lose specificity wars with globals or load order.
+ */
+@media (max-width: 767px) {
+  .navbar-collapse.kuzu-nav-collapse:not(.kuzu-nav-open) {
+    display: none !important;
+    overflow: hidden !important;
+  }
+  .navbar-collapse.kuzu-nav-collapse.kuzu-nav-open {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .navbar-collapse.kuzu-nav-collapse {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    border-top: 0;
+    box-shadow: none;
+  }
+}
+
 .table,
 .panel {
   background: #100806;
