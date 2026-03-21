@@ -1,10 +1,10 @@
-import { getServerSession } from 'next-auth'
-import { redirect } from 'next/navigation'
-import { authOptions } from '@/lib/auth'
+import { AdminTracksClient } from '@/components/admin/AdminTracksClient'
 
-export default async function AdminTracksPage() {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect('/login')
-  if (!session.user.isAdmin) redirect('/')
-  return <h2>Admin Tracks</h2>
+export default function AdminTracksPage() {
+  return (
+    <div>
+      <h2>Tracks</h2>
+      <AdminTracksClient />
+    </div>
+  )
 }

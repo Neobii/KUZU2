@@ -1,10 +1,10 @@
-import { getServerSession } from 'next-auth'
-import { redirect } from 'next/navigation'
-import { authOptions } from '@/lib/auth'
+import { AdminProductionStatusesClient } from '@/components/admin/AdminProductionStatusesClient'
 
-export default async function AdminProductionStatusesPage() {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect('/login')
-  if (!session.user.isAdmin) redirect('/')
-  return <h2>Production Statuses</h2>
+export default function AdminProductionStatusesPage() {
+  return (
+    <div>
+      <h2>Production statuses</h2>
+      <AdminProductionStatusesClient />
+    </div>
+  )
 }

@@ -1,0 +1,56 @@
+function escCell(v: unknown, delimiter: string): string {
+  const s = v == null ? '' : String(v)
+  if (s.includes('"') || s.includes('\n') || s.includes(delimiter)) {
+    return `"${s.replace(/"/g, '""')}"`
+  }
+  return s
+}
+
+type TrackRow = {
+  trackType: string
+  songTitle: string
+  artist: string | null
+  album: string | null
+  label: string | null
+  trackLength: string | null
+  playDate: Date | null
+  indexNumber: number | null
+}
+
+export function tracksToDelimited(
+  rows: TrackRow[],
+  delimiter: string,
+  includeHeader: boolean
+): string {
+  const headers = [
+    'trackType',
+    'songTitle',
+    'artist',
+    'album',
+    'label',
+    'trackLength',
+    'playDate',
+    'indexNumber',
+  ]
+  const lines: string[] = []
+  if (includeHeader) {
+    lines.push(headers.map((h) => escCell(h, delimiter)).join(delimiter))
+  }
+  for (const r of rows) {
+    lines.push(
+      [
+        r.trackType,
+        r.songTitle,
+        r.artist,
+        r.album,
+        r.label,
+        r.trackLength,
+        r.playDate ? r.playDate.toISOString() : '',
+        r.indexNumber,
+      ]
+        .map((v) => escCell(v, delimiter))
+        .join(delimiter)
+    )
+  }
+  return lines.join('\n')
+}

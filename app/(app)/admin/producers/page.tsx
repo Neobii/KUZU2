@@ -1,10 +1,11 @@
-import { getServerSession } from 'next-auth'
-import { redirect } from 'next/navigation'
-import { authOptions } from '@/lib/auth'
+import { AdminProducersClient } from '@/components/admin/AdminProducersClient'
 
-export default async function AdminProducersPage() {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect('/login')
-  if (!session.user.isAdmin) redirect('/')
-  return <h2>Admin Producers</h2>
+export default function AdminProducersPage() {
+  return (
+    <div>
+      <h2>Producers</h2>
+      <p className="text-muted">Users with producer flag (same as Users — filtered).</p>
+      <AdminProducersClient />
+    </div>
+  )
 }

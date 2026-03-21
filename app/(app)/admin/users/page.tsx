@@ -1,10 +1,10 @@
-import { getServerSession } from 'next-auth'
-import { redirect } from 'next/navigation'
-import { authOptions } from '@/lib/auth'
+import { AdminUsersClient } from '@/components/admin/AdminUsersClient'
 
-export default async function AdminUsersPage() {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect('/login')
-  if (!session.user.isAdmin) redirect('/')
-  return <h2>Admin Users</h2>
+export default function AdminUsersPage() {
+  return (
+    <div>
+      <h2>Users</h2>
+      <AdminUsersClient />
+    </div>
+  )
 }

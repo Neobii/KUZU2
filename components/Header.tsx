@@ -69,8 +69,10 @@ export function Header({ session }: { session: Session | null }) {
                 <a className="dropdown-toggle" data-toggle="dropdown">Admin <b className="caret" /></a>
                 <ul className="dropdown-menu" role="menu">
                   <li><Link href="/admin/users">Users</Link></li>
+                  <li><Link href="/admin/producers">Producers</Link></li>
                   <li><Link href="/admin/shows">Shows</Link></li>
                   <li><Link href="/admin/tracks">Tracks</Link></li>
+                  <li><Link href="/admin/posts">Posts</Link></li>
                   <li><Link href="/admin/auto-dj-playlists">Auto DJ Playlists</Link></li>
                   <li><Link href="/admin/production-statuses">Kuzu Statuses</Link></li>
                 </ul>

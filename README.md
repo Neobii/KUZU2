@@ -44,6 +44,16 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **My
 
 6. Open [http://localhost:3000](http://localhost:3000)
 
+## Admin, posts, CSV, profile
+
+| Area | Where / API |
+|------|-------------|
+| **Admin UI** | `/admin/*` — layout + nav (Users, Producers, Shows, Tracks, Posts, Auto DJ, Statuses). Requires `isAdmin`. |
+| **Posts (TipTap)** | Create/edit: `/admin/posts/new`, `/admin/posts/[id]/edit`. List: `/admin/posts`. `POST/PATCH/DELETE` → `/api/posts`, `/api/posts/[postId]`. Home respects `visibleBy` (`lib/post-visibility.ts`). |
+| **CSV export** | `GET /api/export/tracks` (optional `?dateFrom=&dateTo=` ISO dates, `;` delimited). `GET /api/export/shows/[showId]/tracks` (tab-delimited). Auth required. |
+| **Producer profile** | `/producer/profile`, `/producer/program-information` → `GET`/`PATCH /api/users/me` (JSON merge `profile` + `producerProfile`). |
+| **Production statuses** | `/admin/production-statuses` + `/api/admin/production-statuses` (+ `[id]` PATCH/DELETE). |
+
 ## Implemented features (from Meteor app)
 
 | Area | Implementation |

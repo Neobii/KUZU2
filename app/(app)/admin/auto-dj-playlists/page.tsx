@@ -1,10 +1,10 @@
-import { getServerSession } from 'next-auth'
-import { redirect } from 'next/navigation'
-import { authOptions } from '@/lib/auth'
+import { AdminAutoDJPlaylistsClient } from '@/components/admin/AdminAutoDJPlaylistsClient'
 
-export default async function AdminAutoDJPlaylistsPage() {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect('/login')
-  if (!session.user.isAdmin) redirect('/')
-  return <h2>Admin Auto DJ Playlists</h2>
+export default function AdminAutoDJPlaylistsPage() {
+  return (
+    <div>
+      <h2>Auto DJ playlists</h2>
+      <AdminAutoDJPlaylistsClient />
+    </div>
+  )
 }
