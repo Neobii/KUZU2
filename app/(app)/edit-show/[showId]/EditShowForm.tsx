@@ -6,6 +6,8 @@ import { showEditSchema } from '@/lib/schemas/forms'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { TipTapEditor } from '@/components/TipTapEditor'
+import { DateTimeCalendarField } from '@/components/DateTimeCalendarField'
+import { isoToLocalDatetimeInputValue } from '@/lib/datetime-local'
 import { btnPrimary, checkboxRowClass, formGroupClass, inputClass, labelClass } from '@/lib/ui'
 import { cn } from '@/lib/cn'
 
@@ -35,8 +37,8 @@ export function EditShowForm({
     resolver: zodResolver(showEditSchema),
     defaultValues: {
       showName: show.showName,
-      showStart: show.showStart ? show.showStart.slice(0, 16) : '',
-      showEnd: show.showEnd ? show.showEnd.slice(0, 16) : '',
+      showStart: isoToLocalDatetimeInputValue(show.showStart),
+      showEnd: isoToLocalDatetimeInputValue(show.showEnd),
       defaultMeta: show.defaultMeta ?? '',
       description: show.description ?? '',
       hasRadioLogikTracking: show.hasRadioLogikTracking,
@@ -68,12 +70,38 @@ export function EditShowForm({
         {errors.showName && <span className="text-sm text-red-400">{errors.showName.message}</span>}
       </div>
       <div className={formGroupClass}>
-        <label className={labelClass}>Start (local)</label>
-        <input className={inputClass} type="datetime-local" {...register('showStart')} />
+        <label className={labelClass} htmlFor="edit-show-start">
+          Start (local)
+        </label>
+        <Controller
+          name="showStart"
+          control={control}
+          render={({ field }) => (
+            <DateTimeCalendarField
+              id="edit-show-start"
+              value={field.value ?? ''}
+              onChange={field.onChange}
+              placeholder="Select start date and time"
+            />
+          )}
+        />
       </div>
       <div className={formGroupClass}>
-        <label className={labelClass}>End (local)</label>
-        <input className={inputClass} type="datetime-local" {...register('showEnd')} />
+        <label className={labelClass} htmlFor="edit-show-end">
+          End (local)
+        </label>
+        <Controller
+          name="showEnd"
+          control={control}
+          render={({ field }) => (
+            <DateTimeCalendarField
+              id="edit-show-end"
+              value={field.value ?? ''}
+              onChange={field.onChange}
+              placeholder="Select end date and time"
+            />
+          )}
+        />
       </div>
       <div className={formGroupClass}>
         <label className={labelClass}>Default meta</label>

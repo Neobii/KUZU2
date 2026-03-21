@@ -100,3 +100,49 @@ ul li a {
 .calendar-container .fc {
   @apply text-stone-900;
 }
+
+/* react-datepicker (dark theme — Edit Show start/end) */
+.kuzu-datepicker-wrap .react-datepicker__input-container {
+  @apply w-full;
+}
+.kuzu-datepicker-popper .react-datepicker {
+  @apply rounded-lg border border-stone-600 bg-stone-900 font-sans text-stone-100 shadow-xl;
+}
+.kuzu-datepicker-popper .react-datepicker__header {
+  @apply rounded-t-lg border-b border-stone-600 bg-stone-800 text-stone-100;
+}
+.kuzu-datepicker-popper .react-datepicker__current-month,
+.kuzu-datepicker-popper .react-datepicker-time__header {
+  @apply text-stone-100;
+}
+.kuzu-datepicker-popper .react-datepicker__day-name {
+  @apply text-stone-400;
+}
+.kuzu-datepicker-popper .react-datepicker__day {
+  @apply text-stone-200 hover:bg-stone-700;
+}
+.kuzu-datepicker-popper .react-datepicker__day--selected,
+.kuzu-datepicker-popper .react-datepicker__day--keyboard-selected {
+  @apply bg-amber-600 text-white hover:bg-amber-700;
+}
+.kuzu-datepicker-popper .react-datepicker__day--outside-month {
+  @apply text-stone-600;
+}
+.kuzu-datepicker-popper .react-datepicker__day--disabled {
+  @apply text-stone-600 opacity-50;
+}
+.kuzu-datepicker-popper .react-datepicker__navigation-icon::before {
+  @apply border-stone-300;
+}
+.kuzu-datepicker-popper .react-datepicker__time-container {
+  @apply border-l border-stone-600;
+}
+.kuzu-datepicker-popper .react-datepicker__time-list-item {
+  @apply text-stone-200 hover:bg-stone-700;
+}
+.kuzu-datepicker-popper .react-datepicker__time-list-item--selected {
+  @apply bg-amber-600 font-medium text-white hover:bg-amber-700;
+}
+.kuzu-datepicker-popper .react-datepicker__triangle {
+  display: none;
+}
