@@ -89,13 +89,23 @@ export const authOptions: NextAuthOptions = {
         token.isAdmin = dbUser.isAdmin
         token.isProducer = dbUser.isProducer
         token.producerProfile = dbUser.producerProfile as object
-        return token
-      }
-      if (user) {
+      } else if (user) {
         token.id = user.id
         token.isAdmin = (user as { isAdmin?: boolean }).isAdmin
         token.isProducer = (user as { isProducer?: boolean }).isProducer
         token.producerProfile = (user as { producerProfile?: object }).producerProfile
+      }
+      // Keep JWT in sync with DB (e.g. admin enables Producer — no re-login required)
+      if (token.id) {
+        const row = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { isAdmin: true, isProducer: true, producerProfile: true },
+        })
+        if (row) {
+          token.isAdmin = row.isAdmin
+          token.isProducer = row.isProducer
+          token.producerProfile = (row.producerProfile as object) ?? undefined
+        }
       }
       return token
     },

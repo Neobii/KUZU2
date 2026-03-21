@@ -5,6 +5,7 @@ import { signOut } from 'next-auth/react'
 import type { Session } from 'next-auth'
 import { useCallback, useEffect, useState } from 'react'
 import { cn } from '@/lib/cn'
+import { canAccessProducerPortal } from '@/lib/can-access-producer-portal'
 
 export function Header({ session }: { session: Session | null }) {
   const [navOpen, setNavOpen] = useState(false)
@@ -33,8 +34,8 @@ export function Header({ session }: { session: Session | null }) {
   if (!session?.user) return null
   const user = session.user
   const isAdmin = user.isAdmin
-  const isProducer = user.isProducer
   const producerProfile = user.producerProfile
+  const showProducerPortal = canAccessProducerPortal(user)
   const unreadCount = 0
 
   const navLinkClass =
@@ -90,7 +91,7 @@ export function Header({ session }: { session: Session | null }) {
                 Logout
               </button>
             </li>
-            {isProducer && (
+            {showProducerPortal && (
               <>
                 <li>
                   <Link href="/producer/shows" className={navLinkClass} onClick={closeMenus}>
