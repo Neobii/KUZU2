@@ -10,6 +10,10 @@ out/
 .env.local
 .env.*.local
 
+# User uploads (keep folder)
+public/uploads/editor/*
+!public/uploads/editor/.gitkeep
+
 # Misc
 *.crt
 *.key
