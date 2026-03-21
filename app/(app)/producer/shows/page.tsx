@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { prettifySimpleTime } from '@/lib/utils'
+import { ProducerShowsActions } from './ProducerShowsActions'
 
 export default async function ProducerShowsPage() {
   const session = await getServerSession(authOptions)
@@ -27,6 +28,7 @@ export default async function ProducerShowsPage() {
             {show.showStart && (
               <span> — {prettifySimpleTime(show.showStart)}</span>
             )}
+            <ProducerShowsActions showId={show.id} showName={show.showName} />
           </li>
         ))}
       </ul>

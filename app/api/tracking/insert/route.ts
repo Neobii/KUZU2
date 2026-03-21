@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { setPendingAutoDJTrack } from '@/lib/auto-dj-global'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,6 +61,15 @@ export async function POST(req: NextRequest) {
         trackLength: duration,
         playDate: new Date(),
       },
+    })
+  } else {
+    setPendingAutoDJTrack({
+      artist,
+      songTitle,
+      album,
+      label,
+      duration,
+      playDate: new Date(),
     })
   }
   return NextResponse.json({ ok: true }, { headers })

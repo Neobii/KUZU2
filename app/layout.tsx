@@ -31,6 +31,18 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"
           rel="stylesheet"
         />
+        <link
+          href="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/main.min.css"
+          rel="stylesheet"
+        />
+        <link
+          href="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.15/main.min.css"
+          rel="stylesheet"
+        />
+        <link
+          href="https://cdn.jsdelivr.net/npm/@fullcalendar/timegrid@6.1.15/main.min.css"
+          rel="stylesheet"
+        />
       </head>
       <body>
         <Providers>{children}</Providers>

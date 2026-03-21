@@ -42,6 +42,7 @@ export function Header({ session }: { session: Session | null }) {
             {isProducer && (
               <>
                 <li><Link href="/producer/shows">My Shows</Link></li>
+                <li><Link href="/track-imports">Track Imports</Link></li>
                 <li><Link href="/producer/profile">My Producer Profile</Link></li>
                 <li><Link href="/producer/program-information">My Program Information</Link></li>
                 {producerProfile?.isMessagingUIEnabled && (

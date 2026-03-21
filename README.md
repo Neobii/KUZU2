@@ -44,6 +44,28 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **My
 
 6. Open [http://localhost:3000](http://localhost:3000)
 
+## Implemented features (from Meteor app)
+
+| Area | Implementation |
+|------|----------------|
+| **Forms & CRUD** | React Hook Form + Zod (`/edit-track/[id]`, `/edit-show/[id]`, feature requests, add track) |
+| **Rich text** | TipTap (`TipTapEditor` on show description) |
+| **Live show** | `/live-show` — start/stop track, autoplay, move up/down, default meta toggle, messages, recent tracks |
+| **API methods** | `activate`, `deactivate`, `duplicate`, `startTrack`, position, `clearPlaytime`, autoplay, show meta, import Reaper, etc. |
+| **Calendar** | FullCalendar (`/calendar`) — loads shows from `/api/calendar/shows` |
+| **Stats** | Highcharts (`/kuzu-stats`) + listener hours API |
+| **Track imports** | `/track-imports` — CSV via Papa Parse → `/api/import/reaper` |
+| **Banners** | Armed show, Radio Logik down, live show strip (`LayoutBanners` + `/api/layout/banners`) |
+| **Cron / polling** | `instrumentation.ts` — listener stats poll + auto-start scheduling (`node-schedule`). Set `ENABLE_CRON=false` to disable. |
+
+### Environment (optional)
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `ICECAST_STATUS_URL` | `http://138.197.2.189:8000/status-json.xsl` | Icecast JSON for listeners + “Radio Logik down” |
+| `ENABLE_CRON` | enabled | Set `false` to skip background jobs |
+| `LISTENER_POLL_MS` | `300000` | Listener poll interval (ms) |
+
 ## Database Commands
 
 | Command | Description |

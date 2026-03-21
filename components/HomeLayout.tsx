@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Header } from './Header'
+import { LayoutBanners } from './LayoutBanners'
 
 export function HomeLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
@@ -24,6 +25,7 @@ export function HomeLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header session={session} />
+      <LayoutBanners />
       <main id="page">
         <div id="content" className="main-content">
           {children}
