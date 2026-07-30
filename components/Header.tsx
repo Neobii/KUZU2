@@ -74,11 +74,11 @@ export function Header({ session }: { session: Session | null }) {
         <div
           id="kuzu-navbar-collapse"
           className={cn(
-            'w-full flex-col gap-1 md:flex md:max-w-none md:flex-1 md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-x-2',
+            'w-full flex-col gap-2 md:flex md:max-w-none md:flex-1 md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-x-4',
             navOpen ? 'flex' : 'hidden md:flex'
           )}
         >
-          <ul className="mt-2 flex list-none flex-col md:mt-0 md:flex-row md:flex-wrap md:items-center">
+          <ul className="mt-2 flex list-none flex-col gap-1 md:mt-0 md:flex-row md:flex-wrap md:items-center">
             <li>
               <button
                 type="button"
@@ -124,7 +124,7 @@ export function Header({ session }: { session: Session | null }) {
             )}
           </ul>
 
-          <ul className="flex list-none flex-col md:ml-2 md:flex-row md:items-center">
+          <ul className="flex list-none flex-col md:ml-3 md:flex-row md:items-center">
             <li className="relative">
               <button
                 type="button"
@@ -148,7 +148,7 @@ export function Header({ session }: { session: Session | null }) {
                     <li>
                       <Link
                         href="/kuzu-stats"
-                        className="block px-4 py-2 text-sm text-stone-200 no-underline hover:bg-stone-800"
+                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
                         onClick={closeMenus}
                       >
                         Listener Stats
@@ -168,7 +168,7 @@ export function Header({ session }: { session: Session | null }) {
                     <li>
                       <Link
                         href="/feature-requests"
-                        className="block px-4 py-2 text-sm text-stone-200 no-underline hover:bg-stone-800"
+                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
                         onClick={closeMenus}
                       >
                         Feature Requests
@@ -179,7 +179,7 @@ export function Header({ session }: { session: Session | null }) {
               )}
             </li>
             {isAdmin && (
-              <li className="relative md:ml-1">
+              <li className="relative md:ml-2">
                 <button
                   type="button"
                   className={cn(navLinkClass, 'flex w-full items-center gap-1 text-left md:w-auto')}
@@ -195,13 +195,13 @@ export function Header({ session }: { session: Session | null }) {
                 </button>
                 {adminOpen && (
                   <ul
-                    className="relative z-10 mt-1 min-w-[12rem] rounded-md border border-stone-700 bg-stone-900 py-1 shadow-lg md:absolute md:right-0 md:mt-0"
+                    className="relative z-10 mt-1 min-w-[12rem] rounded-md border border-stone-700 bg-stone-900 py-1.5 shadow-lg md:absolute md:right-0 md:mt-0"
                     role="menu"
                   >
                     <li>
                       <Link
                         href="/admin/users"
-                        className="block px-4 py-2 text-sm text-stone-200 no-underline hover:bg-stone-800"
+                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
                         onClick={closeMenus}
                       >
                         Users
@@ -210,7 +210,7 @@ export function Header({ session }: { session: Session | null }) {
                     <li>
                       <Link
                         href="/admin/producers"
-                        className="block px-4 py-2 text-sm text-stone-200 no-underline hover:bg-stone-800"
+                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
                         onClick={closeMenus}
                       >
                         Producers
@@ -219,7 +219,7 @@ export function Header({ session }: { session: Session | null }) {
                     <li>
                       <Link
                         href="/admin/shows"
-                        className="block px-4 py-2 text-sm text-stone-200 no-underline hover:bg-stone-800"
+                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
                         onClick={closeMenus}
                       >
                         Shows
@@ -228,7 +228,7 @@ export function Header({ session }: { session: Session | null }) {
                     <li>
                       <Link
                         href="/admin/tracks"
-                        className="block px-4 py-2 text-sm text-stone-200 no-underline hover:bg-stone-800"
+                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
                         onClick={closeMenus}
                       >
                         Tracks
@@ -237,7 +237,7 @@ export function Header({ session }: { session: Session | null }) {
                     <li>
                       <Link
                         href="/admin/posts"
-                        className="block px-4 py-2 text-sm text-stone-200 no-underline hover:bg-stone-800"
+                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
                         onClick={closeMenus}
                       >
                         Posts
@@ -246,7 +246,7 @@ export function Header({ session }: { session: Session | null }) {
                     <li>
                       <Link
                         href="/admin/auto-dj-playlists"
-                        className="block px-4 py-2 text-sm text-stone-200 no-underline hover:bg-stone-800"
+                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
                         onClick={closeMenus}
                       >
                         Auto DJ Playlists
@@ -255,10 +255,19 @@ export function Header({ session }: { session: Session | null }) {
                     <li>
                       <Link
                         href="/admin/production-statuses"
-                        className="block px-4 py-2 text-sm text-stone-200 no-underline hover:bg-stone-800"
+                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
                         onClick={closeMenus}
                       >
                         Kuzu Statuses
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/admin/live-chat"
+                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
+                        onClick={closeMenus}
+                      >
+                        Live Chat
                       </Link>
                     </li>
                   </ul>
