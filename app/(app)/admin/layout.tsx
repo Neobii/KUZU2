@@ -10,7 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
   return (
     <div>
-      <nav className="mb-4 flex flex-wrap gap-x-2 gap-y-1 text-sm text-amber-400">
+      <nav className="mb-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-amber-400">
         <Link href="/admin/users" className="no-underline hover:text-amber-300">
           Users
         </Link>
