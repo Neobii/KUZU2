@@ -37,6 +37,7 @@
     "@tiptap/pm": "^2.9.1",
     "@tiptap/react": "^2.9.1",
     "@tiptap/starter-kit": "^2.9.1",
+    "@vercel/blob": "^2.6.1",
     "bcryptjs": "^2.4.3",
     "highcharts": "^11.4.8",
     "highcharts-react-official": "^3.2.1",

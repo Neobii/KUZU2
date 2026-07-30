@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { randomUUID } from 'crypto'
-import { mkdir, writeFile } from 'fs/promises'
-import path from 'path'
 import { authOptions } from '@/lib/auth'
 import { compressUploadImage } from '@/lib/compress-upload-image'
+import { storeEditorImage } from '@/lib/editor-image-storage'
 
 export const dynamic = 'force-dynamic'
 
-const MAX_BYTES = 5 * 1024 * 1024
+const MAX_BYTES = 4 * 1024 * 1024
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
 
 export async function POST(req: NextRequest) {
@@ -38,7 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'Image must be 5MB or smaller' }, { status: 400 })
+    return NextResponse.json({ error: 'Image must be 4MB or smaller' }, { status: 400 })
   }
 
   const raw = Buffer.from(await file.arrayBuffer())
@@ -58,10 +57,15 @@ export async function POST(req: NextRequest) {
   }
 
   const name = `${randomUUID()}.${ext}`
-  const dir = path.join(process.cwd(), 'public', 'uploads', 'editor')
-  await mkdir(dir, { recursive: true })
-  await writeFile(path.join(dir, name), processed)
-
-  const url = `/uploads/editor/${name}`
-  return NextResponse.json({ url })
+  try {
+    const url = await storeEditorImage(processed, name, ext)
+    return NextResponse.json({ url })
+  } catch (e) {
+    console.error('[uploads/image] store failed', e)
+    const message =
+      process.env.NODE_ENV === 'production' && !process.env.BLOB_READ_WRITE_TOKEN?.trim()
+        ? 'Image storage is not configured. Add BLOB_READ_WRITE_TOKEN in Vercel.'
+        : 'Could not save image. Try again.'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 }
