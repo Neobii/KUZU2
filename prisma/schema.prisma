@@ -20,6 +20,7 @@ model User {
   isBoardMember    Boolean  @default(false) @map("is_board_member")
   isFieldProducer  Boolean  @default(false) @map("is_field_producer")
   isManagingArtists Boolean @default(false) @map("is_managing_artists")
+  lastActiveAt      DateTime? @map("last_active_at")
   createdAt        DateTime @default(now()) @map("created_at")
 
   shows              Show[]               @relation("ShowOwner")
