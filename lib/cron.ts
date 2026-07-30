@@ -1,6 +1,8 @@
 import schedule from 'node-schedule'
 import moment from 'moment'
 import { prisma } from '@/lib/prisma'
+import { getListenerPollIntervalMs } from '@/lib/icecast'
+import { pollListenerStats } from '@/lib/listeners'
 
 const scheduledJobs = new Map<string, schedule.Job>()
 
@@ -40,28 +42,16 @@ let listenerInterval: NodeJS.Timeout | null = null
 
 export function startListenerPolling() {
   if (listenerInterval) return
-  const url =
-    process.env.ICECAST_STATUS_URL ?? 'http://138.197.2.189:8000/status-json.xsl'
-  const intervalMs = parseInt(process.env.LISTENER_POLL_MS ?? '300000', 10)
+  const intervalMs = getListenerPollIntervalMs()
 
-  listenerInterval = setInterval(async () => {
-    try {
-      const res = await fetch(url)
-      if (!res.ok) return
-      const data = (await res.json()) as {
-        icestats?: { source?: { listeners?: number } }
-      }
-      const src = data.icestats?.source
-      const numListeners =
-        src && typeof src.listeners === 'number' ? src.listeners : null
-      if (numListeners != null) {
-        await prisma.listenerStat.create({
-          data: { numListeners },
-        })
-      }
-    } catch {
+  void pollListenerStats().catch(() => {
+    /* ignore — local dev convenience */
+  })
+
+  listenerInterval = setInterval(() => {
+    void pollListenerStats().catch(() => {
       /* ignore */
-    }
+    })
   }, intervalMs)
 }
 

@@ -9,9 +9,15 @@ import { cn } from '@/lib/cn'
 const HighchartsReact = dynamic(() => import('highcharts-react-official'), { ssr: false })
 
 export function KuzuStatsClient() {
-  const [from, setFrom] = useState(() => moment().subtract(2, 'hours').toISOString().slice(0, 16))
-  const [to, setTo] = useState(() => moment().toISOString().slice(0, 16))
+  const [from, setFrom] = useState(() => moment().subtract(2, 'hours').format('YYYY-MM-DDTHH:mm'))
+  const [to, setTo] = useState(() => moment().format('YYYY-MM-DDTHH:mm'))
+  const [hoursFrom, setHoursFrom] = useState('')
+  const [hoursTo, setHoursTo] = useState('')
   const [hoursResult, setHoursResult] = useState<number | null>(null)
+  const [hoursError, setHoursError] = useState('')
+  const [chartError, setChartError] = useState('')
+  const [loadingChart, setLoadingChart] = useState(false)
+  const [loadingHours, setLoadingHours] = useState(false)
   const [hc, setHc] = useState<typeof import('highcharts') | null>(null)
   const [opts, setOpts] = useState<import('highcharts').Options | null>(null)
 
@@ -20,45 +26,60 @@ export function KuzuStatsClient() {
   }, [])
 
   async function refreshChart() {
-    const qs = new URLSearchParams({
-      from: new Date(from).toISOString(),
-      to: new Date(to).toISOString(),
-    })
-    const res = await fetch(`/api/listeners/stats?${qs}`)
-    if (!res.ok) return
-    const rows = await res.json()
-    const data: [number, number][] = rows.map(
-      (r: { fetchDate: string; numListeners: number }) => [
-        new Date(r.fetchDate).getTime(),
-        r.numListeners || 0,
-      ]
-    )
-    if (!hc) return
-    setOpts({
-      chart: {
-        type: 'line',
-        backgroundColor: 'rgba(255,255,255,0.7)',
-      },
-      colors: ['#F15822'],
-      title: { text: '' },
-      xAxis: {
-        type: 'datetime',
-        title: { text: 'Time' },
-        labels: {
-          formatter: function () {
-            return moment(this.value as number).format('hh:mm a')
+    setChartError('')
+    setLoadingChart(true)
+    try {
+      const qs = new URLSearchParams({
+        from: new Date(from).toISOString(),
+        to: new Date(to).toISOString(),
+      })
+      const res = await fetch(`/api/listeners/stats?${qs}`)
+      if (!res.ok) {
+        setChartError(res.status === 403 ? 'You do not have access to listener stats.' : 'Could not load stats.')
+        setOpts(null)
+        return
+      }
+      const rows = await res.json()
+      const data: [number, number][] = rows.map(
+        (r: { fetchDate: string; numListeners: number }) => [
+          new Date(r.fetchDate).getTime(),
+          r.numListeners || 0,
+        ]
+      )
+      if (!hc) return
+      if (data.length === 0) {
+        setChartError('No listener data in this time range.')
+        setOpts(null)
+        return
+      }
+      setOpts({
+        chart: {
+          type: 'line',
+          backgroundColor: 'rgba(255,255,255,0.7)',
+        },
+        colors: ['#F15822'],
+        title: { text: '' },
+        xAxis: {
+          type: 'datetime',
+          title: { text: 'Time' },
+          labels: {
+            formatter: function () {
+              return moment(this.value as number).format('hh:mm a')
+            },
           },
         },
-      },
-      yAxis: { title: { text: 'Kuzu Online Streaming Listeners' } },
-      series: [
-        {
-          type: 'line',
-          name: 'Listeners',
-          data,
-        },
-      ],
-    })
+        yAxis: { title: { text: 'Kuzu Online Streaming Listeners' } },
+        series: [
+          {
+            type: 'line',
+            name: 'Kuzu Online Streaming Listeners',
+            data,
+          },
+        ],
+      })
+    } finally {
+      setLoadingChart(false)
+    }
   }
 
   useEffect(() => {
@@ -67,20 +88,31 @@ export function KuzuStatsClient() {
   }, [hc])
 
   async function computeHours() {
-    const df = (document.getElementById('dateFrom') as HTMLInputElement)?.value
-    const dt = (document.getElementById('dateTo') as HTMLInputElement)?.value
-    if (!df || !dt) return
-    const res = await fetch('/api/listeners/hours', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        startDate: df,
-        endDate: dt,
-      }),
-    })
-    if (!res.ok) return
-    const j = await res.json()
-    setHoursResult(j.hours)
+    setHoursError('')
+    setHoursResult(null)
+    if (!hoursFrom || !hoursTo) {
+      setHoursError('You need a start date and end date.')
+      return
+    }
+    setLoadingHours(true)
+    try {
+      const res = await fetch('/api/listeners/hours', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startDate: hoursFrom,
+          endDate: hoursTo,
+        }),
+      })
+      if (!res.ok) {
+        setHoursError('Could not calculate listening hours.')
+        return
+      }
+      const j = await res.json()
+      setHoursResult(j.hours)
+    } finally {
+      setLoadingHours(false)
+    }
   }
 
   return (
@@ -105,21 +137,45 @@ export function KuzuStatsClient() {
             onChange={(e) => setTo(e.target.value)}
           />
         </label>
-        <button type="button" className={btnPrimary} onClick={() => void refreshChart()}>
-          View range
+        <button
+          type="button"
+          className={btnPrimary}
+          disabled={loadingChart}
+          onClick={() => void refreshChart()}
+        >
+          {loadingChart ? 'Loading…' : 'View range'}
         </button>
       </div>
+      {chartError && <p className="mb-3 text-sm text-amber-300">{chartError}</p>}
       {opts && hc && <HighchartsReact highcharts={hc} options={opts} />}
       <hr className="my-6 border-stone-700" />
       <h3 className="mb-3 text-lg font-medium text-stone-200">Listening hours (range)</h3>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <input id="dateFrom" type="date" className={cn(inputClass, 'max-w-[12rem]')} />
-        <input id="dateTo" type="date" className={cn(inputClass, 'max-w-[12rem]')} />
-        <button type="button" className={btnSecondary} onClick={() => void computeHours()}>
-          Get listening hours
+        <input
+          type="date"
+          className={cn(inputClass, 'max-w-[12rem]')}
+          value={hoursFrom}
+          onChange={(e) => setHoursFrom(e.target.value)}
+        />
+        <input
+          type="date"
+          className={cn(inputClass, 'max-w-[12rem]')}
+          value={hoursTo}
+          onChange={(e) => setHoursTo(e.target.value)}
+        />
+        <button
+          type="button"
+          className={btnSecondary}
+          disabled={loadingHours}
+          onClick={() => void computeHours()}
+        >
+          {loadingHours ? 'Calculating…' : 'Get listening hours'}
         </button>
       </div>
-      {hoursResult != null && <p className="text-stone-300">Approximate hours: {hoursResult.toFixed(2)}</p>}
+      {hoursError && <p className="mb-2 text-sm text-red-400">{hoursError}</p>}
+      {hoursResult != null && (
+        <p className="text-stone-300">Approximate hours: {hoursResult.toFixed(2)}</p>
+      )}
     </div>
   )
 }

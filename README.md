@@ -69,7 +69,7 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **Po
 | **Stats** | Highcharts (`/kuzu-stats`) + listener hours API |
 | **Track imports** | `/track-imports` — CSV via Papa Parse → `/api/import/reaper` |
 | **Banners** | Armed show, Radio Logik down, live show strip (`LayoutBanners` + `/api/layout/banners`) |
-| **Cron / polling** | `instrumentation.ts` — listener stats poll + auto-start scheduling (`node-schedule`). Set `ENABLE_CRON=false` to disable. |
+| **Cron / polling** | Local dev: `instrumentation.ts` polls Icecast every 5 min. **Production (Vercel):** `vercel.json` cron hits `GET /api/cron/listeners` every 5 min. Set `CRON_SECRET` on Vercel. Set `ENABLE_CRON=false` to disable local polling. |
 
 ### Environment (optional)
 
@@ -77,6 +77,7 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **Po
 |----------|---------|---------|
 | `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET` | — | Facebook OAuth; enables “Sign up with Facebook” on `/login` |
 | `ICECAST_STATUS_URL` | `http://138.197.2.189:8000/status-json.xsl` | Icecast JSON for listeners + “Radio Logik down” |
+| `CRON_SECRET` | — | Secures `/api/cron/listeners` on Vercel (auto-sent as Bearer token) |
 | `ENABLE_CRON` | enabled | Set `false` to skip background jobs |
 | `LISTENER_POLL_MS` | `300000` | Listener poll interval (ms) |
 
