@@ -28,6 +28,8 @@ type UserRow = {
   producerProfile: { isPioneer?: boolean } | null
   isProducer: boolean
   isAdmin: boolean
+  isBoard: boolean
+  isStudioMonitor: boolean
 }
 
 export function AdminUsersClient() {
@@ -42,6 +44,8 @@ export function AdminUsersClient() {
       body: JSON.stringify({
         isAdmin: editing.isAdmin,
         isProducer: editing.isProducer,
+        isBoard: editing.isBoard,
+        isStudioMonitor: editing.isStudioMonitor,
         profile: editing.profile,
         producerProfile: {
           ...editing.producerProfile,
@@ -78,6 +82,8 @@ export function AdminUsersClient() {
                 <td className={tableCellClass}>{u.email}</td>
                 <td className={tableCellClass}>
                   {u.isAdmin && 'Admin '}
+                  {u.isBoard && 'Board '}
+                  {u.isStudioMonitor && 'Studio Monitor '}
                   {u.producerProfile?.isPioneer
                     ? 'Pioneer'
                     : u.isProducer
@@ -167,6 +173,28 @@ export function AdminUsersClient() {
                     }
                   />
                   Pioneer
+                </label>
+              </div>
+              <div className={checkboxRowClass}>
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
+                  <input
+                    type="checkbox"
+                    className="rounded border-stone-400"
+                    checked={editing.isBoard}
+                    onChange={(e) => setEditing({ ...editing, isBoard: e.target.checked })}
+                  />
+                  Board Member
+                </label>
+              </div>
+              <div className={checkboxRowClass}>
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
+                  <input
+                    type="checkbox"
+                    className="rounded border-stone-400"
+                    checked={editing.isStudioMonitor}
+                    onChange={(e) => setEditing({ ...editing, isStudioMonitor: e.target.checked })}
+                  />
+                  Studio Monitor
                 </label>
               </div>
             </div>

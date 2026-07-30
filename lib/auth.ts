@@ -96,18 +96,22 @@ export const authOptions: NextAuthOptions = {
         token.id = dbUser.id
         token.isAdmin = dbUser.isAdmin
         token.isProducer = dbUser.isProducer
+        token.isBoard = dbUser.isBoard
+        token.isStudioMonitor = dbUser.isStudioMonitor
         token.producerProfile = dbUser.producerProfile as object
       } else if (user) {
         token.id = user.id
         token.isAdmin = (user as { isAdmin?: boolean }).isAdmin
         token.isProducer = (user as { isProducer?: boolean }).isProducer
+        token.isBoard = (user as { isBoard?: boolean }).isBoard
+        token.isStudioMonitor = (user as { isStudioMonitor?: boolean }).isStudioMonitor
         token.producerProfile = (user as { producerProfile?: object }).producerProfile
       }
       // Keep JWT in sync with DB (e.g. admin enables Producer — no re-login required)
       if (token.id) {
         const row = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { isAdmin: true, isProducer: true, producerProfile: true },
+          select: { isAdmin: true, isProducer: true, isBoard: true, isStudioMonitor: true, producerProfile: true },
         })
         if (row) {
           token.isAdmin = row.isAdmin
@@ -122,6 +126,8 @@ export const authOptions: NextAuthOptions = {
         ;(session.user as { id: string }).id = token.id as string
         ;(session.user as { isAdmin?: boolean }).isAdmin = token.isAdmin as boolean
         ;(session.user as { isProducer?: boolean }).isProducer = token.isProducer as boolean
+        ;(session.user as { isBoard?: boolean }).isBoard = token.isBoard as boolean
+        ;(session.user as { isStudioMonitor?: boolean }).isStudioMonitor = token.isStudioMonitor as boolean
         ;(session.user as { producerProfile?: object }).producerProfile =
           token.producerProfile as object
       }

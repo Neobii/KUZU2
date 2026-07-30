@@ -16,6 +16,8 @@ export async function GET() {
       producerProfile: true,
       isProducer: true,
       isAdmin: true,
+      isBoard: true,
+      isStudioMonitor: true,
       createdAt: true,
     },
   })

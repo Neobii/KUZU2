@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
         content: messageBody,
         sentBy,
         showId: activeShow.id,
-        producerId: activeShow.userId,
+        authorId: activeShow.userId,
+        targetRole: 'all',
       },
     })
   }

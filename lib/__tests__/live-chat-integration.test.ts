@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import type { NextRequest } from 'next/server'
 import 'dotenv/config'
 
 // Mock getServerSession: return null (unauthenticated) by default
@@ -45,7 +46,7 @@ it('messages send rejects unauthenticated requests', async () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content: 'hello' }),
   })
-  const res = await POST(req)
+  const res = await POST(req as unknown as NextRequest)
   expect(res.status).toBe(401)
   const body = await res.json()
   expect(body.error).toBe('Unauthorized')
@@ -72,7 +73,7 @@ it('messages send rejects empty content when authenticated', async () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content: '' }),
   })
-  const res = await POST(req)
+  const res = await POST(req as unknown as NextRequest)
   // Content validation returns 400 (no active show because DB is empty)
   expect(res.status).toBe(400)
   const body = await res.json()

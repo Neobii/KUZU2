@@ -5,6 +5,8 @@ declare module 'next-auth' {
     id?: string
     isAdmin?: boolean
     isProducer?: boolean
+    isBoard?: boolean
+    isStudioMonitor?: boolean
     producerProfile?: {
       isMessagingUIEnabled?: boolean
       isPioneer?: boolean
