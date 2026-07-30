@@ -19,7 +19,7 @@
 
 /* Legacy class names used in HTML content (posts) */
 .form-holder {
-  @apply rounded-md bg-stone-300 p-3 text-stone-900;
+  @apply rounded-md border border-stone-700 bg-stone-900/70 p-3 text-stone-100;
 }
 
 .table,
@@ -264,9 +264,9 @@ ul li a {
 }
 .form-holder blockquote {
   margin: 0.5rem 0;
-  border-left: 4px solid #57534e;
+  border-left: 4px solid #78716c;
   padding-left: 1rem;
-  color: #292524;
+  color: #d6d3d1;
 }
 .form-holder pre {
   margin: 0.5rem 0;
@@ -281,7 +281,8 @@ ul li a {
 .form-holder code {
   font-family: var(--font-mono);
   font-size: 0.875em;
-  background: #e7e5e4;
+  background: #57534e;
+  color: #fafaf9;
   padding: 0.1em 0.35em;
   border-radius: 0.25rem;
 }
@@ -313,7 +314,7 @@ ul li a {
   vertical-align: top;
 }
 .form-holder th {
-  background: #e7e5e4;
+  background: #57534e;
   font-weight: 600;
 }
 .form-holder mark {
