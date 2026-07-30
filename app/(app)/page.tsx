@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { prettifyDate } from '@/lib/utils'
 import { canSeePost } from '@/lib/post-visibility'
-import { HomePostsAdmin } from '@/components/HomePostsAdmin'
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions)
@@ -23,19 +22,9 @@ export default async function HomePage() {
   return (
     <div>
       <h2 className="mb-4 text-xl font-semibold text-stone-100">Kuzu Updates</h2>
-      {isAdmin && <HomePostsAdmin />}
       {visible.length === 0 && (
         <div className="mt-4 rounded-lg border border-stone-700 bg-stone-900/40 p-4 text-stone-400">
-          <p className="mb-0 text-sm">
-            No updates to show yet.
-            {isAdmin && (
-              <>
-                {' '}
-                Create one under <a href="/admin/posts/new">New post</a> or run{' '}
-                <code className="text-amber-300">npm run db:seed</code> for sample content.
-              </>
-            )}
-          </p>
+          <p className="mb-0 text-sm">No updates to show yet.</p>
         </div>
       )}
       {visible.map((post) => (
