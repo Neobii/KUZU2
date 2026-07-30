@@ -20,10 +20,10 @@ afterAll(async () => {
 })
 
 // ── LISTENER_POLL_MS defaults ────────────────────────────────────
-it('returns default 60000 when no env var set', async () => {
+it('returns default 300000 when no env var set', async () => {
   const { getListenerPollIntervalMs } = await import('@/lib/icecast')
   delete process.env.LISTENER_POLL_MS
-  expect(getListenerPollIntervalMs()).toBe(60000)
+  expect(getListenerPollIntervalMs()).toBe(300000)
 })
 
 it('respects LISTENER_POLL_MS env var override', async () => {
@@ -33,10 +33,10 @@ it('respects LISTENER_POLL_MS env var override', async () => {
   delete process.env.LISTENER_POLL_MS
 })
 
-it('falls back to 60000 for invalid values', async () => {
+it('falls back to 300000 for invalid values', async () => {
   const { getListenerPollIntervalMs } = await import('@/lib/icecast')
   process.env.LISTENER_POLL_MS = 'not-a-number'
-  expect(getListenerPollIntervalMs()).toBe(60000)
+  expect(getListenerPollIntervalMs()).toBe(300000)
   delete process.env.LISTENER_POLL_MS
 })
 

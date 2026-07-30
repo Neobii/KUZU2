@@ -261,6 +261,15 @@ export function Header({ session }: { session: Session | null }) {
                         Kuzu Statuses
                       </Link>
                     </li>
+                    <li>
+                      <Link
+                        href="/admin/live-chat"
+                        className="block px-4 py-2 text-sm text-stone-200 no-underline hover:bg-stone-800"
+                        onClick={closeMenus}
+                      >
+                        Live Chat
+                      </Link>
+                    </li>
                   </ul>
                 )}
               </li>
