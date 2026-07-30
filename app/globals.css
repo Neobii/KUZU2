@@ -137,10 +137,17 @@ ul li a {
 .kuzu-datepicker-popper .react-datepicker__time-container {
   @apply border-l border-stone-600;
 }
-.kuzu-datepicker-popper .react-datepicker__time-list-item {
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time {
+  @apply bg-stone-900;
+}
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box {
+  @apply bg-stone-900;
+}
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item {
   @apply text-stone-200 hover:bg-stone-700;
 }
-.kuzu-datepicker-popper .react-datepicker__time-list-item--selected {
+
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected {
   @apply bg-amber-600 font-medium text-white hover:bg-amber-700;
 }
 .kuzu-datepicker-popper .react-datepicker__triangle {
