@@ -6,7 +6,7 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **Po
 
 - **Framework:** Next.js 14 (App Router)
 - **Database:** PostgreSQL with Prisma ORM
-- **Auth:** NextAuth.js — **Sign in** / **Sign up** on `/login` (email + password), optional Facebook; `POST /api/auth/register` creates accounts (first user becomes admin).
+- **Auth:** NextAuth.js — **Sign in** / **Sign up** on `/login` (email + password), optional Facebook; `POST /api/auth/register` creates accounts (first user becomes admin). **Forgot password** at `/forgot-password` (email reset link via [Resend](https://resend.com), or logged to the server console when `RESEND_API_KEY` is unset).
 - **Styling:** **Tailwind CSS v4** + custom `globals.css` (KUZU dark theme)
 
 ## Setup
@@ -26,6 +26,7 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **Po
    - `NEXTAUTH_SECRET` — Generate with `openssl rand -base64 32`
    - `NEXTAUTH_URL` — App URL (e.g. `http://localhost:3000`)
    - **Facebook (optional)** — `FACEBOOK_CLIENT_ID` and `FACEBOOK_CLIENT_SECRET` from [Meta for Developers](https://developers.facebook.com/). Add **Valid OAuth Redirect URI**: `{NEXTAUTH_URL}/api/auth/callback/facebook` (e.g. `http://localhost:3000/api/auth/callback/facebook`). When set, the login page shows **Sign up with Facebook**; new users are created in the DB by email. **If the database has no users yet, the first person who signs up (e.g. via Facebook) becomes an admin** (same as running the seed for the first account).
+   - **Password reset (optional)** — `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `KUZU <noreply@yourdomain.com>`). Without Resend, reset links print to the server log when you use `/forgot-password`.
 
 3. **Apply schema to the database**
    ```bash

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { useState, useMemo, type FormEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -19,6 +20,7 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') ?? '/'
   const signupFromUrl = searchParams.get('signup') === '1'
+  const resetSuccess = searchParams.get('reset') === '1'
 
   const [mode, setMode] = useState<'signin' | 'signup'>(() => (signupFromUrl ? 'signup' : 'signin'))
   const [email, setEmail] = useState('')
@@ -110,6 +112,12 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
       <h1 className="mb-1 text-2xl font-semibold text-white">KUZU</h1>
       <p className="mb-5 text-stone-400">{heading}</p>
 
+      {resetSuccess && (
+        <p className="mb-4 rounded-md border border-emerald-700/50 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-300">
+          Password updated. Sign in with your new password.
+        </p>
+      )}
+
       {facebookAuthEnabled && (
         <>
           <button
@@ -175,6 +183,11 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
             autoComplete="current-password"
             className={inputClass}
           />
+          <div className="text-right">
+            <Link href="/forgot-password" className="text-sm text-amber-400 hover:text-amber-300">
+              Forgot password?
+            </Link>
+          </div>
           {error && <p className="text-sm text-red-400">{error}</p>}
           <button type="submit" disabled={submitLoading} className={cn(btnPrimary, 'w-full py-2.5')}>
             {submitLoading ? 'Signing in…' : 'Sign in'}
