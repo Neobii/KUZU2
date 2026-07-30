@@ -37,6 +37,6 @@ export function getIcecastStatusUrl(): string {
 }
 
 export function getListenerPollIntervalMs(): number {
-  const parsed = parseInt(process.env.LISTENER_POLL_MS ?? '300000', 10)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 300000
+  const parsed = parseInt(process.env.LISTENER_POLL_MS ?? '60000', 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 60000
 }
