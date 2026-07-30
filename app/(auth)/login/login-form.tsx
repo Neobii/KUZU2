@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { useState, useMemo, type FormEvent } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/cn'
 import { btnPrimary, inputClass } from '@/lib/ui'
 
@@ -16,7 +16,6 @@ function FacebookIcon() {
 }
 
 export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolean }) {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') ?? '/'
   const signupFromUrl = searchParams.get('signup') === '1'
@@ -56,8 +55,7 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
         setError('Invalid email or password')
         return
       }
-      router.push(callbackUrl)
-      router.refresh()
+      window.location.assign(callbackUrl)
     } finally {
       setSubmitLoading(false)
     }
@@ -92,8 +90,7 @@ export function LoginForm({ facebookAuthEnabled }: { facebookAuthEnabled: boolea
         setMode('signin')
         return
       }
-      router.push(callbackUrl)
-      router.refresh()
+      window.location.assign(callbackUrl)
     } finally {
       setSubmitLoading(false)
     }

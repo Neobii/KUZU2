@@ -2,8 +2,16 @@ import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import FacebookProvider from 'next-auth/providers/facebook'
 import bcrypt from 'bcryptjs'
+import { getAppUrl } from '@/lib/app-url'
 import { prisma } from '@/lib/prisma'
 import { getFirstUserFlags } from '@/lib/first-user'
+
+if (process.env.NODE_ENV === 'production') {
+  const configured = process.env.NEXTAUTH_URL?.trim()
+  if (!configured || configured.includes('localhost')) {
+    process.env.NEXTAUTH_URL = getAppUrl()
+  }
+}
 
 /** True when Facebook OAuth env vars are set (for UI + provider registration). */
 export const isFacebookAuthEnabled =

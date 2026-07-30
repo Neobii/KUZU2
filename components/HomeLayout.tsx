@@ -2,12 +2,19 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { Header } from './Header'
 import { LayoutBanners } from './LayoutBanners'
 
 export function HomeLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
   const router = useRouter()
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/login')
+    }
+  }, [status, router])
 
   if (status === 'loading') {
     return (
@@ -18,7 +25,6 @@ export function HomeLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!session) {
-    router.replace('/login')
     return null
   }
 
