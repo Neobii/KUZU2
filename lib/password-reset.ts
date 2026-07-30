@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'crypto'
+import { getAppUrl } from '@/lib/app-url'
 
 export const RESET_TOKEN_BYTES = 32
 export const RESET_TOKEN_TTL_MS = 60 * 60 * 1000 // 1 hour
@@ -16,6 +17,5 @@ export function getResetTokenExpiry(): Date {
 }
 
 export function getResetPasswordUrl(token: string): string {
-  const base = process.env.NEXTAUTH_URL?.replace(/\/$/, '') ?? 'http://localhost:3000'
-  return `${base}/reset-password?token=${encodeURIComponent(token)}`
+  return `${getAppUrl()}/reset-password?token=${encodeURIComponent(token)}`
 }
