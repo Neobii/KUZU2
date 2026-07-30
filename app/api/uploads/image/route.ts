@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { randomUUID } from 'crypto'
 import { authOptions } from '@/lib/auth'
 import { compressUploadImage } from '@/lib/compress-upload-image'
-import { storeEditorImage } from '@/lib/editor-image-storage'
+import { storeEditorImage, isBlobStorageConfigured } from '@/lib/editor-image-storage'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,8 +63,8 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error('[uploads/image] store failed', e)
     const message =
-      process.env.NODE_ENV === 'production' && !process.env.BLOB_READ_WRITE_TOKEN?.trim()
-        ? 'Image storage is not configured. Add BLOB_READ_WRITE_TOKEN in Vercel.'
+      process.env.NODE_ENV === 'production' && !isBlobStorageConfigured()
+        ? 'Image storage is not configured. Connect a Vercel Blob store to this project.'
         : 'Could not save image. Try again.'
     return NextResponse.json({ error: message }, { status: 500 })
   }

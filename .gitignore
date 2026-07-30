@@ -9,6 +9,7 @@ out/
 .env
 .env.local
 .env.*.local
+.env.vercel.*
 
 # User uploads (keep folder)
 public/uploads/editor/*
@@ -19,3 +20,5 @@ public/uploads/editor/*
 *.key
 .DS_Store
 *.log
+.vercel
+.env*.local

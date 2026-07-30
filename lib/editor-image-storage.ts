@@ -10,9 +10,16 @@ function contentTypeForExtension(ext: string): string {
   return 'application/octet-stream'
 }
 
+/** Vercel Blob: OIDC (`BLOB_STORE_ID`) or legacy `BLOB_READ_WRITE_TOKEN`. */
+export function isBlobStorageConfigured(): boolean {
+  return !!(
+    process.env.BLOB_STORE_ID?.trim() || process.env.BLOB_READ_WRITE_TOKEN?.trim()
+  )
+}
+
 /**
  * Store a processed editor image.
- * - Production (Vercel): Vercel Blob when BLOB_READ_WRITE_TOKEN is set
+ * - Production (Vercel): Vercel Blob when store is connected (`BLOB_STORE_ID` or `BLOB_READ_WRITE_TOKEN`)
  * - Local dev: public/uploads/editor (served as /uploads/editor/…)
  */
 export async function storeEditorImage(
@@ -20,14 +27,13 @@ export async function storeEditorImage(
   filename: string,
   extension: string
 ): Promise<string> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim()
   const contentType = contentTypeForExtension(extension)
 
-  if (token) {
+  if (isBlobStorageConfigured()) {
+    // SDK auth: OIDC (BLOB_STORE_ID + VERCEL_OIDC_TOKEN on Vercel) or BLOB_READ_WRITE_TOKEN fallback
     const blob = await put(`editor/${filename}`, buffer, {
       access: 'public',
       contentType,
-      token,
     })
     return blob.url
   }

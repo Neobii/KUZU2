@@ -78,7 +78,8 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **Po
 | `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET` | — | Facebook OAuth; enables “Sign up with Facebook” on `/login` |
 | `ICECAST_STATUS_URL` | `http://138.197.2.189:8000/status-json.xsl` | Icecast JSON for listeners + “Radio Logik down” |
 | `CRON_SECRET` | — | Secures `/api/cron/listeners` on Vercel (auto-sent as Bearer token) |
-| `BLOB_READ_WRITE_TOKEN` | — | **Required on Vercel** for TipTap image uploads (Vercel Blob). Local dev uses `public/uploads/editor/` without this. |
+| `BLOB_STORE_ID` | — | **Set automatically** when a Vercel Blob store is connected (OIDC auth). TipTap uploads use this in production. |
+| `BLOB_READ_WRITE_TOKEN` | — | Legacy Blob token (optional fallback). Not shown when OIDC is enabled. |
 | `ENABLE_CRON` | enabled | Set `false` to skip background jobs |
 | `LISTENER_POLL_MS` | `300000` | Listener poll interval (ms) |
 
