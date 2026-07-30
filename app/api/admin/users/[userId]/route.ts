@@ -40,6 +40,7 @@ export async function PATCH(
       ...(body.isManagingArtists !== undefined && {
         isManagingArtists: Boolean(body.isManagingArtists),
       }),
+      ...(body.isStudioMonitor !== undefined && { isStudioMonitor: Boolean(body.isStudioMonitor) }),
     },
     select: {
       id: true,
@@ -51,6 +52,7 @@ export async function PATCH(
       isBoardMember: true,
       isFieldProducer: true,
       isManagingArtists: true,
+      isStudioMonitor: true,
     },
   })
   return NextResponse.json(updated)

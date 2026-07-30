@@ -102,6 +102,7 @@ export const authOptions: NextAuthOptions = {
         token.isBoardMember = dbUser.isBoardMember
         token.isFieldProducer = dbUser.isFieldProducer
         token.isManagingArtists = dbUser.isManagingArtists
+        token.isStudioMonitor = dbUser.isStudioMonitor
         token.producerProfile = dbUser.producerProfile as object
       } else if (user) {
         token.id = user.id
@@ -110,13 +111,14 @@ export const authOptions: NextAuthOptions = {
         token.isBoardMember = (user as { isBoardMember?: boolean }).isBoardMember
         token.isFieldProducer = (user as { isFieldProducer?: boolean }).isFieldProducer
         token.isManagingArtists = (user as { isManagingArtists?: boolean }).isManagingArtists
+        token.isStudioMonitor = (user as { isStudioMonitor?: boolean }).isStudioMonitor
         token.producerProfile = (user as { producerProfile?: object }).producerProfile
       }
       // Keep JWT in sync with DB (e.g. admin enables Producer — no re-login required)
       if (token.id) {
         const row = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { isAdmin: true, isProducer: true, isBoardMember: true, isFieldProducer: true, isManagingArtists: true, producerProfile: true },
+          select: { isAdmin: true, isProducer: true, isBoardMember: true, isFieldProducer: true, isManagingArtists: true, isStudioMonitor: true, producerProfile: true },
         })
         if (row) {
           token.isAdmin = row.isAdmin
@@ -138,6 +140,7 @@ export const authOptions: NextAuthOptions = {
         ;(session.user as { isFieldProducer?: boolean }).isFieldProducer = token.isFieldProducer as boolean
         ;(session.user as { isManagingArtists?: boolean }).isManagingArtists =
           token.isManagingArtists as boolean
+        ;(session.user as { isStudioMonitor?: boolean }).isStudioMonitor = token.isStudioMonitor as boolean
         ;(session.user as { producerProfile?: object }).producerProfile =
           token.producerProfile as object
       }

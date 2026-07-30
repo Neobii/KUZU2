@@ -14,14 +14,14 @@ export async function POST(req: NextRequest) {
   if (!id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  const { content } = await req.json()
+  const { content, targetRole } = await req.json()
   if (!content || typeof content !== 'string' || !content.trim()) {
     return NextResponse.json({ error: 'Content required' }, { status: 400 })
   }
 
   const activeShow = await prisma.show.findFirst({
     where: { isActive: true },
-    select: { id: true, userId: true },
+    select: { id: true },
   })
   if (!activeShow) {
     return NextResponse.json({ error: 'No active show' }, { status: 400 })
@@ -29,19 +29,35 @@ export async function POST(req: NextRequest) {
 
   const profile = (session.user as { profile?: { name?: string } | null }).profile
   const displayName = profile?.name ?? session.user.email ?? 'Unknown'
-  const role = (session.user as { isAdmin?: boolean }).isAdmin
+
+  // Determine sender's role
+  const user = session.user as {
+    isAdmin?: boolean
+    isProducer?: boolean
+    isBoard?: boolean
+    isStudioMonitor?: boolean
+  }
+  const senderRole = user.isAdmin
     ? 'Admin'
-    : (session.user as { isProducer?: boolean }).isProducer
-      ? 'Producer'
-      : 'User'
-  const sentBy = `${displayName} (${role})`
+    : user.isBoard
+      ? 'Board'
+      : user.isStudioMonitor
+        ? 'Studio Monitor'
+        : user.isProducer
+          ? 'Producer'
+          : 'User'
+
+  // Validate targetRole — default if not provided
+  const validRoles = ['admin', 'producer', 'board', 'studio_monitor', 'all']
+  const role = targetRole && validRoles.includes(targetRole) ? targetRole : 'all'
 
   const msg = await prisma.message.create({
     data: {
       content: content.trim(),
-      sentBy,
+      sentBy: `${displayName} (${senderRole})`,
       showId: activeShow.id,
-      producerId: activeShow.userId,
+      authorId: id,
+      targetRole: role,
     },
   })
 

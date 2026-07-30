@@ -73,6 +73,7 @@ export function LiveShow() {
   )
 
   const [msgText, setMsgText] = useState('')
+  const [msgTargetRole, setMsgTargetRole] = useState('admin')
   const [sendingMsg, setSendingMsg] = useState(false)
   const msgInputRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
@@ -438,6 +439,11 @@ export function LiveShow() {
                           <p className="mt-0.5 text-xs text-stone-500">
                             {m.sentBy ?? 'Unknown'} · {prettifySimpleTime(m.sentAt)}
                           </p>
+                          {(m as { targetRole?: string }).targetRole && (
+                            <span className="mt-1 inline-block rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-medium uppercase text-stone-600">
+                              To: {(m as { targetRole?: string }).targetRole === 'admin' ? 'Admin' : (m as { targetRole?: string }).targetRole === 'producer' ? 'Producer' : (m as { targetRole?: string }).targetRole === 'board' ? 'Board' : (m as { targetRole?: string }).targetRole === 'studio_monitor' ? 'Studio Monitor' : 'Everyone'}
+                            </span>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -462,7 +468,7 @@ export function LiveShow() {
                   fetch('/api/messages/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: msgText }),
+                    body: JSON.stringify({ content: msgText, targetRole: msgTargetRole }),
                   })
                     .then(() => {
                       setMsgText('')
@@ -470,12 +476,22 @@ export function LiveShow() {
                     })
                     .finally(() => setSendingMsg(false))
                 }}
-                className="flex gap-2"
+                className="flex flex-wrap gap-2"
               >
+                <select
+                  value={msgTargetRole}
+                  onChange={(e) => setMsgTargetRole(e.target.value)}
+                  className="rounded border border-stone-300 bg-white px-2 py-2 text-sm text-stone-800"
+                >
+                  <option value="admin">To Admin</option>
+                  <option value="board">To Board</option>
+                  <option value="studio_monitor">To Studio Monitor</option>
+                  <option value="all">To Everyone</option>
+                </select>
                 <input
                   ref={msgInputRef}
                   type="text"
-                  className={cn(inputClassLight, 'flex-1')}
+                  className={cn(inputClassLight, 'min-w-[150px] flex-1')}
                   placeholder="Reply…"
                   value={msgText}
                   onChange={(e) => setMsgText(e.target.value)}

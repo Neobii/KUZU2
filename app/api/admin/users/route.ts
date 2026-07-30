@@ -19,6 +19,7 @@ export async function GET() {
       isBoardMember: true,
       isFieldProducer: true,
       isManagingArtists: true,
+      isStudioMonitor: true,
       createdAt: true,
     },
   })

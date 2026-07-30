@@ -29,8 +29,27 @@ export async function GET() {
   })
   const highest = tracks.reduce((m, t) => Math.max(m, t.indexNumber ?? -1), -1)
   const nextUnplayed = tracks.find((t) => !t.playDate)
+
+  // Count unread messages targeted at the current user's roles
+  const user = session.user as {
+    isAdmin?: boolean
+    isProducer?: boolean
+    isBoard?: boolean
+    isStudioMonitor?: boolean
+  }
+  const userRoles: string[] = []
+  if (user.isAdmin) userRoles.push('admin', 'all')
+  if (user.isProducer) userRoles.push('producer', 'all')
+  if (user.isBoard) userRoles.push('board', 'all')
+  if (user.isStudioMonitor) userRoles.push('studio_monitor', 'all')
+  if (userRoles.length === 0) userRoles.push('all')
+
   const messageCount = await prisma.message.count({
-    where: { showId: show.id, isRead: false },
+    where: {
+      showId: show.id,
+      isRead: false,
+      targetRole: { in: userRoles },
+    },
   })
   const recentlyPlayed = tracks.filter((t) => t.isHighlighted && t.playDate)
   return NextResponse.json({

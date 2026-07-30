@@ -29,6 +29,7 @@ type Message = {
   sentBy: string | null
   sentAt: string
   isRead: boolean
+  targetRole: string
 }
 
 type ActiveUser = {
@@ -37,12 +38,37 @@ type ActiveUser = {
   profile: { name?: string } | null
   isAdmin: boolean
   isProducer: boolean
+  isBoard: boolean
+  isStudioMonitor: boolean
   lastActiveAt: string
+}
+
+const roleLabel = (role: string) => {
+  const labels: Record<string, string> = {
+    admin: 'Admin',
+    producer: 'Producer',
+    board: 'Board',
+    studio_monitor: 'Studio Monitor',
+    all: 'Everyone',
+  }
+  return labels[role] ?? role
+}
+
+const roleBadgeColor = (role: string) => {
+  const colors: Record<string, string> = {
+    admin: 'bg-amber-600/80 text-white',
+    producer: 'bg-emerald-600/80 text-white',
+    board: 'bg-blue-600/80 text-white',
+    studio_monitor: 'bg-purple-600/80 text-white',
+    all: 'bg-stone-600/80 text-white',
+  }
+  return colors[role] ?? 'bg-stone-600/80 text-white'
 }
 
 export function AdminLiveChat() {
   const { data: session } = useSession()
   const [msgText, setMsgText] = useState('')
+  const [targetRole, setTargetRole] = useState('producer')
   const [sending, setSending] = useState(false)
   const msgEndRef = useRef<HTMLDivElement>(null)
 
@@ -87,7 +113,7 @@ export function AdminLiveChat() {
       const res = await fetch('/api/messages/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: text }),
+        body: JSON.stringify({ content: text, targetRole }),
       })
       if (res.ok) {
         setMsgText('')
@@ -96,7 +122,7 @@ export function AdminLiveChat() {
     } finally {
       setSending(false)
     }
-  }, [msgText, sending, mutateMsg])
+  }, [msgText, sending, mutateMsg, targetRole])
 
   const deleteMessage = useCallback(
     async (id: string) => {
@@ -140,6 +166,9 @@ export function AdminLiveChat() {
                       <p className="mt-0.5 text-xs text-stone-500">
                         {m.sentBy ?? 'Unknown'} · {prettifySimpleTime(m.sentAt)}
                       </p>
+                      <span className={cn('mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-medium uppercase', roleBadgeColor(m.targetRole))}>
+                        To: {roleLabel(m.targetRole)}
+                      </span>
                     </div>
                     {isAdmin && (
                       <button
@@ -164,12 +193,23 @@ export function AdminLiveChat() {
               e.preventDefault()
               void sendMessage()
             }}
-            className="flex gap-2"
+            className="flex flex-wrap gap-2"
           >
+            <select
+              value={targetRole}
+              onChange={(e) => setTargetRole(e.target.value)}
+              className="rounded border border-stone-600 bg-stone-800 px-2 py-2 text-sm text-white"
+            >
+              <option value="producer">To Producers</option>
+              <option value="board">To Board</option>
+              <option value="admin">To Admins</option>
+              <option value="studio_monitor">To Studio Monitors</option>
+              <option value="all">To Everyone</option>
+            </select>
             <input
               type="text"
-              className={inputClass}
-              placeholder="Type a message to the producer…"
+              className={cn(inputClass, 'min-w-[200px] flex-1')}
+              placeholder="Type a message…"
               value={msgText}
               onChange={(e) => setMsgText(e.target.value)}
               disabled={!!msgErr}
@@ -201,7 +241,10 @@ export function AdminLiveChat() {
                     <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
                     <span className="truncate">{name}</span>
                     <span className="shrink-0 text-xs text-stone-600">
-                      {u.isAdmin ? 'Admin' : u.isProducer ? 'Producer' : ''}
+                      {u.isAdmin ? 'Admin' : ''}
+                      {u.isBoard ? 'Board' : ''}
+                      {u.isStudioMonitor ? 'Studio Monitor' : ''}
+                      {!u.isAdmin && !u.isBoard && !u.isStudioMonitor && u.isProducer ? 'Producer' : ''}
                     </span>
                   </li>
                 )

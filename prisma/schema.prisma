@@ -20,12 +20,13 @@ model User {
   isBoardMember    Boolean  @default(false) @map("is_board_member")
   isFieldProducer  Boolean  @default(false) @map("is_field_producer")
   isManagingArtists Boolean @default(false) @map("is_managing_artists")
+  isStudioMonitor   Boolean  @default(false) @map("is_studio_monitor")
   lastActiveAt      DateTime? @map("last_active_at")
   createdAt        DateTime @default(now()) @map("created_at")
 
   shows              Show[]               @relation("ShowOwner")
   showsHelp          Show[]               @relation("ShowHelper")
-  messages           Message[]
+  messagesAuthored   Message[]            @relation("MessageAuthor")
   passwordResetTokens PasswordResetToken[]
 }
 
@@ -103,7 +104,8 @@ model Tracklist {
 
 model Message {
   id         String   @id @default(cuid())
-  producerId String   @map("producer_id")
+  authorId   String?  @map("author_id")
+  targetRole String   @default("producer") @map("target_role")
   showId     String?  @map("show_id")
   content    String   @db.Text
   sentAt     DateTime @default(now()) @map("sent_at")
@@ -111,8 +113,8 @@ model Message {
   isRead     Boolean  @default(false) @map("is_read")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  producer User  @relation(fields: [producerId], references: [id], onDelete: Cascade)
-  show    Show? @relation(fields: [showId], references: [id], onDelete: SetNull)
+  author User?  @relation("MessageAuthor", fields: [authorId], references: [id])
+  show   Show?  @relation(fields: [showId], references: [id], onDelete: SetNull)
 }
 
 model Post {

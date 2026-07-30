@@ -8,6 +8,7 @@ declare module 'next-auth' {
     isBoardMember?: boolean
     isFieldProducer?: boolean
     isManagingArtists?: boolean
+    isStudioMonitor?: boolean
     producerProfile?: {
       isMessagingUIEnabled?: boolean
       isPioneer?: boolean
