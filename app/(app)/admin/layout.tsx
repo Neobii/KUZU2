@@ -35,6 +35,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           Auto DJ
         </Link>
         <span className="text-stone-600">·</span>
+        <Link href="/admin/live-chat" className="no-underline hover:text-amber-300">
+          Live Chat
+        </Link>
+        <span className="text-stone-600">·</span>
         <Link href="/admin/posts" className="no-underline hover:text-amber-300">
           Posts
         </Link>
