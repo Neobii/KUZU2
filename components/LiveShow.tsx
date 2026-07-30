@@ -3,7 +3,7 @@
 import useSWR from 'swr'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { prettifySimpleTime } from '@/lib/utils-client'
 import {
   btnPrimary,
@@ -17,9 +17,11 @@ import {
   btnInfo,
   btnDanger,
   btnLink,
+  btnXsDanger,
   modalBackdropClass,
   modalDialogClass,
   modalDialogLgClass,
+  inputClassLight,
   tableClass,
   tableCellClass,
   tableHeadClass,
@@ -69,6 +71,18 @@ export function LiveShow() {
     fetcher,
     { refreshInterval: msgOpen ? 5000 : 0 }
   )
+
+  const [msgText, setMsgText] = useState('')
+  const [sendingMsg, setSendingMsg] = useState(false)
+  const msgInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (!msgOpen) return
+    const hb = setInterval(() => {
+      fetch('/api/live/heartbeat', { method: 'POST' }).catch(() => {})
+    }, 10_000)
+    fetch('/api/live/heartbeat', { method: 'POST' }).catch(() => {})
+    return () => clearInterval(hb)
+  }, [msgOpen])
 
   const producerProfile = session?.user?.producerProfile as
     | {
@@ -332,48 +346,79 @@ export function LiveShow() {
                 </button>
               </div>
             </div>
-            <div className="overflow-x-auto p-4">
-              <table className={cn(tableClass, 'bg-white text-stone-900')}>
-                <thead>
-                  <tr className={tableHeadClass}>
-                    <th className={tableCellClass}>Read</th>
-                    <th className={tableCellClass}>Sent</th>
-                    <th className={tableCellClass}>Content</th>
-                    <th className={tableCellClass}>By</th>
-                    <th className={tableCellClass} />
-                  </tr>
-                </thead>
-                <tbody>
-                  {showMessages?.map(
-                    (m: {
-                      id: string
-                      isRead: boolean
-                      sentAt: string
-                      content: string
-                      sentBy: string | null
-                    }) => (
-                      <tr key={m.id}>
-                        <td className={tableCellClass}>{m.isRead ? 'Yes' : 'No'}</td>
-                        <td className={tableCellClass}>{prettifySimpleTime(m.sentAt)}</td>
-                        <td className={tableCellClass}>{m.content}</td>
-                        <td className={tableCellClass}>{m.sentBy}</td>
-                        <td className={tableCellClass}>
-                          <button
-                            type="button"
-                            className={btnSmWarning}
-                            onClick={async () => {
-                              await fetch(`/api/messages/${m.id}`, { method: 'DELETE' })
-                              void mutateMsg()
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  )}
-                </tbody>
-              </table>
+            <div className="p-4">
+              <div className="mb-3 max-h-[40vh] min-h-[200px] overflow-y-auto rounded border border-stone-200 bg-stone-50 p-3">
+                {showMessages?.length === 0 ? (
+                  <p className="text-center text-sm text-stone-400">No messages</p>
+                ) : (
+                  [...(showMessages ?? [])].reverse().map((m: {
+                    id: string
+                    isRead: boolean
+                    sentAt: string
+                    content: string
+                    sentBy: string | null
+                  }) => (
+                    <div
+                      key={m.id}
+                      className={cn(
+                        'mb-2 rounded p-2 text-sm',
+                        m.sentBy?.toLowerCase().includes('producer')
+                          ? 'ml-8 border-l-4 border-emerald-500 bg-stone-100'
+                          : 'mr-8 border-l-4 border-amber-500 bg-white',
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-stone-900">{m.content}</p>
+                          <p className="mt-0.5 text-xs text-stone-500">
+                            {m.sentBy ?? 'Unknown'} · {prettifySimpleTime(m.sentAt)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className={btnXsDanger}
+                          onClick={async () => {
+                            await fetch(`/api/messages/${m.id}`, { method: 'DELETE' })
+                            void mutateMsg()
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (!msgText.trim() || sendingMsg) return
+                  setSendingMsg(true)
+                  fetch('/api/messages/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: msgText }),
+                  })
+                    .then(() => {
+                      setMsgText('')
+                      void mutateMsg()
+                    })
+                    .finally(() => setSendingMsg(false))
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  ref={msgInputRef}
+                  type="text"
+                  className={cn(inputClassLight, 'flex-1')}
+                  placeholder="Reply…"
+                  value={msgText}
+                  onChange={(e) => setMsgText(e.target.value)}
+                />
+                <button type="submit" className={btnPrimary} disabled={sendingMsg || !msgText.trim()}>
+                  Send
+                </button>
+              </form>
             </div>
           </div>
         </div>
