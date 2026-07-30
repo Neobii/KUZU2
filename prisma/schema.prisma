@@ -59,8 +59,8 @@ model Show {
   hasMessagingEnabled Boolean   @default(false) @map("has_messaging_enabled")
   createdAt           DateTime  @default(now()) @map("created_at")
 
-  owner    User       @relation("ShowOwner", fields: [userId], references: [id])
-  helper   User?      @relation("ShowHelper", fields: [helperUserId], references: [id])
+  owner    User       @relation("ShowOwner", fields: [userId], references: [id], onDelete: Cascade)
+  helper   User?      @relation("ShowHelper", fields: [helperUserId], references: [id], onDelete: SetNull)
   tracks   Tracklist[]
   messages Message[]
 
@@ -102,7 +102,7 @@ model Message {
   isRead     Boolean  @default(false) @map("is_read")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  producer User  @relation(fields: [producerId], references: [id])
+  producer User  @relation(fields: [producerId], references: [id], onDelete: Cascade)
   show    Show? @relation(fields: [showId], references: [id], onDelete: SetNull)
 }
 
