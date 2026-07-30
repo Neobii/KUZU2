@@ -13,6 +13,8 @@ export async function GET() {
       id: true,
       showName: true,
       description: true,
+      defaultMeta: true,
+      isShowingDefaultMeta: true,
       showStart: true,
       showEnd: true,
       owner: {
@@ -33,6 +35,7 @@ export async function GET() {
         id: show.id,
         name: show.showName,
         description: show.description,
+        defaultMeta: show.isShowingDefaultMeta ? show.defaultMeta : null,
         start: show.showStart,
         end: show.showEnd,
         hostName: profile?.name ?? show.owner.email.split('@')[0] ?? 'Unknown',
