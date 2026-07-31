@@ -44,7 +44,7 @@ export async function GET() {
       profile: true,
       isAdmin: true,
       isProducer: true,
-      isBoard: true,
+      isBoardMember: true,
       isStudioMonitor: true,
       lastActiveAt: true,
     },
@@ -58,7 +58,7 @@ export async function GET() {
     const showLastActive = activeShow ? activeShow[showField] : null
     const members = users.filter((u) => {
       if (name === 'admins') return u.isAdmin
-      if (name === 'board') return u.isBoard
+      if (name === 'board') return u.isBoardMember
       if (name === 'studioMonitors') return u.isStudioMonitor
       return u.isProducer
     })

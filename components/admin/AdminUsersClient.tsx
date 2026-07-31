@@ -219,8 +219,8 @@ export function AdminUsersClient() {
                   <input
                     type="checkbox"
                     className="rounded border-stone-400"
-                    checked={editing.isBoard}
-                    onChange={(e) => setEditing({ ...editing, isBoard: e.target.checked })}
+                    checked={editing.isBoardMember}
+                    onChange={(e) => setEditing({ ...editing, isBoardMember: e.target.checked })}
                   />
                   Board Member
                 </label>

@@ -38,7 +38,7 @@ type ActiveUser = {
   profile: { name?: string } | null
   isAdmin: boolean
   isProducer: boolean
-  isBoard: boolean
+  isBoardMember: boolean
   isStudioMonitor: boolean
   lastActiveAt: string
 }
@@ -355,9 +355,9 @@ export function AdminsLiveChat() {
                     <span className="truncate">{name}</span>
                     <span className="shrink-0 text-xs text-stone-600">
                       {u.isAdmin ? 'Admin' : ''}
-                      {u.isBoard ? 'Board' : ''}
+                      {u.isBoardMember ? 'Board' : ''}
                       {u.isStudioMonitor ? 'Studio Monitor' : ''}
-                      {!u.isAdmin && !u.isBoard && !u.isStudioMonitor && u.isProducer ? 'Producer' : ''}
+                      {!u.isAdmin && !u.isBoardMember && !u.isStudioMonitor && u.isProducer ? 'Producer' : ''}
                     </span>
                   </li>
                 )
