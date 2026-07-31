@@ -33,6 +33,7 @@ export async function POST(
       isShowingDefaultMeta: src.isShowingDefaultMeta,
       description: src.description,
       isShowingDescription: src.isShowingDescription,
+      episodeNumber: src.episodeNumber,
     },
   })
   let idx = 0

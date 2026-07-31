@@ -17,4 +17,13 @@ export const showEditSchema = z.object({
   description: z.string().optional(),
   hasRadioLogikTracking: z.boolean().optional(),
   hasMessagingEnabled: z.boolean().optional(),
+  episodeNumber: z
+    .preprocess(
+      (v) => {
+        if (v === '' || v == null) return null
+        const n = Number(v)
+        return Number.isNaN(n) ? null : n
+      },
+      z.number().int().nullable()
+    ),
 })

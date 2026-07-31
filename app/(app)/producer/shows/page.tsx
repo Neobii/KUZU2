@@ -32,6 +32,7 @@ export default async function ProducerShowsPage() {
             {show.showStart && (
               <span> — {prettifySimpleTime(show.showStart)}</span>
             )}
+            {show.episodeNumber != null && <span> · Episode {show.episodeNumber}</span>}
             <ProducerShowsActions showId={show.id} showName={show.showName} />
           </li>
         ))}
