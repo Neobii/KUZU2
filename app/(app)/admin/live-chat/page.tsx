@@ -1,10 +1,10 @@
-import { AdminLiveChat } from '@/components/admin/AdminLiveChat'
+import { AdminsLiveChat } from '@/components/admin/AdminsLiveChat'
 
-export default function AdminLiveChatPage() {
+export default function AdminsLiveChatPage() {
   return (
     <div>
-      <h2 className="mb-4 text-xl font-semibold text-stone-100">Live Chat</h2>
-      <AdminLiveChat />
+      <h2 className="mb-4 text-xl font-semibold text-stone-100">Admins Live Chat</h2>
+      <AdminsLiveChat />
     </div>
   )
 }

@@ -43,6 +43,18 @@ type ActiveUser = {
   lastActiveAt: string
 }
 
+type ChannelStatus = {
+  name: string
+  active: boolean
+  activeMembers: number
+  lastActiveAt: string | null
+}
+
+type ActiveUsersResponse = {
+  users: ActiveUser[]
+  channels: ChannelStatus[]
+}
+
 const roleLabel = (role: string) => {
   const labels: Record<string, string> = {
     admin: 'Admin',
@@ -65,11 +77,14 @@ const roleBadgeColor = (role: string) => {
   return colors[role] ?? 'bg-stone-600/80 text-white'
 }
 
-export function AdminLiveChat() {
+export function AdminsLiveChat() {
   const { data: session } = useSession()
   const [msgText, setMsgText] = useState('')
   const [targetRole, setTargetRole] = useState('producer')
   const [sending, setSending] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
   const msgEndRef = useRef<HTMLDivElement>(null)
 
   // Heartbeat every 10s while page is open
@@ -90,8 +105,8 @@ export function AdminLiveChat() {
     refreshInterval: 5000,
   })
 
-  // Fetch active users every 10s
-  const { data: activeUsers } = useSWR<ActiveUser[]>('/api/live/active-users', fetcher, {
+  // Fetch active users + channel status every 10s
+  const { data: activeData } = useSWR<ActiveUsersResponse>('/api/live/active-users', fetcher, {
     refreshInterval: 10_000,
   })
 
@@ -132,6 +147,38 @@ export function AdminLiveChat() {
     [mutateMsg],
   )
 
+  const startEdit = useCallback((m: Message) => {
+    setEditingId(m.id)
+    setEditText(m.content)
+  }, [])
+
+  const cancelEdit = useCallback(() => {
+    setEditingId(null)
+    setEditText('')
+  }, [])
+
+  const saveEdit = useCallback(
+    async (id: string) => {
+      const text = editText.trim()
+      if (!text || savingEdit) return
+      setSavingEdit(true)
+      try {
+        const res = await fetch(`/api/messages/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: text }),
+        })
+        if (res.ok) {
+          cancelEdit()
+          void mutateMsg()
+        }
+      } finally {
+        setSavingEdit(false)
+      }
+    },
+    [editText, savingEdit, cancelEdit, mutateMsg],
+  )
+
   const isAdmin = session?.user?.isAdmin
 
   return (
@@ -162,7 +209,30 @@ export function AdminLiveChat() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-stone-100">{m.content}</p>
+                      {editingId === m.id ? (
+                        <div className="flex flex-wrap gap-2">
+                          <input
+                            type="text"
+                            className={cn(inputClass, 'min-w-[120px] flex-1')}
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            className={btnPrimary}
+                            onClick={() => saveEdit(m.id)}
+                            disabled={savingEdit || !editText.trim()}
+                          >
+                            Save
+                          </button>
+                          <button type="button" className={cn(btnXsDanger, 'self-center')} onClick={cancelEdit}>
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-stone-100">{m.content}</p>
+                      )}
                       <p className="mt-0.5 text-xs text-stone-500">
                         {m.sentBy ?? 'Unknown'} · {prettifySimpleTime(m.sentAt)}
                       </p>
@@ -171,14 +241,24 @@ export function AdminLiveChat() {
                       </span>
                     </div>
                     {isAdmin && (
-                      <button
-                        type="button"
-                        className={cn(btnXsDanger, 'shrink-0')}
-                        onClick={() => deleteMessage(m.id)}
-                        aria-label="Delete"
-                      >
-                        ×
-                      </button>
+                      <div className="flex shrink-0 gap-1">
+                        <button
+                          type="button"
+                          className={cn(btnXsDanger, 'shrink-0')}
+                          onClick={() => startEdit(m)}
+                          aria-label="Edit message"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className={cn(btnXsDanger, 'shrink-0')}
+                          onClick={() => deleteMessage(m.id)}
+                          aria-label="Delete"
+                        >
+                          ×
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -221,20 +301,53 @@ export function AdminLiveChat() {
         </div>
       </div>
 
-      {/* Active users sidebar */}
+      {/* Active channels + users sidebar */}
       <div className="w-64 shrink-0">
         <div className={panelClass}>
+          <h4 className={panelHeadingClass}>Channels</h4>
+          {!activeData || activeData.channels.length === 0 ? (
+            <p className="text-sm text-stone-500">No channels online</p>
+          ) : (
+            <ul className="space-y-2">
+              {activeData.channels.map((c) => {
+                const label: Record<string, string> = {
+                  admins: 'Admins',
+                  board: 'Board',
+                  studioMonitors: 'Studio Monitors',
+                  producers: 'Producers',
+                }
+                return (
+                  <li key={c.name} className="flex items-center gap-2 text-sm text-stone-300">
+                    <span
+                      className={cn(
+                        'inline-block h-2 w-2 rounded-full',
+                        c.active ? 'bg-emerald-500' : 'bg-stone-600',
+                      )}
+                    />
+                    <span className="truncate">{label[c.name] ?? c.name}</span>
+                    {c.active && (
+                      <span className="shrink-0 text-xs text-stone-500">
+                        {c.activeMembers} active
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+        <div className={cn(panelClass, 'mt-4')}>
           <h4 className={panelHeadingClass}>
             Online{' '}
             <span className="text-sm font-normal text-stone-400">
-              ({activeUsers?.length ?? 0})
+              ({activeData?.users.length ?? 0})
             </span>
           </h4>
-          {!activeUsers || activeUsers.length === 0 ? (
+          {!activeData || activeData.users.length === 0 ? (
             <p className="text-sm text-stone-500">No users online</p>
           ) : (
             <ul className="space-y-2">
-              {activeUsers.map((u) => {
+              {activeData.users.map((u) => {
                 const name = u.profile?.name ?? u.email
                 return (
                   <li key={u.id} className="flex items-center gap-2 text-sm text-stone-300">
