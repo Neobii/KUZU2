@@ -175,6 +175,10 @@ export async function activateShow(showId: string) {
       isArmedForAutoStart: false,
     },
   })
+  // Start the first unplayed track on go-live, mirroring the manual
+  // Autoplay button. Safe with an empty tracklist: autoplayNextTrack
+  // finds no next track and returns without starting anything.
+  await autoplayNextTrack()
 }
 
 export async function getHighestTrackNumber(showId: string) {
