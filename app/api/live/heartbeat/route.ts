@@ -27,12 +27,12 @@ export async function POST() {
   const user = session.user as {
     isAdmin?: boolean
     isProducer?: boolean
-    isBoard?: boolean
+    isBoardMember?: boolean
     isStudioMonitor?: boolean
   }
   const channelField = user.isAdmin
     ? 'adminsLastActiveAt'
-    : user.isBoard
+    : user.isBoardMember
       ? 'boardLastActiveAt'
       : user.isStudioMonitor
         ? 'studioMonitorsLastActiveAt'

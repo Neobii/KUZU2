@@ -34,12 +34,12 @@ export async function POST(req: NextRequest) {
   const user = session.user as {
     isAdmin?: boolean
     isProducer?: boolean
-    isBoard?: boolean
+    isBoardMember?: boolean
     isStudioMonitor?: boolean
   }
   const senderRole = user.isAdmin
     ? 'Admin'
-    : user.isBoard
+    : user.isBoardMember
       ? 'Board'
       : user.isStudioMonitor
         ? 'Studio Monitor'

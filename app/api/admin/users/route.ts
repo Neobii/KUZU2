@@ -16,7 +16,7 @@ export async function GET() {
       producerProfile: true,
       isProducer: true,
       isAdmin: true,
-      isBoard: true,
+      isBoardMember: true,
       isStudioMonitor: true,
       createdAt: true,
     },

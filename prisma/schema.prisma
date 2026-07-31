@@ -17,7 +17,7 @@ model User {
   producerProfile  Json?    @map("producer_profile")
   isProducer       Boolean  @default(false) @map("is_producer")
   isAdmin          Boolean  @default(false) @map("is_admin")
-  isBoard          Boolean  @default(false) @map("is_board")
+  isBoardMember          Boolean  @default(false) @map("is_board")
   isStudioMonitor  Boolean  @default(false) @map("is_studio_monitor")
   lastActiveAt     DateTime? @map("last_active_at")
   createdAt        DateTime @default(now()) @map("created_at")

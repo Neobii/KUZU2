@@ -283,7 +283,7 @@ it('messages PATCH allows the original author to edit', async () => {
 it('heartbeat updates the channel timestamp on the active show', async () => {
   const nextAuth = await import('next-auth')
   vi.mocked(nextAuth.getServerSession).mockResolvedValueOnce(
-    authedSession({ id: 'admin-user', isAdmin: true, isBoard: false }),
+    authedSession({ id: 'admin-user', isAdmin: true, isBoardMember: false }),
   )
   prismaMock.user.update.mockResolvedValue({ id: 'admin-user' })
   prismaMock.show.findFirst.mockResolvedValue({ id: 'show-1' })
@@ -324,7 +324,7 @@ it('active-users returns per-channel active status and member flags', async () =
       profile: { name: 'Admin One' },
       isAdmin: true,
       isProducer: false,
-      isBoard: false,
+      isBoardMember: false,
       isStudioMonitor: false,
       lastActiveAt: now,
     },
@@ -334,7 +334,7 @@ it('active-users returns per-channel active status and member flags', async () =
       profile: null,
       isAdmin: false,
       isProducer: true,
-      isBoard: false,
+      isBoardMember: false,
       isStudioMonitor: false,
       lastActiveAt: now,
     },
@@ -347,7 +347,7 @@ it('active-users returns per-channel active status and member flags', async () =
 
   expect(body.users).toHaveLength(2)
   // Role flags must be exposed on each user
-  expect(body.users[0]).toMatchObject({ isAdmin: true, isBoard: false, isStudioMonitor: false })
+  expect(body.users[0]).toMatchObject({ isAdmin: true, isBoardMember: false, isStudioMonitor: false })
 
   const byName = (name: string) => body.channels.find((c: { name: string }) => c.name === name)
   expect(byName('admins')).toMatchObject({ active: true, activeMembers: 1 })

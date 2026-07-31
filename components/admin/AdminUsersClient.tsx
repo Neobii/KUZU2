@@ -28,7 +28,7 @@ type UserRow = {
   producerProfile: { isPioneer?: boolean } | null
   isProducer: boolean
   isAdmin: boolean
-  isBoard: boolean
+  isBoardMember: boolean
   isStudioMonitor: boolean
 }
 
@@ -44,7 +44,7 @@ export function AdminUsersClient() {
       body: JSON.stringify({
         isAdmin: editing.isAdmin,
         isProducer: editing.isProducer,
-        isBoard: editing.isBoard,
+        isBoardMember: editing.isBoardMember,
         isStudioMonitor: editing.isStudioMonitor,
         profile: editing.profile,
         producerProfile: {
@@ -82,7 +82,7 @@ export function AdminUsersClient() {
                 <td className={tableCellClass}>{u.email}</td>
                 <td className={tableCellClass}>
                   {u.isAdmin && 'Admin '}
-                  {u.isBoard && 'Board '}
+                  {u.isBoardMember && 'Board '}
                   {u.isStudioMonitor && 'Studio Monitor '}
                   {u.producerProfile?.isPioneer
                     ? 'Pioneer'
@@ -180,8 +180,8 @@ export function AdminUsersClient() {
                   <input
                     type="checkbox"
                     className="rounded border-stone-400"
-                    checked={editing.isBoard}
-                    onChange={(e) => setEditing({ ...editing, isBoard: e.target.checked })}
+                    checked={editing.isBoardMember}
+                    onChange={(e) => setEditing({ ...editing, isBoardMember: e.target.checked })}
                   />
                   Board Member
                 </label>

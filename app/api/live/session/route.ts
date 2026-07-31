@@ -34,13 +34,13 @@ export async function GET() {
   const user = session.user as {
     isAdmin?: boolean
     isProducer?: boolean
-    isBoard?: boolean
+    isBoardMember?: boolean
     isStudioMonitor?: boolean
   }
   const userRoles: string[] = []
   if (user.isAdmin) userRoles.push('admin', 'all')
   if (user.isProducer) userRoles.push('producer', 'all')
-  if (user.isBoard) userRoles.push('board', 'all')
+  if (user.isBoardMember) userRoles.push('board', 'all')
   if (user.isStudioMonitor) userRoles.push('studio_monitor', 'all')
   if (userRoles.length === 0) userRoles.push('all')
 
