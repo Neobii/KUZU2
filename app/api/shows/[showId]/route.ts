@@ -35,6 +35,7 @@ export async function PATCH(
       ...(body.isShowingDefaultMeta != null && {
         isShowingDefaultMeta: Boolean(body.isShowingDefaultMeta),
       }),
+      ...(body.episodeNumber != null && { episodeNumber: Number(body.episodeNumber) }),
     },
   })
   return NextResponse.json(show)

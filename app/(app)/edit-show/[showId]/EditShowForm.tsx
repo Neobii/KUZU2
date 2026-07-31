@@ -25,6 +25,7 @@ export function EditShowForm({
     description: string | null
     hasRadioLogikTracking: boolean
     hasMessagingEnabled: boolean
+    episodeNumber: number | null
   }
 }) {
   const router = useRouter()
@@ -43,6 +44,7 @@ export function EditShowForm({
       description: show.description ?? '',
       hasRadioLogikTracking: show.hasRadioLogikTracking,
       hasMessagingEnabled: show.hasMessagingEnabled,
+      episodeNumber: show.episodeNumber ?? undefined,
     },
   })
 
@@ -106,6 +108,19 @@ export function EditShowForm({
       <div className={formGroupClass}>
         <label className={labelClass}>Default meta</label>
         <textarea className={cn(inputClass, 'min-h-[5rem]')} rows={2} {...register('defaultMeta')} />
+      </div>
+      <div className={formGroupClass}>
+        <label className={labelClass}>Episode Number</label>
+        <input
+          className={inputClass}
+          type="text"
+          inputMode="numeric"
+          placeholder="e.g. 12"
+          {...register('episodeNumber')}
+        />
+        {errors.episodeNumber && (
+          <span className="text-sm text-red-400">{errors.episodeNumber.message}</span>
+        )}
       </div>
       <div className={formGroupClass}>
         <label className={labelClass}>Description</label>

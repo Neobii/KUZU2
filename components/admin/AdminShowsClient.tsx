@@ -25,6 +25,7 @@ type Show = {
   isActive: boolean | null
   defaultMeta: string | null
   autoStartEnd: boolean
+  episodeNumber: number | null
 }
 
 export function AdminShowsClient() {
@@ -107,6 +108,9 @@ export function AdminShowsClient() {
                 Delete
               </button>
             </p>
+            {show.episodeNumber != null && (
+              <span className="mr-1 text-stone-400">Ep {show.episodeNumber}</span>
+            )}
             {show.defaultMeta && <small className="text-stone-400">{show.defaultMeta}</small>}
             <hr className="my-3 border-stone-700" />
           </div>

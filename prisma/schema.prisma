@@ -52,6 +52,7 @@ model Show {
   isActive             Boolean?
   description         String?   @db.Text
   isShowingDescription Boolean  @default(true) @map("is_showing_description")
+  episodeNumber        Int?      @map("episode_number")
   isAutoPlaying       Boolean   @default(false) @map("is_auto_playing")
   hasRadioLogikTracking Boolean @default(false) @map("has_radio_logik_tracking")
   numTracks           Int       @default(0) @map("num_tracks")
