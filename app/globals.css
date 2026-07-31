@@ -101,54 +101,127 @@ ul li a {
   @apply text-stone-900;
 }
 
-/* react-datepicker (dark theme — Edit Show start/end) */
+/* react-datepicker (dark theme — Edit Show start/end)
+   The library's own CSS is imported by DateTimeCalendarField.tsx and ships
+   un-layered, so it can beat Tailwind @apply output (and even equal-specificity
+   rules) depending on bundle order. Colors/backgrounds below therefore use
+   !important so the dark theme wins in every state regardless of order. */
 .kuzu-datepicker-wrap .react-datepicker__input-container {
-  @apply w-full;
+  width: 100%;
+}
+.kuzu-datepicker-wrap .react-datepicker__calendar-icon {
+  color: #d6d3d1;
+}
+.kuzu-datepicker-wrap .react-datepicker__close-icon::after {
+  background-color: #d97706;
+  color: #fff;
 }
 .kuzu-datepicker-popper .react-datepicker {
-  @apply rounded-lg border border-stone-600 bg-stone-900 font-sans text-stone-100 shadow-xl;
+  border: 1px solid #57534e;
+  border-radius: 0.5rem;
+  background: #1c1917;
+  color: #f5f5f4;
+  font-family: var(--font-sans);
+  box-shadow:
+    0 20px 25px -5px rgb(0 0 0 / 0.5),
+    0 8px 10px -6px rgb(0 0 0 / 0.5);
 }
-.kuzu-datepicker-popper .react-datepicker__header {
-  @apply rounded-t-lg border-b border-stone-600 bg-stone-800 text-stone-100;
+.kuzu-datepicker-popper .react-datepicker__month-container {
+  background: #1c1917;
+}
+.kuzu-datepicker-popper .react-datepicker__header,
+.kuzu-datepicker-popper .react-datepicker__header--time {
+  background: #292524;
+  border-bottom: 1px solid #57534e;
+  color: #f5f5f4;
 }
 .kuzu-datepicker-popper .react-datepicker__current-month,
 .kuzu-datepicker-popper .react-datepicker-time__header {
-  @apply text-stone-100;
+  color: #f5f5f4;
 }
 .kuzu-datepicker-popper .react-datepicker__day-name {
-  @apply text-stone-400;
+  color: #a8a29e;
 }
 .kuzu-datepicker-popper .react-datepicker__day {
-  @apply text-stone-200 hover:bg-stone-700;
+  border-radius: 0.3rem;
+  color: #e7e5e4 !important;
+}
+.kuzu-datepicker-popper .react-datepicker__day:hover,
+.kuzu-datepicker-popper .react-datepicker__day:not([aria-disabled='true']):hover {
+  background: #44403c !important;
+  color: #fff !important;
+}
+.kuzu-datepicker-popper .react-datepicker__day--today {
+  color: #fbbf24 !important;
+  font-weight: 700;
 }
 .kuzu-datepicker-popper .react-datepicker__day--selected,
 .kuzu-datepicker-popper .react-datepicker__day--keyboard-selected {
-  @apply bg-amber-600 text-white hover:bg-amber-700;
+  background: #d97706 !important;
+  color: #fff !important;
+}
+.kuzu-datepicker-popper .react-datepicker__day--selected:hover,
+.kuzu-datepicker-popper .react-datepicker__day--selected:not([aria-disabled='true']):hover,
+.kuzu-datepicker-popper .react-datepicker__day--keyboard-selected:hover {
+  background: #b45309 !important;
+  color: #fff !important;
 }
 .kuzu-datepicker-popper .react-datepicker__day--outside-month {
-  @apply text-stone-600;
+  color: #57534e !important;
 }
 .kuzu-datepicker-popper .react-datepicker__day--disabled {
-  @apply text-stone-600 opacity-50;
+  color: #78716c !important;
+  opacity: 0.6;
 }
-.kuzu-datepicker-popper .react-datepicker__navigation-icon::before {
-  @apply border-stone-300;
+.kuzu-datepicker-popper .react-datepicker__navigation-icon::before,
+.kuzu-datepicker-popper .react-datepicker__navigation-icon--previous::before,
+.kuzu-datepicker-popper .react-datepicker__navigation-icon--next::before {
+  border-color: #d6d3d1 !important;
+}
+.kuzu-datepicker-popper .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
+  border-color: #f5f5f4 !important;
 }
 .kuzu-datepicker-popper .react-datepicker__time-container {
-  @apply border-l border-stone-600;
+  border-left: 1px solid #57534e;
+  background: #1c1917;
 }
-.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time {
-  @apply bg-stone-900;
-}
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time,
 .kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box {
-  @apply bg-stone-900;
+  background: #1c1917 !important;
+}
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list {
+  scrollbar-width: thin;
+  scrollbar-color: #57534e #1c1917;
+}
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list::-webkit-scrollbar {
+  width: 8px;
+}
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list::-webkit-scrollbar-track {
+  background: #1c1917;
+}
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list::-webkit-scrollbar-thumb {
+  background: #57534e;
+  border-radius: 4px;
 }
 .kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item {
-  @apply text-stone-200 hover:bg-stone-700;
+  color: #e7e5e4 !important;
 }
-
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover {
+  background: #44403c !important;
+  color: #fff !important;
+}
 .kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected {
-  @apply bg-amber-600 font-medium text-white hover:bg-amber-700;
+  background: #d97706 !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected:hover {
+  background: #b45309 !important;
+  color: #fff !important;
+  font-weight: 600;
+}
+.kuzu-datepicker-popper .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--disabled {
+  color: #78716c !important;
 }
 .kuzu-datepicker-popper .react-datepicker__triangle {
   display: none;
