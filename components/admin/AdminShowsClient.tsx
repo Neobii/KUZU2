@@ -32,7 +32,7 @@ export function AdminShowsClient() {
   const [q, setQ] = useState('')
 
   const filtered = useMemo(() => {
-    if (!shows) return []
+    if (!Array.isArray(shows)) return []
     if (!q.trim()) return shows
     const s = q.toLowerCase()
     return shows.filter((x) => x.showName.toLowerCase().includes(s))
