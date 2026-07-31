@@ -55,6 +55,11 @@ model Show {
   userId               String    @map("user_id")
   helperUserId         String?   @map("helper_user_id")
   isActive             Boolean?
+  // Per-channel last-active tracking for live chat (updated by heartbeat)
+  adminsLastActiveAt        DateTime? @map("admins_last_active_at")
+  boardLastActiveAt         DateTime? @map("board_last_active_at")
+  studioMonitorsLastActiveAt DateTime? @map("studio_monitors_last_active_at")
+  producersLastActiveAt     DateTime? @map("producers_last_active_at")
   description         String?   @db.Text
   isShowingDescription Boolean  @default(true) @map("is_showing_description")
   episodeNumber        Int?      @map("episode_number")
