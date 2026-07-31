@@ -20,10 +20,10 @@ export const showEditSchema = z.object({
   episodeNumber: z
     .preprocess(
       (v) => {
-        if (v === '' || v == null) return undefined
+        if (v === '' || v == null) return null
         const n = Number(v)
-        return Number.isNaN(n) ? undefined : n
+        return Number.isNaN(n) ? null : n
       },
-      z.number().int().optional()
+      z.number().int().nullable()
     ),
 })

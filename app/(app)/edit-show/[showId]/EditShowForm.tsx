@@ -44,7 +44,7 @@ export function EditShowForm({
       description: show.description ?? '',
       hasRadioLogikTracking: show.hasRadioLogikTracking,
       hasMessagingEnabled: show.hasMessagingEnabled,
-      episodeNumber: show.episodeNumber ?? undefined,
+      episodeNumber: (show.episodeNumber ?? '') as never,
     },
   })
 
