@@ -146,7 +146,7 @@ export function LiveShow() {
         </div>
       )}
       {isShowProducer && show.currentShowProducerMessage ? (
-        <div className="bg-[#c0a821] px-2 py-4 text-center text-stone-900">
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-stone-900/20 bg-[#c0a821] px-2 py-3 text-center text-stone-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
           <h3 className="text-lg font-semibold">Station message for you</h3>
           <p className="mt-1">{show.currentShowProducerMessage}</p>
           <button
