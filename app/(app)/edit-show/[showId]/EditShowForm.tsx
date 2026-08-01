@@ -25,6 +25,8 @@ export function EditShowForm({
     description: string | null
     hasRadioLogikTracking: boolean
     hasMessagingEnabled: boolean
+    autoplayOnStart: boolean
+    autoplayOnDate: boolean
     episodeNumber: number | null
   }
 }) {
@@ -44,6 +46,8 @@ export function EditShowForm({
       description: show.description ?? '',
       hasRadioLogikTracking: show.hasRadioLogikTracking,
       hasMessagingEnabled: show.hasMessagingEnabled,
+      autoplayOnStart: show.autoplayOnStart,
+      autoplayOnDate: show.autoplayOnDate,
       episodeNumber: (show.episodeNumber ?? '') as never,
     },
   })
@@ -142,6 +146,18 @@ export function EditShowForm({
         <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
           <input type="checkbox" className="rounded border-stone-600" {...register('hasMessagingEnabled')} />
           Messaging enabled
+        </label>
+      </div>
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
+          <input type="checkbox" className="rounded border-stone-600" {...register('autoplayOnStart')} />
+          Autoplay on show start
+        </label>
+      </div>
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
+          <input type="checkbox" className="rounded border-stone-600" {...register('autoplayOnDate')} />
+          Autoplay on calendar date
         </label>
       </div>
       <button type="submit" className={btnPrimary}>

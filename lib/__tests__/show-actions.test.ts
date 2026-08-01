@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => {
     isShowingDefaultMeta: false,
     isArmedForAutoStart: true,
     autoStartEnd: false,
+    autoplayOnStart: true,
+    autoplayOnDate: false,
   }
   const baseTrack = {
     id: 'track-1',
@@ -94,6 +96,32 @@ describe('activateShow', () => {
       expect.objectContaining({
         where: { id: 'show-1' },
         data: expect.objectContaining({ isActive: true }),
+      })
+    )
+    // No track was started
+    expect(mocks.prisma.tracklist.update).not.toHaveBeenCalled()
+  })
+
+  it('does not autoplay when autoplayOnStart is disabled', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      autoplayOnStart: false,
+    })
+    const { activateShow } = await import('@/lib/show-actions')
+
+    await activateShow('show-1')
+
+    // Show still activated
+    expect(mocks.prisma.show.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'show-1' },
+        data: expect.objectContaining({ isActive: true }),
+      })
+    )
+    // Autoplay NOT engaged
+    expect(mocks.prisma.show.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ isAutoPlaying: true }),
       })
     )
     // No track was started

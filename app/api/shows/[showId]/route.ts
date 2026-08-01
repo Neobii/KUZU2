@@ -43,6 +43,12 @@ export async function PATCH(
       ...(body.hasMessagingEnabled != null && {
         hasMessagingEnabled: Boolean(body.hasMessagingEnabled),
       }),
+      ...(body.autoplayOnStart != null && {
+        autoplayOnStart: Boolean(body.autoplayOnStart),
+      }),
+      ...(body.autoplayOnDate != null && {
+        autoplayOnDate: Boolean(body.autoplayOnDate),
+      }),
       ...(body.isShowingDescription != null && {
         isShowingDescription: Boolean(body.isShowingDescription),
       }),

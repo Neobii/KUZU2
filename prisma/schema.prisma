@@ -60,6 +60,8 @@ model Show {
   numTracks           Int       @default(0) @map("num_tracks")
   hasMessagingEnabled Boolean   @default(false) @map("has_messaging_enabled")
   currentShowProducerMessage String? @map("current_show_producer_message")
+  autoplayOnStart     Boolean   @default(false) @map("autoplay_on_start")
+  autoplayOnDate      Boolean   @default(false) @map("autoplay_on_date")
   createdAt           DateTime  @default(now()) @map("created_at")
 
   owner    User       @relation("ShowOwner", fields: [userId], references: [id], onDelete: Cascade)

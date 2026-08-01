@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { setPendingAutoDJTrack } from '@/lib/auto-dj-global'
+import { autoplayNextTrack } from '@/lib/show-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,6 +50,9 @@ export async function POST(req: NextRequest) {
         where: { id: nextArmed.id },
         data: { isActive: true, isArmedForAutoStart: false },
       })
+      if (nextArmed.autoplayOnDate) {
+        await autoplayNextTrack()
+      }
     }
   } else if (!activeShow || activeShow.hasRadioLogikTracking) {
     ;(global as unknown as { preshowTracksStarted?: boolean }).preshowTracksStarted = false
