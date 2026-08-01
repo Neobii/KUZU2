@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canAccessLiveShow } from '@/lib/api-auth'
+import { getLiveShowAccess } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,8 +15,8 @@ export async function GET() {
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  const allowed = await canAccessLiveShow(userId)
-  if (!allowed) {
+  const { canView, canEditProducerMessage } = await getLiveShowAccess(userId)
+  if (!canView) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   const show = await prisma.show.findFirst({ where: { isActive: true } })
@@ -40,5 +40,6 @@ export async function GET() {
     hasNextTrack: !!nextUnplayed,
     messageCount,
     recentlyPlayed,
+    canEditProducerMessage,
   })
 }

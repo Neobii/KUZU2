@@ -17,6 +17,8 @@ model User {
   producerProfile  Json?    @map("producer_profile")
   isProducer       Boolean  @default(false) @map("is_producer")
   isAdmin          Boolean  @default(false) @map("is_admin")
+  isBoardMember    Boolean  @default(false) @map("is_board_member")
+  isFieldProducer  Boolean  @default(false) @map("is_field_producer")
   createdAt        DateTime @default(now()) @map("created_at")
 
   shows              Show[]               @relation("ShowOwner")
@@ -57,6 +59,7 @@ model Show {
   hasRadioLogikTracking Boolean @default(false) @map("has_radio_logik_tracking")
   numTracks           Int       @default(0) @map("num_tracks")
   hasMessagingEnabled Boolean   @default(false) @map("has_messaging_enabled")
+  currentShowProducerMessage String? @map("current_show_producer_message")
   createdAt           DateTime  @default(now()) @map("created_at")
 
   owner    User       @relation("ShowOwner", fields: [userId], references: [id], onDelete: Cascade)
