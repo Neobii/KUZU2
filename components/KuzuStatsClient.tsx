@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import moment from 'moment'
 import { btnPrimary, btnSecondary, btnXsPrimary, btnXsSecondary, inputClass } from '@/lib/ui'
 import { cn } from '@/lib/cn'
+import { DateTimeCalendarField } from '@/components/DateTimeCalendarField'
 
 const HighchartsReact = dynamic(() => import('highcharts-react-official'), { ssr: false })
 
@@ -153,27 +154,15 @@ export function KuzuStatsClient() {
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <label className="text-sm text-stone-300">
           From{' '}
-          <input
-            type="datetime-local"
-            className={cn(inputClass, 'ml-1 max-w-[14rem]')}
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value)
-              setPreset(null)
-            }}
-          />
+          <span className="ml-1 inline-block max-w-[14rem] align-top">
+            <DateTimeCalendarField value={from} onChange={(v) => { setFrom(v); setPreset(null) }} />
+          </span>
         </label>
         <label className="text-sm text-stone-300">
           To{' '}
-          <input
-            type="datetime-local"
-            className={cn(inputClass, 'ml-1 max-w-[14rem]')}
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value)
-              setPreset(null)
-            }}
-          />
+          <span className="ml-1 inline-block max-w-[14rem] align-top">
+            <DateTimeCalendarField value={to} onChange={(v) => { setTo(v); setPreset(null) }} />
+          </span>
         </label>
         <button
           type="button"
