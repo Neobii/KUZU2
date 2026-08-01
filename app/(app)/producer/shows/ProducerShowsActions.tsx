@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { btnXsSecondary, btnXsSuccess, inputClass } from '@/lib/ui'
+import { btnXsDanger, btnXsSecondary, btnXsSuccess, inputClass } from '@/lib/ui'
 import { cn } from '@/lib/cn'
 
 export function ProducerShowsActions({
@@ -19,6 +19,14 @@ export function ProducerShowsActions({
     await fetch(`/api/shows/${showId}/activate`, { method: 'POST' })
     router.push('/live-show')
     router.refresh()
+  }
+
+  async function remove() {
+    if (!window.confirm('Delete this show?')) return
+    const res = await fetch(`/api/shows/${showId}`, { method: 'DELETE' })
+    if (res.ok) {
+      router.refresh()
+    }
   }
 
   async function duplicate() {
@@ -41,6 +49,9 @@ export function ProducerShowsActions({
       </button>
       <button type="button" className={btnXsSecondary} onClick={() => void duplicate()}>
         Duplicate
+      </button>
+      <button type="button" className={btnXsDanger} onClick={() => void remove()}>
+        Delete
       </button>
       <input
         type="text"
