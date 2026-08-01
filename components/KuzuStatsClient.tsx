@@ -3,10 +3,17 @@
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import moment from 'moment'
-import { btnPrimary, btnSecondary, inputClass } from '@/lib/ui'
+import { btnPrimary, btnSecondary, btnXsPrimary, btnXsSecondary, inputClass } from '@/lib/ui'
 import { cn } from '@/lib/cn'
 
 const HighchartsReact = dynamic(() => import('highcharts-react-official'), { ssr: false })
+
+const PRESETS = [
+  { key: '24h', label: 'Last 24h', from: () => moment().subtract(24, 'hours'), to: () => moment() },
+  { key: '7d', label: 'Last 7d', from: () => moment().subtract(7, 'days'), to: () => moment() },
+  { key: '30d', label: 'Last 30d', from: () => moment().subtract(30, 'days'), to: () => moment() },
+  { key: 'today', label: 'Today', from: () => moment().startOf('day'), to: () => moment() },
+]
 
 export function KuzuStatsClient() {
   const [from, setFrom] = useState(() => moment().subtract(2, 'hours').format('YYYY-MM-DDTHH:mm'))
@@ -16,6 +23,7 @@ export function KuzuStatsClient() {
   const [hoursResult, setHoursResult] = useState<number | null>(null)
   const [hoursError, setHoursError] = useState('')
   const [chartError, setChartError] = useState('')
+  const [preset, setPreset] = useState<string | null>(null)
   const [loadingChart, setLoadingChart] = useState(false)
   const [loadingHours, setLoadingHours] = useState(false)
   const [hc, setHc] = useState<typeof import('highcharts') | null>(null)
@@ -25,13 +33,13 @@ export function KuzuStatsClient() {
     void import('highcharts').then((m) => setHc(m.default))
   }, [])
 
-  async function refreshChart() {
+  async function refreshChart(fromVal?: string, toVal?: string) {
     setChartError('')
     setLoadingChart(true)
     try {
       const qs = new URLSearchParams({
-        from: new Date(from).toISOString(),
-        to: new Date(to).toISOString(),
+        from: new Date(fromVal ?? from).toISOString(),
+        to: new Date(toVal ?? to).toISOString(),
       })
       const res = await fetch(`/api/listeners/stats?${qs}`)
       if (!res.ok) {
@@ -87,6 +95,17 @@ export function KuzuStatsClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- manual "View range" also refreshes
   }, [hc])
 
+  function applyPreset(key: string) {
+    const p = PRESETS.find((x) => x.key === key)
+    if (!p) return
+    const fromVal = p.from().format('YYYY-MM-DDTHH:mm')
+    const toVal = p.to().format('YYYY-MM-DDTHH:mm')
+    setPreset(key)
+    setFrom(fromVal)
+    setTo(toVal)
+    void refreshChart(fromVal, toVal)
+  }
+
   async function computeHours() {
     setHoursError('')
     setHoursResult(null)
@@ -118,6 +137,19 @@ export function KuzuStatsClient() {
   return (
     <div>
       <h2 className="mb-4 text-xl font-semibold text-stone-100">Listener Stats</h2>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {PRESETS.map((p) => (
+          <button
+            key={p.key}
+            type="button"
+            className={preset === p.key ? btnXsPrimary : btnXsSecondary}
+            disabled={loadingChart}
+            onClick={() => applyPreset(p.key)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <label className="text-sm text-stone-300">
           From{' '}
@@ -125,7 +157,10 @@ export function KuzuStatsClient() {
             type="datetime-local"
             className={cn(inputClass, 'ml-1 max-w-[14rem]')}
             value={from}
-            onChange={(e) => setFrom(e.target.value)}
+            onChange={(e) => {
+              setFrom(e.target.value)
+              setPreset(null)
+            }}
           />
         </label>
         <label className="text-sm text-stone-300">
@@ -134,14 +169,20 @@ export function KuzuStatsClient() {
             type="datetime-local"
             className={cn(inputClass, 'ml-1 max-w-[14rem]')}
             value={to}
-            onChange={(e) => setTo(e.target.value)}
+            onChange={(e) => {
+              setTo(e.target.value)
+              setPreset(null)
+            }}
           />
         </label>
         <button
           type="button"
           className={btnPrimary}
           disabled={loadingChart}
-          onClick={() => void refreshChart()}
+          onClick={() => {
+            setPreset(null)
+            void refreshChart()
+          }}
         >
           {loadingChart ? 'Loading…' : 'View range'}
         </button>
