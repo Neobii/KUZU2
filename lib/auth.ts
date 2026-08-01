@@ -49,6 +49,8 @@ const providers: NextAuthOptions['providers'] = [
           name: profile?.name ?? user.email,
           isAdmin: user.isAdmin,
           isProducer: user.isProducer,
+          isBoardMember: user.isBoardMember,
+          isFieldProducer: user.isFieldProducer,
           producerProfile: producerProfile ?? undefined,
         }
       },
@@ -96,22 +98,28 @@ export const authOptions: NextAuthOptions = {
         token.id = dbUser.id
         token.isAdmin = dbUser.isAdmin
         token.isProducer = dbUser.isProducer
+        token.isBoardMember = dbUser.isBoardMember
+        token.isFieldProducer = dbUser.isFieldProducer
         token.producerProfile = dbUser.producerProfile as object
       } else if (user) {
         token.id = user.id
         token.isAdmin = (user as { isAdmin?: boolean }).isAdmin
         token.isProducer = (user as { isProducer?: boolean }).isProducer
+        token.isBoardMember = (user as { isBoardMember?: boolean }).isBoardMember
+        token.isFieldProducer = (user as { isFieldProducer?: boolean }).isFieldProducer
         token.producerProfile = (user as { producerProfile?: object }).producerProfile
       }
       // Keep JWT in sync with DB (e.g. admin enables Producer — no re-login required)
       if (token.id) {
         const row = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { isAdmin: true, isProducer: true, producerProfile: true },
+          select: { isAdmin: true, isProducer: true, isBoardMember: true, isFieldProducer: true, producerProfile: true },
         })
         if (row) {
           token.isAdmin = row.isAdmin
           token.isProducer = row.isProducer
+          token.isBoardMember = row.isBoardMember
+          token.isFieldProducer = row.isFieldProducer
           token.producerProfile = (row.producerProfile as object) ?? undefined
         }
       }
@@ -122,6 +130,8 @@ export const authOptions: NextAuthOptions = {
         ;(session.user as { id: string }).id = token.id as string
         ;(session.user as { isAdmin?: boolean }).isAdmin = token.isAdmin as boolean
         ;(session.user as { isProducer?: boolean }).isProducer = token.isProducer as boolean
+        ;(session.user as { isBoardMember?: boolean }).isBoardMember = token.isBoardMember as boolean
+        ;(session.user as { isFieldProducer?: boolean }).isFieldProducer = token.isFieldProducer as boolean
         ;(session.user as { producerProfile?: object }).producerProfile =
           token.producerProfile as object
       }

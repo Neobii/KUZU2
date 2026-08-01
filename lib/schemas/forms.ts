@@ -26,4 +26,5 @@ export const showEditSchema = z.object({
       },
       z.number().int().nullable()
     ),
+  currentShowProducerMessage: z.string().nullable().optional(),
 })

@@ -3,7 +3,7 @@
 import useSWR from 'swr'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { prettifySimpleTime } from '@/lib/utils-client'
 import {
   btnPrimary,
@@ -77,6 +77,34 @@ export function LiveShow() {
       }
     | undefined
   const isAdmin = session?.user?.isAdmin
+  const canEditProducerMessage = data?.canEditProducerMessage === true
+  const producerMsgRef = useRef<HTMLTextAreaElement>(null)
+  const [producerMsgSaving, setProducerMsgSaving] = useState(false)
+
+  async function saveProducerMessage() {
+    if (!show) return
+    setProducerMsgSaving(true)
+    try {
+      await fetch(`/api/shows/${show.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentShowProducerMessage: producerMsgRef.current?.value ?? '' }),
+      })
+    } finally {
+      setProducerMsgSaving(false)
+      void mutate()
+    }
+  }
+
+  async function clearProducerMessage() {
+    if (!show) return
+    await fetch(`/api/shows/${show.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentShowProducerMessage: null }),
+    })
+    void mutate()
+  }
 
   if (error) {
     return <p className="text-red-400">Access denied or no active show.</p>
@@ -86,6 +114,7 @@ export function LiveShow() {
   }
 
   const show = data.show
+  const isShowProducer = !!session?.user?.id && session.user.id === show.userId
   const tracks = data.tracks as Array<{
     id: string
     indexNumber: number | null
@@ -114,6 +143,42 @@ export function LiveShow() {
       {show.hasRadioLogikTracking && (
         <div className="bg-[#c0a821] px-2 py-4 text-center text-stone-900">
           <h3 className="text-lg font-semibold">WARNING! Tracking is set to come from Radio Logik instead of the Kuzu App</h3>
+        </div>
+      )}
+      {isShowProducer && show.currentShowProducerMessage ? (
+        <div className="bg-[#c0a821] px-2 py-4 text-center text-stone-900">
+          <h3 className="text-lg font-semibold">Station message for you</h3>
+          <p className="mt-1">{show.currentShowProducerMessage}</p>
+          <button
+            type="button"
+            className={cn(btnSmDanger, 'mt-2')}
+            onClick={clearProducerMessage}
+          >
+            Clear
+          </button>
+        </div>
+      ) : null}
+      {canEditProducerMessage && (
+        <div className="mx-auto mt-4 max-w-4xl">
+          <div className="rounded-lg border border-stone-700 bg-stone-900/40 p-4">
+            <h3 className="mb-2 text-lg font-medium text-stone-100">Producer message</h3>
+            <textarea
+              key={`producer-msg-${show.currentShowProducerMessage ?? ''}`}
+              ref={producerMsgRef}
+              defaultValue={show.currentShowProducerMessage ?? ''}
+              rows={3}
+              className="w-full rounded border border-stone-700 bg-stone-950 p-2 text-stone-100"
+              placeholder="One message to show to the live show producer..."
+            />
+            <button
+              type="button"
+              className={cn(btnSmPrimary, 'mt-2')}
+              disabled={producerMsgSaving}
+              onClick={saveProducerMessage}
+            >
+              {producerMsgSaving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
         </div>
       )}
       <h2 className="mt-4 text-xl font-semibold text-stone-100">

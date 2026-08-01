@@ -15,10 +15,27 @@ export async function requireSession() {
   return { session, userId: id }
 }
 
-export async function canAccessLiveShow(userId: string) {
+export async function getLiveShowAccess(userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } })
-  if (user?.isAdmin) return true
   const active = await prisma.show.findFirst({ where: { isActive: true } })
-  if (!active) return false
-  return active.userId === userId || active.helperUserId === userId
+  // Board members, field producers, and admins can view any active show.
+  const canView =
+    !!user?.isAdmin ||
+    !!user?.isBoardMember ||
+    !!user?.isFieldProducer ||
+    (!!active && (active.userId === userId || active.helperUserId === userId))
+  // Only admin/board/field producers can write the producer message box.
+  const canEditProducerMessage = !!user?.isAdmin || !!user?.isBoardMember || !!user?.isFieldProducer
+  return {
+    user,
+    active,
+    canView,
+    canEditProducerMessage,
+    isShowOwner: !!active && active.userId === userId,
+  }
+}
+
+export async function canAccessLiveShow(userId: string) {
+  const { canView } = await getLiveShowAccess(userId)
+  return canView
 }

@@ -15,6 +15,20 @@ export async function PATCH(
   }
   const { showId } = await params
   const body = await req.json()
+  const userId = (session.user as { id?: string }).id
+  const hasProducerMessageField = body.currentShowProducerMessage !== undefined
+  if (hasProducerMessageField) {
+    const user = userId
+      ? await prisma.user.findUnique({ where: { id: userId } })
+      : null
+    const canWrite = !!user?.isAdmin || !!user?.isBoardMember || !!user?.isFieldProducer
+    const show = await prisma.show.findUnique({ where: { id: showId } })
+    const isOwner = !!show && show.userId === userId
+    const isClear = body.currentShowProducerMessage === null
+    if (!canWrite && !(isClear && isOwner)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
   const show = await prisma.show.update({
     where: { id: showId },
     data: {
@@ -37,6 +51,9 @@ export async function PATCH(
       }),
       ...(body.episodeNumber === null && { episodeNumber: null }),
       ...(body.episodeNumber != null && { episodeNumber: Number(body.episodeNumber) }),
+      ...(hasProducerMessageField && {
+        currentShowProducerMessage: body.currentShowProducerMessage as string | null,
+      }),
     },
   })
   return NextResponse.json(show)
