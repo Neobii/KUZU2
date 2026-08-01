@@ -227,6 +227,15 @@ ul li a {
   display: none;
 }
 
+/* Native date inputs (dark theme — KuzuStats "Listening hours" range).
+   The popup itself is OS-themed and CSS-unreachable, but the calendar
+   icon must stay visible on the dark input surface. */
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+  cursor: pointer;
+}
+
 /* TipTap WYSIWYG — editor surface */
 .tiptap-wrap .tiptap .is-empty::before {
   content: attr(data-placeholder);
