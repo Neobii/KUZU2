@@ -26,7 +26,7 @@ export async function POST() {
   const show = await prisma.show.create({
     data: {
       userId,
-      showName: producerProfile?.showName ?? 'Kuzu Show',
+      showName: producerProfile?.showName?.trim() || 'Kuzu Show',
       description: producerProfile?.description ?? ' ',
       defaultMeta: producerProfile?.defaultMeta ?? 'Kuzu Show',
       hasMessagingEnabled: producerProfile?.isMessagingUIEnbled ?? false,

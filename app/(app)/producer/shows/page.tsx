@@ -28,7 +28,9 @@ export default async function ProducerShowsPage() {
       <ul className="list-inside list-disc space-y-3 text-stone-300">
         {shows.map((show) => (
           <li key={show.id}>
-            <Link href={`/show/${show.id}/tracks`}>{show.showName}</Link>
+            <Link href={`/show/${show.id}/tracks`}>
+              {show.showName?.trim() || 'Kuzu Show'}
+            </Link>
             {show.showStart && (
               <span> — {prettifySimpleTime(show.showStart)}</span>
             )}
