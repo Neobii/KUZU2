@@ -78,7 +78,7 @@ export function Header({ session }: { session: Session | null }) {
             navOpen ? 'flex' : 'hidden md:flex'
           )}
         >
-          <ul className="mt-2 flex list-none flex-col gap-1 md:mt-0 md:flex-row md:flex-wrap md:items-center">
+          <ul className="mt-2 flex list-none flex-col gap-2 md:mt-0 md:flex-row md:flex-wrap md:items-center md:gap-x-4">
             <li>
               <button
                 type="button"
@@ -124,7 +124,7 @@ export function Header({ session }: { session: Session | null }) {
             )}
           </ul>
 
-          <ul className="flex list-none flex-col md:ml-3 md:flex-row md:items-center">
+          <ul className="flex list-none flex-col gap-2 md:ml-3 md:flex-row md:items-center md:gap-x-3">
             <li className="relative">
               <button
                 type="button"
@@ -179,7 +179,7 @@ export function Header({ session }: { session: Session | null }) {
               )}
             </li>
             {isAdmin && (
-              <li className="relative md:ml-2">
+              <li className="relative">
                 <button
                   type="button"
                   className={cn(navLinkClass, 'flex w-full items-center gap-1 text-left md:w-auto')}
