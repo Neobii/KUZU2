@@ -17,6 +17,8 @@ export const showEditSchema = z.object({
   description: z.string().optional(),
   hasRadioLogikTracking: z.boolean().optional(),
   hasMessagingEnabled: z.boolean().optional(),
+  autoplayOnStart: z.boolean().optional(),
+  autoplayOnDate: z.boolean().optional(),
   episodeNumber: z
     .preprocess(
       (v) => {

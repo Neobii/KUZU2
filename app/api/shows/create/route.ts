@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST() {
+export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -23,6 +23,10 @@ export async function POST() {
     defaultMeta?: string
     isMessagingUIEnbled?: boolean
   } | null
+  const body = (await request.json().catch(() => ({}))) as {
+    autoplayOnStart?: boolean
+    autoplayOnDate?: boolean
+  }
   const show = await prisma.show.create({
     data: {
       userId,
@@ -30,6 +34,8 @@ export async function POST() {
       description: producerProfile?.description ?? ' ',
       defaultMeta: producerProfile?.defaultMeta ?? 'Kuzu Show',
       hasMessagingEnabled: producerProfile?.isMessagingUIEnbled ?? false,
+      autoplayOnStart: typeof body.autoplayOnStart === 'boolean' ? body.autoplayOnStart : false,
+      autoplayOnDate: typeof body.autoplayOnDate === 'boolean' ? body.autoplayOnDate : false,
     },
   })
   return NextResponse.json(show)

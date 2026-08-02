@@ -163,6 +163,9 @@ export async function deactivateShow(showId: string) {
 }
 
 export async function activateShow(showId: string) {
+  const show = await prisma.show.findUnique({ where: { id: showId } })
+  if (!show) return
+
   await prisma.show.updateMany({
     where: { isActive: true },
     data: { isActive: false },
@@ -175,6 +178,12 @@ export async function activateShow(showId: string) {
       isArmedForAutoStart: false,
     },
   })
+  // Only start the first unplayed track on go-live when the show has
+  // "Autoplay on show start" enabled. Safe with an empty tracklist:
+  // autoplayNextTrack finds no next track and returns without starting.
+  if (show.autoplayOnStart) {
+    await autoplayNextTrack()
+  }
 }
 
 export async function getHighestTrackNumber(showId: string) {

@@ -22,4 +22,6 @@ public/uploads/editor/*
 *.log
 .vercel
 .env*.local
+
+# TypeScript build info
 tsconfig.tsbuildinfo

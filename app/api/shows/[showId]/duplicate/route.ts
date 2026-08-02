@@ -34,6 +34,8 @@ export async function POST(
       description: src.description,
       isShowingDescription: src.isShowingDescription,
       episodeNumber: src.episodeNumber,
+      autoplayOnStart: src.autoplayOnStart,
+      autoplayOnDate: src.autoplayOnDate,
     },
   })
   let idx = 0
