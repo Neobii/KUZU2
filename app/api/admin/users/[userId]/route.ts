@@ -31,6 +31,12 @@ export async function PATCH(
       ...(producerProfile !== undefined && { producerProfile }),
       ...(body.isAdmin !== undefined && { isAdmin: Boolean(body.isAdmin) }),
       ...(body.isProducer !== undefined && { isProducer: Boolean(body.isProducer) }),
+      ...(body.isBoardMember !== undefined && {
+        isBoardMember: Boolean(body.isBoardMember),
+      }),
+      ...(body.isFieldProducer !== undefined && {
+        isFieldProducer: Boolean(body.isFieldProducer),
+      }),
     },
     select: {
       id: true,
@@ -39,6 +45,8 @@ export async function PATCH(
       producerProfile: true,
       isProducer: true,
       isAdmin: true,
+      isBoardMember: true,
+      isFieldProducer: true,
     },
   })
   return NextResponse.json(updated)
