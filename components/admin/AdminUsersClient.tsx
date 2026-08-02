@@ -28,6 +28,8 @@ type UserRow = {
   producerProfile: { isPioneer?: boolean } | null
   isProducer: boolean
   isAdmin: boolean
+  isBoardMember: boolean
+  isFieldProducer: boolean
 }
 
 export function AdminUsersClient() {
@@ -42,6 +44,8 @@ export function AdminUsersClient() {
       body: JSON.stringify({
         isAdmin: editing.isAdmin,
         isProducer: editing.isProducer,
+        isBoardMember: editing.isBoardMember,
+        isFieldProducer: editing.isFieldProducer,
         profile: editing.profile,
         producerProfile: {
           ...editing.producerProfile,
@@ -78,11 +82,13 @@ export function AdminUsersClient() {
                 <td className={tableCellClass}>{u.email}</td>
                 <td className={tableCellClass}>
                   {u.isAdmin && 'Admin '}
+                  {u.isBoardMember && 'Board '}
                   {u.producerProfile?.isPioneer
                     ? 'Pioneer'
                     : u.isProducer
                       ? 'Evergreen'
                       : ''}
+                  {u.isFieldProducer && 'Field Producer'}
                 </td>
                 <td className={tableCellClass}>
                   <button type="button" className={btnXsPrimary} onClick={() => setEditing({ ...u })}>
@@ -148,6 +154,28 @@ export function AdminUsersClient() {
                     onChange={(e) => setEditing({ ...editing, isProducer: e.target.checked })}
                   />
                   Producer
+                </label>
+              </div>
+              <div className={checkboxRowClass}>
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
+                  <input
+                    type="checkbox"
+                    className="rounded border-stone-400"
+                    checked={editing.isBoardMember}
+                    onChange={(e) => setEditing({ ...editing, isBoardMember: e.target.checked })}
+                  />
+                  Board Member
+                </label>
+              </div>
+              <div className={checkboxRowClass}>
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
+                  <input
+                    type="checkbox"
+                    className="rounded border-stone-400"
+                    checked={editing.isFieldProducer}
+                    onChange={(e) => setEditing({ ...editing, isFieldProducer: e.target.checked })}
+                  />
+                  Field Producer
                 </label>
               </div>
               <div className={checkboxRowClass}>
