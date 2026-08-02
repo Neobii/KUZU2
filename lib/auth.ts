@@ -51,6 +51,7 @@ const providers: NextAuthOptions['providers'] = [
           isProducer: user.isProducer,
           isBoardMember: user.isBoardMember,
           isFieldProducer: user.isFieldProducer,
+          isManagingArtists: user.isManagingArtists,
           producerProfile: producerProfile ?? undefined,
         }
       },
@@ -100,6 +101,7 @@ export const authOptions: NextAuthOptions = {
         token.isProducer = dbUser.isProducer
         token.isBoardMember = dbUser.isBoardMember
         token.isFieldProducer = dbUser.isFieldProducer
+        token.isManagingArtists = dbUser.isManagingArtists
         token.producerProfile = dbUser.producerProfile as object
       } else if (user) {
         token.id = user.id
@@ -107,19 +109,21 @@ export const authOptions: NextAuthOptions = {
         token.isProducer = (user as { isProducer?: boolean }).isProducer
         token.isBoardMember = (user as { isBoardMember?: boolean }).isBoardMember
         token.isFieldProducer = (user as { isFieldProducer?: boolean }).isFieldProducer
+        token.isManagingArtists = (user as { isManagingArtists?: boolean }).isManagingArtists
         token.producerProfile = (user as { producerProfile?: object }).producerProfile
       }
       // Keep JWT in sync with DB (e.g. admin enables Producer — no re-login required)
       if (token.id) {
         const row = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { isAdmin: true, isProducer: true, isBoardMember: true, isFieldProducer: true, producerProfile: true },
+          select: { isAdmin: true, isProducer: true, isBoardMember: true, isFieldProducer: true, isManagingArtists: true, producerProfile: true },
         })
         if (row) {
           token.isAdmin = row.isAdmin
           token.isProducer = row.isProducer
           token.isBoardMember = row.isBoardMember
           token.isFieldProducer = row.isFieldProducer
+          token.isManagingArtists = row.isManagingArtists
           token.producerProfile = (row.producerProfile as object) ?? undefined
         }
       }
@@ -132,6 +136,8 @@ export const authOptions: NextAuthOptions = {
         ;(session.user as { isProducer?: boolean }).isProducer = token.isProducer as boolean
         ;(session.user as { isBoardMember?: boolean }).isBoardMember = token.isBoardMember as boolean
         ;(session.user as { isFieldProducer?: boolean }).isFieldProducer = token.isFieldProducer as boolean
+        ;(session.user as { isManagingArtists?: boolean }).isManagingArtists =
+          token.isManagingArtists as boolean
         ;(session.user as { producerProfile?: object }).producerProfile =
           token.producerProfile as object
       }

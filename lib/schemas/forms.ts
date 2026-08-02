@@ -3,6 +3,9 @@ import { z } from 'zod'
 export const trackEditSchema = z.object({
   songTitle: z.string().min(1, 'Required'),
   artist: z.string().optional(),
+  artistId: z
+    .preprocess((v) => (v === '' || v == null ? null : v), z.string().nullable())
+    .optional(),
   album: z.string().optional(),
   label: z.string().optional(),
   trackLength: z.string().optional(),

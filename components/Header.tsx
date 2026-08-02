@@ -34,6 +34,7 @@ export function Header({ session }: { session: Session | null }) {
   if (!session?.user) return null
   const user = session.user
   const isAdmin = user.isAdmin
+  const isManagingArtists = user.isManagingArtists
   const producerProfile = user.producerProfile
   const showProducerPortal = canAccessProducerPortal(user)
   const unreadCount = 0
@@ -125,6 +126,13 @@ export function Header({ session }: { session: Session | null }) {
           </ul>
 
           <ul className="flex list-none flex-col gap-2 md:ml-3 md:flex-row md:items-center md:gap-x-3">
+            {(isAdmin || isManagingArtists) && (
+              <li>
+                <Link href="/artists" className={navLinkClass} onClick={closeMenus}>
+                  Artists
+                </Link>
+              </li>
+            )}
             <li className="relative">
               <button
                 type="button"

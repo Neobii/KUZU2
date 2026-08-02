@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ArtistAutocomplete } from '@/components/ArtistAutocomplete'
 import { btnPrimary, formGroupClass, inputClass, labelClass } from '@/lib/ui'
 
 export function AddTrackForm({ showId }: { showId: string }) {
   const router = useRouter()
   const [songTitle, setSongTitle] = useState('')
   const [artist, setArtist] = useState('')
+  const [artistId, setArtistId] = useState<string | null>(null)
   const [album, setAlbum] = useState('')
   const [label, setLabel] = useState('')
   const [trackLength, setTrackLength] = useState('')
@@ -22,6 +24,7 @@ export function AddTrackForm({ showId }: { showId: string }) {
         showId,
         songTitle,
         artist,
+        artistId: artistId ?? undefined,
         album,
         label,
         trackLength,
@@ -58,7 +61,14 @@ export function AddTrackForm({ showId }: { showId: string }) {
       </div>
       <div className={formGroupClass}>
         <label className={labelClass}>Artist</label>
-        <input className={inputClass} type="text" value={artist} onChange={(e) => setArtist(e.target.value)} />
+        <ArtistAutocomplete
+          value={artist}
+          placeholder="Search or add an artist…"
+          onChange={(a) => {
+            setArtist(a.artistName)
+            setArtistId(a.id)
+          }}
+        />
       </div>
       <div className={formGroupClass}>
         <label className={labelClass}>Album</label>

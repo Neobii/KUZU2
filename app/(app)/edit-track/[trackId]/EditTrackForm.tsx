@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { trackEditSchema } from '@/lib/schemas/forms'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
+import { ArtistAutocomplete } from '@/components/ArtistAutocomplete'
 import { btnPrimary, formGroupClass, inputClass, labelClass } from '@/lib/ui'
 
 type Form = z.infer<typeof trackEditSchema>
@@ -16,6 +17,7 @@ export function EditTrackForm({
     id: string
     songTitle: string
     artist: string | null
+    artistId: string | null
     album: string | null
     label: string | null
     trackLength: string | null
@@ -27,12 +29,15 @@ export function EditTrackForm({
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<Form>({
     resolver: zodResolver(trackEditSchema),
     defaultValues: {
       songTitle: track.songTitle,
       artist: track.artist ?? '',
+      artistId: track.artistId ?? null,
       album: track.album ?? '',
       label: track.label ?? '',
       trackLength: track.trackLength ?? '',
@@ -72,7 +77,14 @@ export function EditTrackForm({
       </div>
       <div className={formGroupClass}>
         <label className={labelClass}>Artist</label>
-        <input className={inputClass} {...register('artist')} />
+        <ArtistAutocomplete
+          value={watch('artist') ?? ''}
+          placeholder="Search or add an artist…"
+          onChange={(a) => {
+            setValue('artist', a.artistName)
+            setValue('artistId', a.id)
+          }}
+        />
       </div>
       <div className={formGroupClass}>
         <label className={labelClass}>Album</label>

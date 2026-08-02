@@ -19,6 +19,7 @@ model User {
   isAdmin          Boolean  @default(false) @map("is_admin")
   isBoardMember    Boolean  @default(false) @map("is_board_member")
   isFieldProducer  Boolean  @default(false) @map("is_field_producer")
+  isManagingArtists Boolean @default(false) @map("is_managing_artists")
   createdAt        DateTime @default(now()) @map("created_at")
 
   shows              Show[]               @relation("ShowOwner")
@@ -80,6 +81,8 @@ model Tracklist {
   trackType   String    @default("song") @map("track_type")
   songTitle   String    @map("song_title")
   artist      String?
+  artistId         String?  @map("artist_id")
+  artistRelation   Artist?  @relation("TrackArtist", fields: [artistId], references: [id], onDelete: SetNull)
   album       String?
   label       String?
   trackLength String?   @map("track_length")
@@ -156,4 +159,16 @@ model AutoDJPlaylist {
   name          String
   showSchedules Json?    @map("show_schedules")
   createdAt     DateTime @default(now()) @map("created_at")
+}
+
+model Artist {
+  id         String      @id @default(cuid())
+  artistName String      @unique @map("artist_name")
+  imageUrl   String?     @map("image_url")
+  bio        String?     @db.Text
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  tracks     Tracklist[] @relation("TrackArtist")
+
+  @@index([artistName])
 }
