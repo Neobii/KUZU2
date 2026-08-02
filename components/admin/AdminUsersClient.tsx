@@ -30,6 +30,7 @@ type UserRow = {
   isAdmin: boolean
   isBoardMember: boolean
   isFieldProducer: boolean
+  isManagingArtists: boolean
 }
 
 export function AdminUsersClient() {
@@ -46,6 +47,7 @@ export function AdminUsersClient() {
         isProducer: editing.isProducer,
         isBoardMember: editing.isBoardMember,
         isFieldProducer: editing.isFieldProducer,
+        isManagingArtists: editing.isManagingArtists,
         profile: editing.profile,
         producerProfile: {
           ...editing.producerProfile,
@@ -89,6 +91,7 @@ export function AdminUsersClient() {
                       ? 'Evergreen'
                       : ''}
                   {u.isFieldProducer && 'Field Producer'}
+                  {u.isManagingArtists && 'Artist Manager'}
                 </td>
                 <td className={tableCellClass}>
                   <button type="button" className={btnXsPrimary} onClick={() => setEditing({ ...u })}>
@@ -176,6 +179,17 @@ export function AdminUsersClient() {
                     onChange={(e) => setEditing({ ...editing, isFieldProducer: e.target.checked })}
                   />
                   Field Producer
+                </label>
+              </div>
+              <div className={checkboxRowClass}>
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
+                  <input
+                    type="checkbox"
+                    className="rounded border-stone-400"
+                    checked={editing.isManagingArtists}
+                    onChange={(e) => setEditing({ ...editing, isManagingArtists: e.target.checked })}
+                  />
+                  Artist Manager
                 </label>
               </div>
               <div className={checkboxRowClass}>
