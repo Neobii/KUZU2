@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const body = await req.json()
-  const { showId, songTitle, artist, album, label, trackLength, trackType } = body
+  const { showId, songTitle, artist, album, label, trackLength, trackType, artistId } = body
   if (!showId || !songTitle) {
     return NextResponse.json({ error: 'showId and songTitle required' }, { status: 400 })
   }
@@ -19,6 +19,12 @@ export async function POST(req: NextRequest) {
     where: { id: showId },
   })
   if (!show) return NextResponse.json({ error: 'Show not found' }, { status: 404 })
+  let artistIdValue: string | undefined
+  if (artistId != null && artistId !== '') {
+    const artistRow = await prisma.artist.findUnique({ where: { id: String(artistId) } })
+    if (!artistRow) return NextResponse.json({ error: 'Artist not found' }, { status: 400 })
+    artistIdValue = artistRow.id
+  }
   const userId = (session.user as { id?: string }).id
   const highest = await prisma.tracklist.findFirst({
     where: { showId },
@@ -30,6 +36,7 @@ export async function POST(req: NextRequest) {
       showId,
       songTitle,
       artist: artist || undefined,
+      artistId: artistIdValue,
       album: album || undefined,
       label: label || undefined,
       trackLength: trackLength || undefined,

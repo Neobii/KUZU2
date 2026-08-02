@@ -18,6 +18,15 @@ export async function PATCH(
   const data: Record<string, unknown> = {}
   if (body.songTitle != null) data.songTitle = body.songTitle
   if (body.artist != null) data.artist = body.artist
+  if (body.artistId !== undefined) {
+    if (body.artistId === null || body.artistId === '') {
+      data.artistId = null
+    } else {
+      const artistRow = await prisma.artist.findUnique({ where: { id: String(body.artistId) } })
+      if (!artistRow) return NextResponse.json({ error: 'Artist not found' }, { status: 400 })
+      data.artistId = artistRow.id
+    }
+  }
   if (body.album != null) data.album = body.album
   if (body.label != null) data.label = body.label
   if (body.trackLength != null) data.trackLength = body.trackLength
