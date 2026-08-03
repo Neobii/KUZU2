@@ -320,11 +320,11 @@ export function LiveShow() {
                       >
                         Edit
                       </button>
-                      <h4 className="clear-both mt-2 text-stone-300">
+                      <div className="clear-both mt-2 text-stone-300">
                         <span className="float-right text-sm">Album: {t.album}</span>
-                        <h5 className="text-sm font-normal">Length: {t.trackLength}</h5>
-                        Played at: {t.playDate ? prettifySimpleTime(t.playDate) : '-'}
-                      </h4>
+                        <div className="text-sm font-normal">Length: {t.trackLength}</div>
+                        <div>Played at: {t.playDate ? prettifySimpleTime(t.playDate) : '-'}</div>
+                      </div>
                     </td>
                   </tr>
                 ))}
