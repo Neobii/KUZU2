@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArtistAutocomplete } from '@/components/ArtistAutocomplete'
+import { TrackAutocomplete } from '@/components/TrackAutocomplete'
 import { btnPrimary, formGroupClass, inputClass, labelClass } from '@/lib/ui'
 
 export function AddTrackForm({ showId }: { showId: string }) {
@@ -51,13 +52,30 @@ export function AddTrackForm({ showId }: { showId: string }) {
       </div>
       <div className={formGroupClass}>
         <label className={labelClass}>Song Title</label>
-        <input
-          className={inputClass}
-          type="text"
-          value={songTitle}
-          onChange={(e) => setSongTitle(e.target.value)}
-          required
-        />
+        {trackType === 'song' ? (
+          <TrackAutocomplete
+            value={songTitle}
+            placeholder="Search prior tracks…"
+            required
+            onTitleChange={setSongTitle}
+            onSelect={(t) => {
+              setSongTitle(t.songTitle)
+              setArtist(t.artist ?? '')
+              setArtistId(t.artistId)
+              setAlbum(t.album ?? '')
+              setLabel(t.label ?? '')
+              setTrackLength(t.trackLength ?? '')
+            }}
+          />
+        ) : (
+          <input
+            className={inputClass}
+            type="text"
+            value={songTitle}
+            onChange={(e) => setSongTitle(e.target.value)}
+            required
+          />
+        )}
       </div>
       <div className={formGroupClass}>
         <label className={labelClass}>Artist</label>
