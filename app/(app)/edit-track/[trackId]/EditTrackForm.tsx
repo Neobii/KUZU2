@@ -6,6 +6,7 @@ import { trackEditSchema } from '@/lib/schemas/forms'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { ArtistAutocomplete } from '@/components/ArtistAutocomplete'
+import { TrackAutocomplete } from '@/components/TrackAutocomplete'
 import { btnPrimary, formGroupClass, inputClass, labelClass } from '@/lib/ui'
 
 type Form = z.infer<typeof trackEditSchema>
@@ -72,7 +73,23 @@ export function EditTrackForm({
       </div>
       <div className={formGroupClass}>
         <label className={labelClass}>Song title</label>
-        <input className={inputClass} {...register('songTitle')} />
+        {watch('trackType') === 'song' ? (
+          <TrackAutocomplete
+            value={watch('songTitle') ?? ''}
+            placeholder="Search prior tracks…"
+            onTitleChange={(title) => setValue('songTitle', title, { shouldValidate: true })}
+            onSelect={(t) => {
+              setValue('songTitle', t.songTitle, { shouldValidate: true })
+              setValue('artist', t.artist ?? '')
+              setValue('artistId', t.artistId)
+              setValue('album', t.album ?? '')
+              setValue('label', t.label ?? '')
+              setValue('trackLength', t.trackLength ?? '')
+            }}
+          />
+        ) : (
+          <input className={inputClass} {...register('songTitle')} />
+        )}
         {errors.songTitle && <span className="text-sm text-red-400">{errors.songTitle.message}</span>}
       </div>
       <div className={formGroupClass}>

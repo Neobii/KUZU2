@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import useSWR from 'swr'
 import { useState } from 'react'
 import {
@@ -115,7 +116,15 @@ export function AdminArtistsClient() {
                   )}
                 </td>
                 <td className={tableCellClass}>{a.bio || '—'}</td>
-                <td className={tableCellClass}>{a._count?.tracks ?? 0}</td>
+                <td className={tableCellClass}>
+                  {(a._count?.tracks ?? 0) > 0 ? (
+                    <Link href={`/artists/${a.id}/tracks`} className="text-amber-400 no-underline hover:text-amber-300">
+                      {a._count.tracks}
+                    </Link>
+                  ) : (
+                    0
+                  )}
+                </td>
                 <td className={tableCellClass}>
                   <button type="button" className={btnXsPrimary} onClick={() => setEditing(a)}>
                     Edit
