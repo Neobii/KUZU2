@@ -56,6 +56,10 @@ function StarIcon() {
 
 const btnLg = (base: string) => cn(base, 'px-6 py-3 text-base')
 
+function hasProducerMessageText(message: string | null | undefined): boolean {
+  return typeof message === 'string' && message.trim().length > 0
+}
+
 export function LiveShow() {
   const router = useRouter()
   const { data: session } = useSession()
@@ -80,16 +84,33 @@ export function LiveShow() {
   const canEditProducerMessage = data?.canEditProducerMessage === true
   const producerMsgRef = useRef<HTMLTextAreaElement>(null)
   const [producerMsgSaving, setProducerMsgSaving] = useState(false)
+  const [producerMsgFeedback, setProducerMsgFeedback] = useState<string | null>(null)
 
   async function saveProducerMessage() {
     if (!show) return
+    const raw = producerMsgRef.current?.value ?? ''
+    const trimmed = raw.trim()
     setProducerMsgSaving(true)
+    setProducerMsgFeedback(null)
     try {
-      await fetch(`/api/shows/${show.id}`, {
+      const res = await fetch(`/api/shows/${show.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentShowProducerMessage: producerMsgRef.current?.value ?? '' }),
+        body: JSON.stringify({
+          currentShowProducerMessage: trimmed.length > 0 ? trimmed : null,
+        }),
       })
+      if (!res.ok) {
+        setProducerMsgFeedback('Could not save message. Try again.')
+        return
+      }
+      if (trimmed.length > 0) {
+        setProducerMsgFeedback(
+          'Message saved. The show producer will see it as a banner at the bottom of Live Show.'
+        )
+      } else {
+        setProducerMsgFeedback('Message cleared.')
+      }
     } finally {
       setProducerMsgSaving(false)
       void mutate()
@@ -114,7 +135,10 @@ export function LiveShow() {
   }
 
   const show = data.show
-  const isShowProducer = !!session?.user?.id && session.user.id === show.userId
+  const userId = session?.user?.id
+  const isShowRunner =
+    !!userId && (userId === show.userId || userId === show.helperUserId)
+  const stationMessage = show.currentShowProducerMessage?.trim() ?? ''
   const tracks = data.tracks as Array<{
     id: string
     indexNumber: number | null
@@ -145,10 +169,10 @@ export function LiveShow() {
           <h3 className="text-lg font-semibold">WARNING! Tracking is set to come from Radio Logik instead of the Kuzu App</h3>
         </div>
       )}
-      {isShowProducer && show.currentShowProducerMessage ? (
+      {isShowRunner && hasProducerMessageText(stationMessage) ? (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-stone-900/20 bg-[#c0a821] px-2 py-3 text-center text-stone-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
           <h3 className="text-lg font-semibold">Station message for you</h3>
-          <p className="mt-1">{show.currentShowProducerMessage}</p>
+          <p className="mt-1">{stationMessage}</p>
           <button
             type="button"
             className={cn(btnSmDanger, 'mt-2')}
@@ -162,6 +186,9 @@ export function LiveShow() {
         <div className="mx-auto mt-4 max-w-4xl">
           <div className="rounded-lg border border-stone-700 bg-stone-900/40 p-4">
             <h3 className="mb-2 text-lg font-medium text-stone-100">Producer message</h3>
+            <p className="mb-2 text-sm text-stone-400">
+              Saved messages appear as a yellow banner for the show owner and helper on Live Show.
+            </p>
             <textarea
               key={`producer-msg-${show.currentShowProducerMessage ?? ''}`}
               ref={producerMsgRef}
@@ -169,7 +196,20 @@ export function LiveShow() {
               rows={3}
               className="w-full rounded border border-stone-700 bg-stone-950 p-2 text-stone-100"
               placeholder="One message to show to the live show producer..."
+              onChange={() => setProducerMsgFeedback(null)}
             />
+            {producerMsgFeedback && (
+              <p
+                className={cn(
+                  'mt-2 text-sm',
+                  producerMsgFeedback.startsWith('Could not')
+                    ? 'text-red-400'
+                    : 'text-emerald-400'
+                )}
+              >
+                {producerMsgFeedback}
+              </p>
+            )}
             <button
               type="button"
               className={cn(btnSmPrimary, 'mt-2')}
