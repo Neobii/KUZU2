@@ -24,11 +24,16 @@ export async function PATCH(
     const canWrite = !!user?.isAdmin || !!user?.isBoardMember || !!user?.isFieldProducer
     const show = await prisma.show.findUnique({ where: { id: showId } })
     const isOwner = !!show && show.userId === userId
+    const isHelper = !!show && show.helperUserId === userId
     const isClear = body.currentShowProducerMessage === null
-    if (!canWrite && !(isClear && isOwner)) {
+    if (!canWrite && !(isClear && (isOwner || isHelper))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
   }
+  const normalizedProducerMessage =
+    hasProducerMessageField && typeof body.currentShowProducerMessage === 'string'
+      ? body.currentShowProducerMessage.trim() || null
+      : body.currentShowProducerMessage
   const show = await prisma.show.update({
     where: { id: showId },
     data: {
@@ -58,7 +63,7 @@ export async function PATCH(
       ...(body.episodeNumber === null && { episodeNumber: null }),
       ...(body.episodeNumber != null && { episodeNumber: Number(body.episodeNumber) }),
       ...(hasProducerMessageField && {
-        currentShowProducerMessage: body.currentShowProducerMessage as string | null,
+        currentShowProducerMessage: normalizedProducerMessage as string | null,
       }),
     },
   })
