@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     showName?: string
     description?: string
     defaultMeta?: string
-    isMessagingUIEnbled?: boolean
+    isMessagingUIEnabled?: boolean
   } | null
   const body = (await request.json().catch(() => ({}))) as {
     autoplayOnStart?: boolean
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       showName: producerProfile?.showName?.trim() || 'Kuzu Show',
       description: producerProfile?.description ?? ' ',
       defaultMeta: producerProfile?.defaultMeta ?? 'Kuzu Show',
-      hasMessagingEnabled: producerProfile?.isMessagingUIEnbled ?? false,
+      hasMessagingEnabled: producerProfile?.isMessagingUIEnabled ?? false,
       autoplayOnStart: typeof body.autoplayOnStart === 'boolean' ? body.autoplayOnStart : false,
       autoplayOnDate: typeof body.autoplayOnDate === 'boolean' ? body.autoplayOnDate : false,
     },
