@@ -2,15 +2,17 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { btnXsDanger, btnXsSecondary, btnXsSuccess, inputClass } from '@/lib/ui'
+import { btnXsDanger, btnXsSecondary, btnXsSuccess, btnXsWarning, inputClass } from '@/lib/ui'
 import { cn } from '@/lib/cn'
 
 export function ProducerShowsActions({
   showId,
   showName,
+  isActive,
 }: {
   showId: string
   showName: string
+  isActive: boolean
 }) {
   const router = useRouter()
   const [dupName, setDupName] = useState(`${showName} (copy)`)
@@ -29,6 +31,12 @@ export function ProducerShowsActions({
     }
   }
 
+  async function deactivate() {
+    if (!window.confirm('Stop this show?')) return
+    await fetch(`/api/shows/${showId}/deactivate`, { method: 'POST' })
+    router.refresh()
+  }
+
   async function duplicate() {
     const res = await fetch(`/api/shows/${showId}/duplicate`, {
       method: 'POST',
@@ -44,9 +52,15 @@ export function ProducerShowsActions({
 
   return (
     <span className="ml-2 inline-flex flex-wrap items-center gap-2">
-      <button type="button" className={btnXsSuccess} onClick={() => void activate()}>
-        Go live
-      </button>
+      {isActive ? (
+        <button type="button" className={btnXsWarning} onClick={() => void deactivate()}>
+          Stop Show
+        </button>
+      ) : (
+        <button type="button" className={btnXsSuccess} onClick={() => void activate()}>
+          Go Live
+        </button>
+      )}
       <button type="button" className={btnXsSecondary} onClick={() => void duplicate()}>
         Duplicate
       </button>
