@@ -33,6 +33,17 @@ type UserRow = {
   isManagingArtists: boolean
 }
 
+function formatUserRoles(u: UserRow): string {
+  const roles: string[] = []
+  if (u.isAdmin) roles.push('Admin')
+  if (u.isBoardMember) roles.push('Board')
+  if (u.producerProfile?.isPioneer) roles.push('Pioneer')
+  else if (u.isProducer) roles.push('Evergreen')
+  if (u.isFieldProducer) roles.push('Field Producer')
+  if (u.isManagingArtists) roles.push('Artist Manager')
+  return roles.length > 0 ? roles.join(', ') : '—'
+}
+
 export function AdminUsersClient() {
   const { data: users, mutate } = useSWR<UserRow[]>('/api/admin/users', fetcher)
   const [editing, setEditing] = useState<UserRow | null>(null)
@@ -82,17 +93,7 @@ export function AdminUsersClient() {
               <tr key={u.id}>
                 <td className={tableCellClass}>{u.profile?.name ?? '—'}</td>
                 <td className={tableCellClass}>{u.email}</td>
-                <td className={tableCellClass}>
-                  {u.isAdmin && 'Admin '}
-                  {u.isBoardMember && 'Board '}
-                  {u.producerProfile?.isPioneer
-                    ? 'Pioneer'
-                    : u.isProducer
-                      ? 'Evergreen'
-                      : ''}
-                  {u.isFieldProducer && 'Field Producer'}
-                  {u.isManagingArtists && 'Artist Manager'}
-                </td>
+                <td className={tableCellClass}>{formatUserRoles(u)}</td>
                 <td className={tableCellClass}>
                   <button type="button" className={btnXsPrimary} onClick={() => setEditing({ ...u })}>
                     Edit
