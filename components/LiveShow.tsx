@@ -3,7 +3,7 @@
 import useSWR from 'swr'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useState, useRef } from 'react'
+import { useState, useRef, useLayoutEffect } from 'react'
 import { prettifySimpleTime } from '@/lib/utils-client'
 import {
   btnPrimary,
@@ -54,7 +54,8 @@ function StarIcon() {
   )
 }
 
-const btnLg = (base: string) => cn(base, 'px-6 py-3 text-base')
+const btnLg = (base: string) =>
+  cn(base, 'px-3 py-2 text-sm sm:px-6 sm:py-3 sm:text-base')
 
 function hasProducerMessageText(message: string | null | undefined): boolean {
   return typeof message === 'string' && message.trim().length > 0
@@ -83,8 +84,20 @@ export function LiveShow() {
   const isAdmin = session?.user?.isAdmin
   const canEditProducerMessage = data?.canEditProducerMessage === true
   const producerMsgRef = useRef<HTMLTextAreaElement>(null)
+  const footerRef = useRef<HTMLDivElement>(null)
+  const [footerPad, setFooterPad] = useState(160)
   const [producerMsgSaving, setProducerMsgSaving] = useState(false)
   const [producerMsgFeedback, setProducerMsgFeedback] = useState<string | null>(null)
+
+  useLayoutEffect(() => {
+    const el = footerRef.current
+    if (!el) return
+    const update = () => setFooterPad(el.offsetHeight + 16)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [data?.show?.id, data?.show?.currentShowProducerMessage, data?.hasNextTrack])
 
   async function saveProducerMessage() {
     if (!show) return
@@ -139,6 +152,7 @@ export function LiveShow() {
   const isShowRunner =
     !!userId && (userId === show.userId || userId === show.helperUserId)
   const stationMessage = show.currentShowProducerMessage?.trim() ?? ''
+  const showProducerBanner = isShowRunner && hasProducerMessageText(stationMessage)
   const tracks = data.tracks as Array<{
     id: string
     indexNumber: number | null
@@ -163,25 +177,12 @@ export function LiveShow() {
   const highest = data.highestIndex as number
 
   return (
-    <div>
+    <div style={{ paddingBottom: footerPad }}>
       {show.hasRadioLogikTracking && (
         <div className="bg-[#c0a821] px-2 py-4 text-center text-stone-900">
           <h3 className="text-lg font-semibold">WARNING! Tracking is set to come from Radio Logik instead of the Kuzu App</h3>
         </div>
       )}
-      {isShowRunner && hasProducerMessageText(stationMessage) ? (
-        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-stone-900/20 bg-[#c0a821] px-2 py-3 text-center text-stone-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-          <h3 className="text-lg font-semibold">Station message for you</h3>
-          <p className="mt-1">{stationMessage}</p>
-          <button
-            type="button"
-            className={cn(btnSmDanger, 'mt-2')}
-            onClick={clearProducerMessage}
-          >
-            Clear
-          </button>
-        </div>
-      ) : null}
       {canEditProducerMessage && (
         <div className="mx-auto mt-4 max-w-4xl">
           <div className="rounded-lg border border-stone-700 bg-stone-900/40 p-4">
@@ -334,90 +335,108 @@ export function LiveShow() {
         </div>
       </div>
 
-      <div className="show-control-panel bg-stone-900 p-4">
-        <div className="flex flex-wrap items-center justify-center gap-3 text-center">
-          {data.hasNextTrack && (producerProfile?.isAutomationUIEnabled || isAdmin) && (
-            <>
-              {show.isAutoPlaying ? (
-                <button
-                  type="button"
-                  className={btnLg(btnInfo)}
-                  onClick={() => call('/api/live/autoplay', { body: JSON.stringify({ action: 'pause' }) })}
-                >
-                  Pause Autoplay
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={btnLg(btnSuccess)}
-                  onClick={() => call('/api/live/autoplay', { body: JSON.stringify({}) })}
-                >
-                  Autoplay
-                </button>
-              )}
-            </>
-          )}
-          <button
-            type="button"
-            className={btnLg(btnDanger)}
-            onClick={async () => {
-              if (!confirm('Stop this show?')) return
-              await call(`/api/shows/${show.id}/deactivate`)
-              router.push('/producer/shows')
-            }}
-          >
-            Stop Show
-          </button>
-          {show.isShowingDefaultMeta ? (
+      <div
+        ref={footerRef}
+        className="fixed inset-x-0 bottom-0 z-40 bg-stone-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]"
+      >
+        {showProducerBanner ? (
+          <div className="border-t border-stone-900/20 bg-[#c0a821] px-3 py-2 text-center text-stone-900">
+            <p className="m-0 text-sm font-semibold sm:text-base">Station message for you</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm sm:text-base">{stationMessage}</p>
             <button
               type="button"
-              className={btnLg(btnWarning)}
-              onClick={() =>
-                call('/api/live/show-meta', {
-                  body: JSON.stringify({ showId: show.id, useDefaultMeta: false }),
-                })
-              }
+              className={cn(btnSmDanger, 'mt-2')}
+              onClick={clearProducerMessage}
             >
-              Display song title
+              Clear
             </button>
-          ) : (
+          </div>
+        ) : null}
+        <div className="show-control-panel p-2 sm:p-4">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-center sm:gap-3">
+            {data.hasNextTrack && (producerProfile?.isAutomationUIEnabled || isAdmin) && (
+              <>
+                {show.isAutoPlaying ? (
+                  <button
+                    type="button"
+                    className={btnLg(btnInfo)}
+                    onClick={() => call('/api/live/autoplay', { body: JSON.stringify({ action: 'pause' }) })}
+                  >
+                    Pause Autoplay
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={btnLg(btnSuccess)}
+                    onClick={() => call('/api/live/autoplay', { body: JSON.stringify({}) })}
+                  >
+                    Autoplay
+                  </button>
+                )}
+              </>
+            )}
             <button
               type="button"
-              className={btnLg(btnPrimary)}
-              onClick={() =>
-                call('/api/live/show-meta', {
-                  body: JSON.stringify({ showId: show.id, useDefaultMeta: true }),
-                })
-              }
-            >
-              Display show title
-            </button>
-          )}
-          {producerProfile?.isMessagingUIEnabled && (
-            <button
-              type="button"
-              className={btnLg(btnSecondary)}
-              onClick={() => {
-                setMsgOpen(true)
-                void fetch('/api/messages/mark-show-read', { method: 'POST' })
-                void mutate()
+              className={btnLg(btnDanger)}
+              onClick={async () => {
+                if (!confirm('Stop this show?')) return
+                await call(`/api/shows/${show.id}/deactivate`)
+                router.push('/producer/shows')
               }}
             >
-              Messages ({data.messageCount ?? 0})
+              Stop Show
             </button>
-          )}
-          {data.recentlyPlayed?.length > 0 && (
-            <button type="button" className={btnLg(btnSecondary)} onClick={() => setRecentOpen(true)}>
-              Recent Tracks
+            {show.isShowingDefaultMeta ? (
+              <button
+                type="button"
+                className={btnLg(btnWarning)}
+                onClick={() =>
+                  call('/api/live/show-meta', {
+                    body: JSON.stringify({ showId: show.id, useDefaultMeta: false }),
+                  })
+                }
+              >
+                Display song title
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={btnLg(btnPrimary)}
+                onClick={() =>
+                  call('/api/live/show-meta', {
+                    body: JSON.stringify({ showId: show.id, useDefaultMeta: true }),
+                  })
+                }
+              >
+                Display show title
+              </button>
+            )}
+            {producerProfile?.isMessagingUIEnabled && (
+              <button
+                type="button"
+                className={btnLg(btnSecondary)}
+                onClick={() => {
+                  setMsgOpen(true)
+                  void fetch('/api/messages/mark-show-read', { method: 'POST' })
+                  void mutate()
+                }}
+              >
+                Messages ({data.messageCount ?? 0})
+              </button>
+            )}
+            {data.recentlyPlayed?.length > 0 && (
+              <button type="button" className={btnLg(btnSecondary)} onClick={() => setRecentOpen(true)}>
+                Recent Tracks
+              </button>
+            )}
+            <button
+              type="button"
+              className={btnLg(btnSuccess)}
+              onClick={() => router.push(`/addTrackToShow/${show.id}`)}
+            >
+              Add a new track
             </button>
-          )}
-          <button
-            type="button"
-            className={btnLg(btnSuccess)}
-            onClick={() => router.push(`/addTrackToShow/${show.id}`)}
-          >
-            Add a new track
-          </button>
+          </div>
         </div>
       </div>
 
