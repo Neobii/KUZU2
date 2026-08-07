@@ -10,26 +10,41 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions): 
   const from = process.env.EMAIL_FROM?.trim() ?? 'KUZU <onboarding@resend.dev>'
 
   if (!apiKey) {
-    console.info('[email] RESEND_API_KEY not set — logging email instead of sending')
-    console.info(`To: ${to}`)
-    console.info(`Subject: ${subject}`)
-    console.info(text)
+    logEmailInsteadOfSending(to, subject, text, 'RESEND_API_KEY not set')
     return
   }
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ from, to, subject, html, text }),
-  })
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from, to, subject, html, text }),
+    })
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to send email (${res.status}): ${body}`)
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      console.error(`[email] Resend failed (${res.status}): ${body}`)
+      logEmailInsteadOfSending(to, subject, text, 'Resend request failed — logged instead')
+    }
+  } catch (e) {
+    console.error('[email] Resend request error:', e)
+    logEmailInsteadOfSending(to, subject, text, 'Resend request error — logged instead')
   }
+}
+
+function logEmailInsteadOfSending(
+  to: string,
+  subject: string,
+  text: string,
+  reason: string
+): void {
+  console.info(`[email] ${reason}`)
+  console.info(`To: ${to}`)
+  console.info(`Subject: ${subject}`)
+  console.info(text)
 }
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
