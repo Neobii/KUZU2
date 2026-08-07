@@ -22,6 +22,8 @@ export const showEditSchema = z.object({
   hasMessagingEnabled: z.boolean().optional(),
   autoplayOnStart: z.boolean().optional(),
   autoplayOnDate: z.boolean().optional(),
+  stopAfterLastSong: z.boolean().optional(),
+  stopOnCalendarEnd: z.boolean().optional(),
   episodeNumber: z
     .preprocess(
       (v) => {

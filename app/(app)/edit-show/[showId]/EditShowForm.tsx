@@ -27,6 +27,8 @@ export function EditShowForm({
     hasMessagingEnabled: boolean
     autoplayOnStart: boolean
     autoplayOnDate: boolean
+    stopAfterLastSong: boolean
+    stopOnCalendarEnd: boolean
     episodeNumber: number | null
   }
 }) {
@@ -48,6 +50,8 @@ export function EditShowForm({
       hasMessagingEnabled: show.hasMessagingEnabled,
       autoplayOnStart: show.autoplayOnStart,
       autoplayOnDate: show.autoplayOnDate,
+      stopAfterLastSong: show.stopAfterLastSong,
+      stopOnCalendarEnd: show.stopOnCalendarEnd,
       episodeNumber: (show.episodeNumber ?? '') as never,
     },
   })
@@ -160,6 +164,30 @@ export function EditShowForm({
           Autoplay on calendar date
         </label>
       </div>
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
+          <input
+            type="checkbox"
+            className="rounded border-stone-600"
+            {...register('stopAfterLastSong')}
+          />
+          Stop show after last song
+        </label>
+      </div>
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
+          <input
+            type="checkbox"
+            className="rounded border-stone-600"
+            {...register('stopOnCalendarEnd')}
+          />
+          Stop show on calendar end
+        </label>
+      </div>
+      <p className="mb-4 text-sm text-stone-500">
+        Calendar end stop uses the End date above. After-last-song stop runs when autoplay
+        reaches the end of the track list.
+      </p>
       <button type="submit" className={btnPrimary}>
         Save
       </button>

@@ -63,6 +63,8 @@ model Show {
   currentShowProducerMessage String? @map("current_show_producer_message")
   autoplayOnStart     Boolean   @default(false) @map("autoplay_on_start")
   autoplayOnDate      Boolean   @default(false) @map("autoplay_on_date")
+  stopAfterLastSong   Boolean   @default(false) @map("stop_after_last_song")
+  stopOnCalendarEnd   Boolean   @default(false) @map("stop_on_calendar_end")
   createdAt           DateTime  @default(now()) @map("created_at")
 
   owner    User       @relation("ShowOwner", fields: [userId], references: [id], onDelete: Cascade)
