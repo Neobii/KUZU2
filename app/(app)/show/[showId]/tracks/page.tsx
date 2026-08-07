@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { canManageShow } from '@/lib/show-access'
 import { prettifySimpleTime } from '@/lib/utils'
 
 export default async function ShowTracksPage({
@@ -11,12 +12,14 @@ export default async function ShowTracksPage({
   params: Promise<{ showId: string }>
 }) {
   const session = await getServerSession(authOptions)
-  if (!session) redirect('/login')
+  if (!session?.user?.id) redirect('/login')
   const { showId } = await params
-  const show = await prisma.show.findUnique({
-    where: { id: showId },
-  })
+  const [show, user] = await Promise.all([
+    prisma.show.findUnique({ where: { id: showId } }),
+    prisma.user.findUnique({ where: { id: session.user.id } }),
+  ])
   if (!show) notFound()
+  if (!user || !canManageShow(user, show)) redirect('/')
   const tracks = await prisma.tracklist.findMany({
     where: { showId },
     orderBy: { indexNumber: 'asc' },

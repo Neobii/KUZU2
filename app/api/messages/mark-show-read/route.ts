@@ -1,21 +1,20 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireSession } from '@/lib/api-auth'
+import { requireLiveShowControl } from '@/lib/show-access'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  const active = await prisma.show.findFirst({ where: { isActive: true } })
-  if (active) {
-    await prisma.message.updateMany({
-      where: { showId: active.id },
-      data: { isRead: true },
-    })
-  }
+  const auth = await requireSession()
+  if ('error' in auth) return auth.error
+
+  const live = await requireLiveShowControl(auth.userId)
+  if ('error' in live) return live.error
+
+  await prisma.message.updateMany({
+    where: { showId: live.active!.id },
+    data: { isRead: true },
+  })
   return NextResponse.json({ ok: true })
 }
