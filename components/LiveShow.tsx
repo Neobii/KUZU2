@@ -106,7 +106,7 @@ export function LiveShow() {
       }
       if (trimmed.length > 0) {
         setProducerMsgFeedback(
-          'Message saved. The show producer will see it as a banner at the bottom of Live Show.'
+          'Message saved. It will appear as a banner at the bottom of Live Show.'
         )
       } else {
         setProducerMsgFeedback('Message cleared.')
@@ -138,7 +138,9 @@ export function LiveShow() {
   const userId = session?.user?.id
   const isShowRunner =
     !!userId && (userId === show.userId || userId === show.helperUserId)
+  const canClearProducerMessage = isShowRunner || canEditProducerMessage
   const stationMessage = show.currentShowProducerMessage?.trim() ?? ''
+  const showProducerBanner = hasProducerMessageText(stationMessage)
   const tracks = data.tracks as Array<{
     id: string
     indexNumber: number | null
@@ -163,31 +165,18 @@ export function LiveShow() {
   const highest = data.highestIndex as number
 
   return (
-    <div>
+    <div className={cn(showProducerBanner && 'pb-28')}>
       {show.hasRadioLogikTracking && (
         <div className="bg-[#c0a821] px-2 py-4 text-center text-stone-900">
           <h3 className="text-lg font-semibold">WARNING! Tracking is set to come from Radio Logik instead of the Kuzu App</h3>
         </div>
       )}
-      {isShowRunner && hasProducerMessageText(stationMessage) ? (
-        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-stone-900/20 bg-[#c0a821] px-2 py-3 text-center text-stone-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-          <h3 className="text-lg font-semibold">Station message for you</h3>
-          <p className="mt-1">{stationMessage}</p>
-          <button
-            type="button"
-            className={cn(btnSmDanger, 'mt-2')}
-            onClick={clearProducerMessage}
-          >
-            Clear
-          </button>
-        </div>
-      ) : null}
       {canEditProducerMessage && (
         <div className="mx-auto mt-4 max-w-4xl">
           <div className="rounded-lg border border-stone-700 bg-stone-900/40 p-4">
             <h3 className="mb-2 text-lg font-medium text-stone-100">Producer message</h3>
             <p className="mb-2 text-sm text-stone-400">
-              Saved messages appear as a yellow banner for the show owner and helper on Live Show.
+              Saved messages appear as a yellow banner at the bottom of Live Show for anyone viewing the active show.
             </p>
             <textarea
               key={`producer-msg-${show.currentShowProducerMessage ?? ''}`}
@@ -546,6 +535,25 @@ export function LiveShow() {
           </div>
         </div>
       )}
+
+      {showProducerBanner ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-stone-900/20 bg-[#c0a821] px-4 py-4 text-center text-stone-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]"
+        >
+          <p className="whitespace-pre-wrap">{stationMessage}</p>
+          {canClearProducerMessage ? (
+            <button
+              type="button"
+              className={cn(btnSmDanger, 'mt-2')}
+              onClick={clearProducerMessage}
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   )
 }
