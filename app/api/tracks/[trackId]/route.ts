@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireSession } from '@/lib/api-auth'
+import { requireTrackAccess } from '@/lib/show-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,11 +9,13 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ trackId: string }> }
 ) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await requireSession()
+  if ('error' in auth) return auth.error
+
   const { trackId } = await params
+  const access = await requireTrackAccess(trackId, auth.userId)
+  if ('error' in access) return access.error
+
   const body = await req.json()
   const data: Record<string, unknown> = {}
   if (body.songTitle != null) data.songTitle = body.songTitle
@@ -42,11 +44,13 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ trackId: string }> }
 ) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await requireSession()
+  if ('error' in auth) return auth.error
+
   const { trackId } = await params
+  const access = await requireTrackAccess(trackId, auth.userId)
+  if ('error' in access) return access.error
+
   await prisma.tracklist.delete({ where: { id: trackId } })
   return NextResponse.json({ ok: true })
 }

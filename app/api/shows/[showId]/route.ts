@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireSession } from '@/lib/api-auth'
+import { canWriteProducerMessage, requireShowAccess } from '@/lib/show-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,31 +9,33 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ showId: string }> }
 ) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await requireSession()
+  if ('error' in auth) return auth.error
+
   const { showId } = await params
+  const access = await requireShowAccess(showId, auth.userId)
+  if ('error' in access) return access.error
+
   const body = await req.json()
-  const userId = (session.user as { id?: string }).id
   const hasProducerMessageField = body.currentShowProducerMessage !== undefined
-  if (hasProducerMessageField) {
-    const user = userId
-      ? await prisma.user.findUnique({ where: { id: userId } })
-      : null
-    const canWrite = !!user?.isAdmin || !!user?.isBoardMember || !!user?.isFieldProducer
-    const show = await prisma.show.findUnique({ where: { id: showId } })
-    const isOwner = !!show && show.userId === userId
-    const isHelper = !!show && show.helperUserId === userId
-    const isClear = body.currentShowProducerMessage === null
-    if (!canWrite && !(isClear && (isOwner || isHelper))) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+
+  if (
+    hasProducerMessageField &&
+    !canWriteProducerMessage(
+      access.user,
+      access.show,
+      auth.userId,
+      body.currentShowProducerMessage as string | null
+    )
+  ) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
+
   const normalizedProducerMessage =
     hasProducerMessageField && typeof body.currentShowProducerMessage === 'string'
       ? body.currentShowProducerMessage.trim() || null
       : body.currentShowProducerMessage
+
   const show = await prisma.show.update({
     where: { id: showId },
     data: {
@@ -74,11 +76,13 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ showId: string }> }
 ) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await requireSession()
+  if ('error' in auth) return auth.error
+
   const { showId } = await params
+  const access = await requireShowAccess(showId, auth.userId)
+  if ('error' in access) return access.error
+
   await prisma.tracklist.deleteMany({ where: { showId } })
   await prisma.message.deleteMany({ where: { showId } })
   await prisma.show.delete({ where: { id: showId } })

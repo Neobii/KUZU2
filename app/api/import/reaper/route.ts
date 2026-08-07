@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getHighestTrackNumber } from '@/lib/show-actions'
+import { requireSession } from '@/lib/api-auth'
+import { requireShowAccess } from '@/lib/show-access'
 
 export const dynamic = 'force-dynamic'
 
 type Row = { Name?: string; Meta?: string; Album?: string; Label?: string; Length?: string }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await requireSession()
+  if ('error' in auth) return auth.error
+
   const body = await req.json()
   const showId = body.showId as string
   const data = body.data as Row[]
   if (!showId || !Array.isArray(data)) {
     return NextResponse.json({ error: 'showId and data required' }, { status: 400 })
   }
+
+  const access = await requireShowAccess(showId, auth.userId)
+  if ('error' in access) return access.error
+
   const regex = /%(.*)%/
   let base = await getHighestTrackNumber(showId)
   for (let i = 0; i < data.length; i++) {
