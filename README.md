@@ -107,6 +107,16 @@ Next.js loads env from **`.env.local`** (or `.env`) in the project root.
 
 Use the exact strings from the Neon dashboard. If `db push` fails through the pooler, ensure **`DATABASE_URL_UNPOOLED`** is set to the **direct** connection string (non-pooler host).
 
+## Testing
+
+```bash
+npm test
+```
+
+Show/track authorization (object-level access) — automated + manual QA checklist for contributors:
+
+→ [docs/testing-show-access.md](docs/testing-show-access.md)
+
 ## REST endpoints (external integrations)
 
 - `GET /api/tracking/current-track` — Current playing track

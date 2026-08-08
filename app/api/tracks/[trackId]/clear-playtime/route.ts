@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireSession } from '@/lib/api-auth'
+import { requireTrackAccess } from '@/lib/show-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,11 +9,13 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ trackId: string }> }
 ) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await requireSession()
+  if ('error' in auth) return auth.error
+
   const { trackId } = await params
+  const access = await requireTrackAccess(trackId, auth.userId)
+  if ('error' in access) return access.error
+
   await prisma.tracklist.update({
     where: { id: trackId },
     data: { playDate: null },
