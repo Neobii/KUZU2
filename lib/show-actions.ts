@@ -77,15 +77,11 @@ export async function autoplayNextTrack() {
   })
   if (next) {
     await startTrack(next.id)
-  } else if (show.stopAfterLastSong || show.autoStartEnd) {
-    await deactivateShow(show.id)
-    if (show.autoStartEnd) {
-      await prisma.show.update({
-        where: { id: show.id },
-        data: { autoStartEnd: false },
-      })
-    }
   }
+  // Intentionally do not stop the show here when the playlist is empty/exhausted.
+  // stopAfterLastSong / autoStartEnd belong in startNextTrackAfterCurrent (after a
+  // track finishes). Deactivating from this entrypoint would kill go-live or a
+  // manual Autoplay press when there are no unplayed tracks yet.
 }
 
 export async function pauseAutoplay() {
