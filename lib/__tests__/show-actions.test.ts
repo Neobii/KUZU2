@@ -115,6 +115,37 @@ describe('activateShow', () => {
     expect(mocks.prisma.tracklist.update).not.toHaveBeenCalled()
   })
 
+  it('does not deactivate on empty playlist when stopAfterLastSong is on', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      autoplayOnStart: true,
+      stopAfterLastSong: true,
+    })
+    mocks.prisma.show.findFirst.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: true,
+      autoplayOnStart: true,
+      stopAfterLastSong: true,
+    })
+    mocks.prisma.tracklist.findFirst.mockResolvedValue(null)
+    const { activateShow } = await import('@/lib/show-actions')
+
+    await activateShow('show-1')
+
+    expect(mocks.prisma.show.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'show-1' },
+        data: expect.objectContaining({ isActive: true }),
+      })
+    )
+    expect(mocks.prisma.show.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ isActive: false }),
+      })
+    )
+    expect(mocks.fillAutoDJTrack).not.toHaveBeenCalled()
+  })
+
   it('does not autoplay when autoplayOnStart is disabled', async () => {
     mocks.prisma.show.findUnique.mockResolvedValue({
       ...mocks.baseShow,
