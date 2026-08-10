@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => {
     autoStartEnd: false,
     autoplayOnStart: true,
     autoplayOnDate: false,
+    stopAfterLastSong: false,
+    stopOnCalendarEnd: false,
   }
   const baseTrack = {
     id: 'track-1',
@@ -35,10 +37,21 @@ const mocks = vi.hoisted(() => {
     },
     $transaction: vi.fn(),
   }
-  return { prisma, baseShow, baseTrack }
+  const cron = {
+    scheduleStopShowAtEnd: vi.fn(),
+    cancelStopShowAtEnd: vi.fn(),
+  }
+  const fillAutoDJTrack = vi.fn()
+  return { prisma, baseShow, baseTrack, cron, fillAutoDJTrack }
 })
 
 vi.mock('@/lib/prisma', () => ({ prisma: mocks.prisma }))
+vi.mock('@/lib/cron', () => mocks.cron)
+vi.mock('@/lib/auto-dj-fill', () => ({ fillAutoDJTrack: mocks.fillAutoDJTrack }))
+vi.mock('@/lib/live-timer', () => ({
+  clearAutoplayTimer: vi.fn(),
+  scheduleNextTrackAfter: vi.fn(),
+}))
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -102,6 +115,37 @@ describe('activateShow', () => {
     expect(mocks.prisma.tracklist.update).not.toHaveBeenCalled()
   })
 
+  it('does not deactivate on empty playlist when stopAfterLastSong is on', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      autoplayOnStart: true,
+      stopAfterLastSong: true,
+    })
+    mocks.prisma.show.findFirst.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: true,
+      autoplayOnStart: true,
+      stopAfterLastSong: true,
+    })
+    mocks.prisma.tracklist.findFirst.mockResolvedValue(null)
+    const { activateShow } = await import('@/lib/show-actions')
+
+    await activateShow('show-1')
+
+    expect(mocks.prisma.show.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'show-1' },
+        data: expect.objectContaining({ isActive: true }),
+      })
+    )
+    expect(mocks.prisma.show.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ isActive: false }),
+      })
+    )
+    expect(mocks.fillAutoDJTrack).not.toHaveBeenCalled()
+  })
+
   it('does not autoplay when autoplayOnStart is disabled', async () => {
     mocks.prisma.show.findUnique.mockResolvedValue({
       ...mocks.baseShow,
@@ -126,5 +170,62 @@ describe('activateShow', () => {
     )
     // No track was started
     expect(mocks.prisma.tracklist.update).not.toHaveBeenCalled()
+  })
+
+  it('schedules calendar end stop when activating', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      autoplayOnStart: false,
+      stopOnCalendarEnd: true,
+    })
+    const { activateShow } = await import('@/lib/show-actions')
+
+    await activateShow('show-1')
+
+    expect(mocks.cron.scheduleStopShowAtEnd).toHaveBeenCalledWith('show-1')
+  })
+})
+
+describe('startNextTrackAfterCurrent', () => {
+  it('deactivates when there is no next track and stopAfterLastSong is on', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: true,
+      stopAfterLastSong: true,
+    })
+    mocks.prisma.tracklist.findFirst.mockResolvedValue(null)
+    const { startNextTrackAfterCurrent } = await import('@/lib/show-actions')
+
+    await startNextTrackAfterCurrent('show-1', 0)
+
+    expect(mocks.cron.cancelStopShowAtEnd).toHaveBeenCalledWith('show-1')
+    expect(mocks.prisma.show.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'show-1' },
+        data: expect.objectContaining({ isActive: false }),
+      })
+    )
+    expect(mocks.fillAutoDJTrack).toHaveBeenCalled()
+  })
+
+  it('only pauses autoplay when stopAfterLastSong is off', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: true,
+      stopAfterLastSong: false,
+      autoStartEnd: false,
+    })
+    mocks.prisma.tracklist.findFirst.mockResolvedValue(null)
+    const { startNextTrackAfterCurrent } = await import('@/lib/show-actions')
+
+    await startNextTrackAfterCurrent('show-1', 0)
+
+    expect(mocks.prisma.show.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'show-1' },
+        data: { isAutoPlaying: false },
+      })
+    )
+    expect(mocks.fillAutoDJTrack).not.toHaveBeenCalled()
   })
 })

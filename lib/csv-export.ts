@@ -17,6 +17,42 @@ type TrackRow = {
   indexNumber: number | null
 }
 
+type LicensingTrackRow = {
+  playDate: Date | null
+  songTitle: string
+  artist: string | null
+  album: string | null
+  label: string | null
+  trackLength: string | null
+}
+
+function na(value: unknown): string {
+  if (value == null || value === '') return 'NA'
+  return String(value)
+}
+
+/** Meteor `downloadTracksCSV` — pipe-delimited, songs only, licensing columns. */
+export function licensingTracksToPipeCsv(rows: LicensingTrackRow[]): string {
+  const delimiter = '|'
+  const headers = ['playDate', 'songTitle', 'artist', 'albumName', 'label', 'trackLength']
+  const lines = [headers.join(delimiter)]
+  for (const row of rows) {
+    lines.push(
+      [
+        row.playDate ? row.playDate.toISOString() : 'NA',
+        na(row.songTitle),
+        na(row.artist),
+        na(row.album),
+        na(row.label),
+        na(row.trackLength),
+      ]
+        .map((v) => escCell(v, delimiter))
+        .join(delimiter)
+    )
+  }
+  return lines.join('\n')
+}
+
 export function tracksToDelimited(
   rows: TrackRow[],
   delimiter: string,
