@@ -14,6 +14,18 @@ export function isShowMember(
   return show.userId === userId || show.helperUserId === userId
 }
 
+/**
+ * Prisma `where` for listing shows on My Shows / GET /api/shows.
+ * Admins see all; everyone else sees shows they own or help on.
+ */
+export function showsListWhereForUser(userId: string | undefined, isAdmin: boolean) {
+  if (isAdmin) return {}
+  if (!userId) return { id: '__none__' }
+  return {
+    OR: [{ userId }, { helperUserId: userId }],
+  }
+}
+
 /** Edit/delete show, add/import/duplicate tracks, activate a specific show */
 export function canManageShow(
   user: Pick<User, 'id' | 'isAdmin' | 'isBoardMember' | 'isFieldProducer'>,

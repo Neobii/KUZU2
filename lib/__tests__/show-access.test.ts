@@ -85,6 +85,25 @@ describe('isShowMember', () => {
   })
 })
 
+describe('showsListWhereForUser', () => {
+  it('returns empty filter for admins (all shows)', async () => {
+    const { showsListWhereForUser } = await import('@/lib/show-access')
+    expect(showsListWhereForUser('user-admin', true)).toEqual({})
+  })
+
+  it('includes owned and helped shows for producers', async () => {
+    const { showsListWhereForUser } = await import('@/lib/show-access')
+    expect(showsListWhereForUser('user-helper', false)).toEqual({
+      OR: [{ userId: 'user-helper' }, { helperUserId: 'user-helper' }],
+    })
+  })
+
+  it('returns a no-match filter when user id is missing', async () => {
+    const { showsListWhereForUser } = await import('@/lib/show-access')
+    expect(showsListWhereForUser(undefined, false)).toEqual({ id: '__none__' })
+  })
+})
+
 describe('canManageShow', () => {
   it('allows owner, helper, and station ops', async () => {
     const { canManageShow } = await import('@/lib/show-access')

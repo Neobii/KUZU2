@@ -8,16 +8,16 @@ import { btnPrimary } from '@/lib/ui'
 import { cn } from '@/lib/cn'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StackedList, StackedListItem } from '@/components/ui/StackedList'
+import { showsListWhereForUser } from '@/lib/show-access'
 import { ProducerShowsActions } from './ProducerShowsActions'
 
 export default async function ProducerShowsPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
   const userId = (session.user as { id?: string }).id
-  const isAdmin = session.user.isAdmin
-  const where = isAdmin ? {} : { userId }
+  const isAdmin = session.user.isAdmin === true
   const shows = await prisma.show.findMany({
-    where,
+    where: showsListWhereForUser(userId, isAdmin),
     orderBy: { showStart: 'desc' },
   })
 
@@ -29,15 +29,21 @@ export default async function ProducerShowsPage() {
 
   return (
     <div>
-      <PageHeader title="My Shows" action={createAction} />
+      <PageHeader
+        title="My Shows"
+        description="Shows you own or help on."
+        action={createAction}
+      />
       <StackedList
-        emptyMessage="No shows yet. Create one to get started."
+        emptyMessage="No shows yet. Create one, or ask an admin to add you as a helper."
         emptyAction={createAction}
       >
         {shows.map((show) => {
+          const isHelperOnly = !!userId && show.helperUserId === userId && show.userId !== userId
           const metaParts = [
             show.showStart ? prettifySimpleTime(show.showStart) : null,
             show.episodeNumber != null ? `Episode ${show.episodeNumber}` : null,
+            isHelperOnly ? 'Helper' : null,
             show.isActive ? 'Live' : null,
           ].filter(Boolean)
 
