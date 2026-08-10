@@ -51,7 +51,7 @@ export function ProducerShowsActions({
   }
 
   return (
-    <span className="ml-2 inline-flex flex-wrap items-center gap-2">
+    <>
       {isActive ? (
         <button type="button" className={btnXsWarning} onClick={() => void deactivate()}>
           Stop Show
@@ -69,11 +69,12 @@ export function ProducerShowsActions({
       </button>
       <input
         type="text"
-        className={cn(inputClass, 'inline-block max-w-[10rem] text-xs')}
+        className={cn(inputClass, 'max-w-[12rem] text-xs')}
         value={dupName}
         onChange={(e) => setDupName(e.target.value)}
         placeholder="Duplicate name"
+        aria-label="Duplicate name"
       />
-    </span>
+    </>
   )
 }
