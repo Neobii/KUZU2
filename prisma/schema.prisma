@@ -132,6 +132,7 @@ model ProductionStatus {
   isShowingMetaData       Boolean? @map("is_showing_meta_data")
   additionalContent       String?  @db.Text @map("additional_content")
   isShowingAdditionalContent Boolean? @map("is_showing_additional_content")
+  isDisplayingLocalArtistShows Boolean @default(false) @map("is_displaying_local_artist_shows")
   isActive                Boolean
   userId                  String?  @map("user_id")
   producersNote           String?  @db.Text @map("producers_note")
@@ -164,13 +165,31 @@ model AutoDJPlaylist {
 }
 
 model Artist {
-  id         String      @id @default(cuid())
-  artistName String      @unique @map("artist_name")
-  imageUrl   String?     @map("image_url")
-  bio        String?     @db.Text
-  createdAt  DateTime    @default(now()) @map("created_at")
-  updatedAt  DateTime    @updatedAt @map("updated_at")
-  tracks     Tracklist[] @relation("TrackArtist")
+  id            String       @id @default(cuid())
+  artistName    String       @unique @map("artist_name")
+  imageUrl      String?      @map("image_url")
+  bio           String?      @db.Text
+  isLocalArtist Boolean      @default(false) @map("is_local_artist")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  tracks        Tracklist[]  @relation("TrackArtist")
+  shows         ArtistShow[]
 
   @@index([artistName])
+  @@index([isLocalArtist])
+}
+
+/// Local artist live show promo — flyer + TipTap HTML (dates/doors live in content).
+model ArtistShow {
+  id            String   @id @default(cuid())
+  artistId      String   @map("artist_id")
+  flyerImageUrl String?  @map("flyer_image_url")
+  content       String?  @db.Text
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  artist        Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([artistId])
+  @@index([artistId, isActive])
 }
