@@ -39,7 +39,14 @@ export async function POST(req: Request) {
         }),
       ])
 
-      await sendPasswordResetEmail(user.email, getResetPasswordUrl(token))
+      // Never fail the request after a token is stored — email may log to console in dev
+      // or when Resend is misconfigured.
+      try {
+        await sendPasswordResetEmail(user.email, getResetPasswordUrl(token))
+      } catch (emailError) {
+        console.error('[forgot-password] email send failed:', emailError)
+        console.info(`[forgot-password] reset URL: ${getResetPasswordUrl(token)}`)
+      }
     }
 
     return NextResponse.json({ ok: true, message: GENERIC_MESSAGE })

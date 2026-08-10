@@ -119,7 +119,7 @@ export function LiveShow() {
       }
       if (trimmed.length > 0) {
         setProducerMsgFeedback(
-          'Message saved. The show producer will see it as a banner at the bottom of Live Show.'
+          'Message saved. It will appear as a banner at the bottom of Live Show.'
         )
       } else {
         setProducerMsgFeedback('Message cleared.')
@@ -151,8 +151,9 @@ export function LiveShow() {
   const userId = session?.user?.id
   const isShowRunner =
     !!userId && (userId === show.userId || userId === show.helperUserId)
+  const canClearProducerMessage = isShowRunner || canEditProducerMessage
   const stationMessage = show.currentShowProducerMessage?.trim() ?? ''
-  const showProducerBanner = isShowRunner && hasProducerMessageText(stationMessage)
+  const showProducerBanner = hasProducerMessageText(stationMessage)
   const tracks = data.tracks as Array<{
     id: string
     indexNumber: number | null
@@ -188,7 +189,7 @@ export function LiveShow() {
           <div className="rounded-lg border border-stone-700 bg-stone-900/40 p-4">
             <h3 className="mb-2 text-lg font-medium text-stone-100">Producer message</h3>
             <p className="mb-2 text-sm text-stone-400">
-              Saved messages appear as a yellow banner for the show owner and helper on Live Show.
+              Saved messages appear as a yellow banner at the bottom of Live Show for anyone viewing the active show.
             </p>
             <textarea
               key={`producer-msg-${show.currentShowProducerMessage ?? ''}`}
@@ -340,16 +341,21 @@ export function LiveShow() {
         className="fixed inset-x-0 bottom-0 z-40 bg-stone-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]"
       >
         {showProducerBanner ? (
-          <div className="border-t border-stone-900/20 bg-[#c0a821] px-3 py-2 text-center text-stone-900">
-            <p className="m-0 text-sm font-semibold sm:text-base">Station message for you</p>
-            <p className="mt-1 whitespace-pre-wrap text-sm sm:text-base">{stationMessage}</p>
-            <button
-              type="button"
-              className={cn(btnSmDanger, 'mt-2')}
-              onClick={clearProducerMessage}
-            >
-              Clear
-            </button>
+          <div
+            role="status"
+            aria-live="polite"
+            className="border-t border-stone-900/20 bg-[#c0a821] px-3 py-2 text-center text-stone-900"
+          >
+            <p className="whitespace-pre-wrap text-sm sm:text-base">{stationMessage}</p>
+            {canClearProducerMessage ? (
+              <button
+                type="button"
+                className={cn(btnSmDanger, 'mt-2')}
+                onClick={clearProducerMessage}
+              >
+                Clear
+              </button>
+            ) : null}
           </div>
         ) : null}
         <div className="show-control-panel p-2 sm:p-4">
@@ -565,6 +571,7 @@ export function LiveShow() {
           </div>
         </div>
       )}
+
     </div>
   )
 }

@@ -1,13 +1,18 @@
 'use client'
 
 import Link from 'next/link'
-import { signOut } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 import type { Session } from 'next-auth'
+import useSWR from 'swr'
 import { useCallback, useEffect, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { canAccessProducerPortal } from '@/lib/can-access-producer-portal'
 
-export function Header({ session }: { session: Session | null }) {
+const fetcher = (url: string) => fetch(url).then((r) => r.json())
+
+export function Header({ session: initialSession }: { session: Session | null }) {
+  const { data: clientSession } = useSession()
+  const session = clientSession ?? initialSession
   const [navOpen, setNavOpen] = useState(false)
   const [extrasOpen, setExtrasOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
@@ -37,7 +42,13 @@ export function Header({ session }: { session: Session | null }) {
   const isManagingArtists = user.isManagingArtists
   const producerProfile = user.producerProfile
   const showProducerPortal = canAccessProducerPortal(user)
-  const unreadCount = 0
+  const messagingEnabled = !!producerProfile?.isMessagingUIEnabled
+  const { data: unreadData } = useSWR<{ count: number }>(
+    messagingEnabled ? '/api/messages/unread-count' : null,
+    fetcher,
+    { refreshInterval: 30_000 }
+  )
+  const unreadCount = unreadData?.count ?? 0
 
   const navLinkClass =
     'block rounded px-3 py-2 text-sm text-stone-200 hover:bg-stone-800 hover:text-white md:inline-block'
@@ -114,10 +125,10 @@ export function Header({ session }: { session: Session | null }) {
                     My Program Information
                   </Link>
                 </li>
-                {producerProfile?.isMessagingUIEnabled && (
+                {messagingEnabled && (
                   <li>
                     <Link href="/producer/messages" className={navLinkClass} onClick={closeMenus}>
-                      My Messages {unreadCount || ''}
+                      My Messages{unreadCount > 0 ? ` ${unreadCount}` : ''}
                     </Link>
                   </li>
                 )}

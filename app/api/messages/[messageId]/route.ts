@@ -13,7 +13,23 @@ export async function DELETE(
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const userId = (session.user as { id?: string }).id
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { messageId } = await params
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+    select: { producerId: true },
+  })
+  if (!message) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+  if (!session.user.isAdmin && message.producerId !== userId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   await prisma.message.delete({ where: { id: messageId } })
   return NextResponse.json({ ok: true })
 }

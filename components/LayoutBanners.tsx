@@ -21,47 +21,29 @@ export function LayoutBanners() {
   return (
     <>
       {layout?.armedShow && (
-        <div
-          style={{
-            backgroundColor: '#c0a821',
-            marginTop: -21,
-            padding: '15px 5px',
-            textAlign: 'center',
-          }}
-        >
-          <h3>
+        <div className="bg-[#c0a821] px-3 py-2 text-center text-stone-900">
+          <p className="m-0 text-sm font-semibold sm:text-base">
             {layout.armedShow.showName} will autoplay soon after underwriting / call letter
             announcements.
-          </h3>
+          </p>
         </div>
       )}
       {radio?.down && (
-        <div
-          style={{
-            backgroundColor: '#c0a821',
-            marginTop: -21,
-            padding: '15px 5px',
-            textAlign: 'center',
-          }}
-        >
-          <h3>RADIO LOGIK IS DOWN, FIX IT!!!!!</h3>
+        <div className="bg-[#c0a821] px-3 py-2 text-center text-stone-900">
+          <p className="m-0 text-sm font-semibold sm:text-base">
+            RADIO LOGIK IS DOWN, FIX IT!!!!!
+          </p>
         </div>
       )}
       {layout?.activeShow && layout?.canSeeBanner && (
-        <div
-          style={{
-            backgroundColor: '#e7d0ba',
-            marginTop: -21,
-            padding: '15px 5px',
-          }}
-        >
+        <div className="bg-[#e7d0ba] px-3 py-2">
           <Link
-            style={{ textAlign: 'center', display: 'block' }}
+            className="block text-center no-underline"
             href={layout.canLookAtLiveShow ? '/live-show' : '#'}
             onClick={(e) => !layout.canLookAtLiveShow && e.preventDefault()}
           >
-            <div className="mx-auto max-w-4xl px-3">
-              <h3 className="mt-2.5 text-stone-800">
+            <div className="mx-auto max-w-4xl">
+              <p className="m-0 text-sm font-semibold text-stone-800 sm:text-base">
                 {layout.activeShow.showName} is Live from{' '}
                 {layout.activeShow.showStart
                   ? prettifySimpleTime(layout.activeShow.showStart)
@@ -71,7 +53,7 @@ export function LayoutBanners() {
                   ? prettifySimpleTime(layout.activeShow.showEnd)
                   : ''}
                 !
-              </h3>
+              </p>
             </div>
           </Link>
         </div>

@@ -26,6 +26,8 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
     autoplayOnStart?: boolean
     autoplayOnDate?: boolean
+    stopAfterLastSong?: boolean
+    stopOnCalendarEnd?: boolean
   }
   const show = await prisma.show.create({
     data: {
@@ -36,6 +38,10 @@ export async function POST(request: Request) {
       hasMessagingEnabled: producerProfile?.isMessagingUIEnabled ?? false,
       autoplayOnStart: typeof body.autoplayOnStart === 'boolean' ? body.autoplayOnStart : false,
       autoplayOnDate: typeof body.autoplayOnDate === 'boolean' ? body.autoplayOnDate : false,
+      stopAfterLastSong:
+        typeof body.stopAfterLastSong === 'boolean' ? body.stopAfterLastSong : false,
+      stopOnCalendarEnd:
+        typeof body.stopOnCalendarEnd === 'boolean' ? body.stopOnCalendarEnd : false,
     },
   })
   return NextResponse.json(show)

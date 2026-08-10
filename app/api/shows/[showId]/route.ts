@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { scheduleStopShowAtEnd } from '@/lib/cron'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,6 +55,12 @@ export async function PATCH(
       ...(body.autoplayOnDate != null && {
         autoplayOnDate: Boolean(body.autoplayOnDate),
       }),
+      ...(body.stopAfterLastSong != null && {
+        stopAfterLastSong: Boolean(body.stopAfterLastSong),
+      }),
+      ...(body.stopOnCalendarEnd != null && {
+        stopOnCalendarEnd: Boolean(body.stopOnCalendarEnd),
+      }),
       ...(body.isShowingDescription != null && {
         isShowingDescription: Boolean(body.isShowingDescription),
       }),
@@ -67,6 +74,12 @@ export async function PATCH(
       }),
     },
   })
+  if (
+    body.showEnd !== undefined ||
+    body.stopOnCalendarEnd !== undefined
+  ) {
+    scheduleStopShowAtEnd(showId)
+  }
   return NextResponse.json(show)
 }
 
