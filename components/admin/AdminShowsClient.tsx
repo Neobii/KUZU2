@@ -10,10 +10,11 @@ import {
   btnSmPrimary,
   btnSmSecondary,
   btnSmWarning,
-  formGroupClass,
   inputClass,
 } from '@/lib/ui'
 import { cn } from '@/lib/cn'
+import { StackedList, StackedListItem } from '@/components/ui/StackedList'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -29,7 +30,7 @@ type Show = {
 }
 
 export function AdminShowsClient() {
-  const { data: shows, mutate } = useSWR<Show[]>('/api/shows', fetcher)
+  const { data: shows, mutate, isLoading } = useSWR<Show[]>('/api/shows', fetcher)
   const [q, setQ] = useState('')
 
   const filtered = useMemo(() => {
@@ -57,65 +58,104 @@ export function AdminShowsClient() {
 
   return (
     <div>
-      <div className={formGroupClass}>
+      <div className="mb-4">
         <input
           className={cn(inputClass, 'max-w-md')}
           placeholder="Search shows…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
+          aria-label="Search shows"
         />
       </div>
-      {filtered.map((show) => {
-        const endAfter = show.showEnd && moment(show.showEnd).add(10, 'minutes').isAfter(moment())
-        return (
-          <div key={show.id} className="form-holder mb-4">
-            <h3 className="text-lg font-semibold text-stone-100">
-              {show.showName}
-              <br />
-              <span className="text-sm font-normal text-stone-400">
-                {show.showStart ? prettifyDate(show.showStart) : ''},{' '}
-                {show.showStart ? prettifySimpleTime(show.showStart) : ''} –{' '}
-                {show.showEnd ? prettifySimpleTime(show.showEnd) : ''}
-              </span>
-            </h3>
-            <p className="mt-2 flex flex-wrap gap-2">
-              <Link href={`/show/${show.id}/tracks`} className={cn(btnSmSecondary, 'no-underline')}>
-                Tracks
-              </Link>{' '}
-              <a
-                href={`/api/export/shows/${show.id}/tracks`}
-                className={cn(btnSmSecondary, 'no-underline')}
-                download
-              >
-                Export TSV
-              </a>{' '}
-              {show.isActive ? (
-                <button type="button" className={btnSmWarning} onClick={() => void deactivate(show.id)}>
-                  Stop show
-                </button>
-              ) : (
-                <button type="button" className={btnSmPrimary} onClick={() => void activate(show.id)}>
-                  Start show
-                </button>
-              )}{' '}
-              {!show.autoStartEnd && endAfter && (
-                <span className="self-center text-sm text-stone-500">(auto start/end off)</span>
-              )}{' '}
-              <Link href={`/edit-show/${show.id}`} className={cn(btnSmPrimary, 'no-underline')}>
-                Edit
-              </Link>{' '}
-              <button type="button" className={btnSmDanger} onClick={() => void remove(show.id)}>
-                Delete
-              </button>
-            </p>
-            {show.episodeNumber != null && (
-              <span className="mr-1 text-stone-400">Ep {show.episodeNumber}</span>
-            )}
-            {show.defaultMeta && <small className="text-stone-400">{show.defaultMeta}</small>}
-            <hr className="my-3 border-stone-700" />
-          </div>
-        )
-      })}
+
+      {isLoading ? (
+        <EmptyState message="Loading shows…" />
+      ) : (
+        <StackedList
+          emptyMessage={
+            q.trim() ? 'No shows match that search.' : 'No shows found.'
+          }
+        >
+          {filtered.map((show) => {
+            const endAfter =
+              show.showEnd && moment(show.showEnd).add(10, 'minutes').isAfter(moment())
+            const timeLabel = [
+              show.showStart ? prettifyDate(show.showStart) : null,
+              show.showStart && show.showEnd
+                ? `${prettifySimpleTime(show.showStart)} – ${prettifySimpleTime(show.showEnd)}`
+                : show.showStart
+                  ? prettifySimpleTime(show.showStart)
+                  : null,
+            ]
+              .filter(Boolean)
+              .join(', ')
+
+            const subtitleParts = [
+              show.episodeNumber != null ? `Ep ${show.episodeNumber}` : null,
+              show.defaultMeta,
+              show.isActive ? 'Live' : null,
+              !show.autoStartEnd && endAfter ? 'auto start/end off' : null,
+            ].filter(Boolean)
+
+            return (
+              <StackedListItem
+                key={show.id}
+                title={show.showName}
+                href={`/show/${show.id}/tracks`}
+                meta={timeLabel || undefined}
+                subtitle={subtitleParts.length ? subtitleParts.join(' · ') : undefined}
+                actions={
+                  <>
+                    <Link
+                      href={`/show/${show.id}/tracks`}
+                      className={cn(btnSmSecondary, 'no-underline')}
+                    >
+                      Tracks
+                    </Link>
+                    <a
+                      href={`/api/export/shows/${show.id}/tracks`}
+                      className={cn(btnSmSecondary, 'no-underline')}
+                      download
+                    >
+                      Export TSV
+                    </a>
+                    {show.isActive ? (
+                      <button
+                        type="button"
+                        className={btnSmWarning}
+                        onClick={() => void deactivate(show.id)}
+                      >
+                        Stop show
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={btnSmPrimary}
+                        onClick={() => void activate(show.id)}
+                      >
+                        Start show
+                      </button>
+                    )}
+                    <Link
+                      href={`/edit-show/${show.id}`}
+                      className={cn(btnSmPrimary, 'no-underline')}
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      type="button"
+                      className={btnSmDanger}
+                      onClick={() => void remove(show.id)}
+                    >
+                      Delete
+                    </button>
+                  </>
+                }
+              />
+            )
+          })}
+        </StackedList>
+      )}
     </div>
   )
 }

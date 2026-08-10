@@ -4,6 +4,10 @@ import Link from 'next/link'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { prettifySimpleTime } from '@/lib/utils'
+import { btnPrimary } from '@/lib/ui'
+import { cn } from '@/lib/cn'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StackedList, StackedListItem } from '@/components/ui/StackedList'
 import { ProducerShowsActions } from './ProducerShowsActions'
 
 export default async function ProducerShowsPage() {
@@ -17,32 +21,43 @@ export default async function ProducerShowsPage() {
     orderBy: { showStart: 'desc' },
   })
 
+  const createAction = (
+    <Link href="/start-show" className={cn(btnPrimary, 'no-underline')}>
+      Create New Show
+    </Link>
+  )
+
   return (
     <div>
-      <h2 className="mb-3 text-xl font-semibold text-stone-100">My Shows</h2>
-      <p className="mb-4">
-        <Link href="/start-show" className="no-underline">
-          Create New Show
-        </Link>
-      </p>
-      <ul className="list-inside list-disc space-y-3 text-stone-300">
-        {shows.map((show) => (
-          <li key={show.id}>
-            <Link href={`/show/${show.id}/tracks`}>
-              {show.showName?.trim() || 'Kuzu Show'}
-            </Link>
-            {show.showStart && (
-              <span> — {prettifySimpleTime(show.showStart)}</span>
-            )}
-            {show.episodeNumber != null && <span> · Episode {show.episodeNumber}</span>}
-            <ProducerShowsActions
-              showId={show.id}
-              showName={show.showName}
-              isActive={show.isActive === true}
+      <PageHeader title="My Shows" action={createAction} />
+      <StackedList
+        emptyMessage="No shows yet. Create one to get started."
+        emptyAction={createAction}
+      >
+        {shows.map((show) => {
+          const metaParts = [
+            show.showStart ? prettifySimpleTime(show.showStart) : null,
+            show.episodeNumber != null ? `Episode ${show.episodeNumber}` : null,
+            show.isActive ? 'Live' : null,
+          ].filter(Boolean)
+
+          return (
+            <StackedListItem
+              key={show.id}
+              title={show.showName?.trim() || 'Kuzu Show'}
+              href={`/show/${show.id}/tracks`}
+              meta={metaParts.length ? metaParts.join(' · ') : undefined}
+              actions={
+                <ProducerShowsActions
+                  showId={show.id}
+                  showName={show.showName}
+                  isActive={show.isActive === true}
+                />
+              }
             />
-          </li>
-        ))}
-      </ul>
+          )
+        })}
+      </StackedList>
     </div>
   )
 }
