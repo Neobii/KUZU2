@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getHighestTrackNumber } from '@/lib/show-actions'
+import { requireSession } from '@/lib/api-auth'
+import { requireShowAccess } from '@/lib/show-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,24 +9,23 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ showId: string }> }
 ) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  const userId = (session.user as { id?: string }).id
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireSession()
+  if ('error' in auth) return auth.error
+
   const { showId } = await params
+  const access = await requireShowAccess(showId, auth.userId)
+  if ('error' in access) return access.error
+
   const body = await req.json().catch(() => ({}))
   const showName = (body.showName as string) || 'Copy'
-  const src = await prisma.show.findUnique({ where: { id: showId } })
-  if (!src) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const src = access.show
   const tracks = await prisma.tracklist.findMany({
     where: { showId },
     orderBy: { indexNumber: 'asc' },
   })
   const newShow = await prisma.show.create({
     data: {
-      userId,
+      userId: auth.userId,
       showName,
       defaultMeta: src.defaultMeta,
       isShowingDefaultMeta: src.isShowingDefaultMeta,
