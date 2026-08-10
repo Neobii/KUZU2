@@ -14,6 +14,7 @@ import {
   tableHeadClass,
 } from '@/lib/ui'
 import { cn } from '@/lib/cn'
+import { inclusiveLocalDateRangeToExclusiveBounds } from '@/lib/datetime-local'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -22,12 +23,6 @@ type Track = {
   songTitle: string
   artist: string | null
   show: { id: string; showName: string } | null
-}
-
-function parseLocalDate(value: string): Date | null {
-  if (!value) return null
-  const d = new Date(`${value}T00:00:00`)
-  return Number.isNaN(d.getTime()) ? null : d
 }
 
 export function AdminTracksClient() {
@@ -43,14 +38,13 @@ export function AdminTracksClient() {
 
   async function exportLicensingCsv() {
     setExportError('')
-    const from = parseLocalDate(dateFrom)
-    const to = parseLocalDate(dateTo)
-    if (!from || !to) {
-      setExportError('Choose both a start date and end date.')
-      return
-    }
-    if (from >= to) {
-      setExportError('End date must be after start date.')
+    const bounds = inclusiveLocalDateRangeToExclusiveBounds(dateFrom, dateTo)
+    if (!bounds) {
+      setExportError(
+        !dateFrom || !dateTo
+          ? 'Choose both a start date and end date.'
+          : 'End date must be on or after start date.'
+      )
       return
     }
 
@@ -58,8 +52,9 @@ export function AdminTracksClient() {
     try {
       const params = new URLSearchParams({
         format: 'licensing',
-        dateFrom: from.toISOString(),
-        dateTo: to.toISOString(),
+        dateFrom: bounds.from.toISOString(),
+        // API uses exclusive `lt: dateTo`; send start of the day after the inclusive end.
+        dateTo: bounds.toExclusive.toISOString(),
       })
       const res = await fetch(`/api/export/tracks?${params}`)
       if (!res.ok) {
@@ -117,7 +112,7 @@ export function AdminTracksClient() {
             {exporting ? 'Exporting…' : 'Export as CSV'}
           </button>
           <p className="mt-2 text-xs text-stone-400">
-            Pipe-delimited song tracks only, for licensing export.
+            Pipe-delimited song tracks only, for licensing export. From/To dates are inclusive.
           </p>
           {exportError ? <p className="mt-2 text-sm text-red-400">{exportError}</p> : null}
         </div>
