@@ -34,6 +34,8 @@ export async function POST(
       episodeNumber: src.episodeNumber,
       autoplayOnStart: src.autoplayOnStart,
       autoplayOnDate: src.autoplayOnDate,
+      stopAfterLastSong: src.stopAfterLastSong,
+      stopOnCalendarEnd: src.stopOnCalendarEnd,
     },
   })
   let idx = 0

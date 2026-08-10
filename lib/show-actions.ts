@@ -48,23 +48,19 @@ export async function startNextTrackAfterCurrent(showId: string, currentIndex: n
 
   if (nextTrack) {
     await startTrack(nextTrack.id)
-  } else {
+  } else if (show.stopAfterLastSong || show.autoStartEnd) {
+    await deactivateShow(showId)
     if (show.autoStartEnd) {
-      await prisma.show.updateMany({
-        where: { isActive: true },
-        data: {
-          isAutoPlaying: false,
-          autoStartEnd: false,
-          isActive: false,
-        },
-      })
-      await fillAutoDJTrack()
-    } else {
       await prisma.show.update({
         where: { id: showId },
-        data: { isAutoPlaying: false },
+        data: { autoStartEnd: false },
       })
     }
+  } else {
+    await prisma.show.update({
+      where: { id: showId },
+      data: { isAutoPlaying: false },
+    })
   }
 }
 
@@ -82,6 +78,10 @@ export async function autoplayNextTrack() {
   if (next) {
     await startTrack(next.id)
   }
+  // Intentionally do not stop the show here when the playlist is empty/exhausted.
+  // stopAfterLastSong / autoStartEnd belong in startNextTrackAfterCurrent (after a
+  // track finishes). Deactivating from this entrypoint would kill go-live or a
+  // manual Autoplay press when there are no unplayed tracks yet.
 }
 
 export async function pauseAutoplay() {
@@ -155,9 +155,11 @@ export async function decrementPosition(trackId: string) {
 
 export async function deactivateShow(showId: string) {
   clearAutoplayTimer()
+  const { cancelStopShowAtEnd } = await import('@/lib/cron')
+  cancelStopShowAtEnd(showId)
   await prisma.show.update({
     where: { id: showId },
-    data: { isActive: false },
+    data: { isActive: false, isAutoPlaying: false },
   })
   await fillAutoDJTrack()
 }
@@ -178,6 +180,8 @@ export async function activateShow(showId: string) {
       isArmedForAutoStart: false,
     },
   })
+  const { scheduleStopShowAtEnd } = await import('@/lib/cron')
+  scheduleStopShowAtEnd(showId)
   // Only start the first unplayed track on go-live when the show has
   // "Autoplay on show start" enabled. Safe with an empty tracklist:
   // autoplayNextTrack finds no next track and returns without starting.
