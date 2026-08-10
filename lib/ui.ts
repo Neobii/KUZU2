@@ -40,6 +40,15 @@ export const panelClass = 'rounded-lg border border-stone-700 bg-stone-900/50 p-
 export const panelHeadingClass = 'mb-3 border-b border-stone-600 pb-2 text-lg font-semibold text-stone-100'
 export const wellClass = 'rounded-lg border border-stone-700 bg-stone-900/40 p-4 text-stone-300'
 
+/** List page chrome */
+export const pageTitleClass = 'text-xl font-semibold text-stone-100'
+export const pageDescriptionClass = 'mt-1 text-sm text-stone-400'
+export const listStackClass =
+  'divide-y divide-stone-700 overflow-hidden rounded-lg border border-stone-700 bg-stone-900/40'
+export const listItemClass = 'px-4 py-3'
+export const emptyStateClass =
+  'rounded-lg border border-dashed border-stone-600 bg-stone-900/30 px-4 py-8 text-center text-sm text-stone-400'
+
 export const formGroupClass = 'mb-4'
 export const labelClass = 'mb-1 block text-sm font-medium text-stone-300'
 export const checkboxRowClass = 'mb-2 flex items-center gap-2'
