@@ -81,5 +81,4 @@ Use at least three accounts:
 These remain separate follow-ups and are not covered by this checklist:
 
 - Public integration writes (`/api/tracking/insert`, `/api/messages/insert`)
-- Self-service role changes via `PATCH /api/users/me`
 - Station-wide track search / calendar visibility policy
