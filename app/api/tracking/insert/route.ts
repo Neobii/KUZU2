@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { setPendingAutoDJTrack } from '@/lib/auto-dj-global'
-import { autoplayNextTrack } from '@/lib/show-actions'
+import { autoplayNextTrack, clearActiveShowRuntime } from '@/lib/show-actions'
+import { scheduleStopShowAtEnd } from '@/lib/cron'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,14 +43,14 @@ export async function POST(req: NextRequest) {
     })
     if (nextArmed) {
       ;(global as unknown as { preshowTracksStarted?: boolean }).preshowTracksStarted = false
-      await prisma.show.updateMany({
-        where: { isActive: true },
-        data: { isActive: false },
-      })
+      // Same live handoff as activateShow: drop prior timers/jobs, then arm
+      // calendar-end stop for the newly live show.
+      await clearActiveShowRuntime()
       await prisma.show.update({
         where: { id: nextArmed.id },
         data: { isActive: true, isArmedForAutoStart: false },
       })
+      scheduleStopShowAtEnd(nextArmed.id)
       if (nextArmed.autoplayOnDate) {
         await autoplayNextTrack()
       }
