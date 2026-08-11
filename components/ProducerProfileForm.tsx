@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { TipTapEditor } from '@/components/TipTapEditor'
-import { btnPrimary, checkboxRowClass, formGroupClass, inputClass, labelClass } from '@/lib/ui'
+import { btnPrimary, formGroupClass, inputClass, labelClass } from '@/lib/ui'
 
 export function ProducerProfileForm() {
   const router = useRouter()
@@ -29,7 +29,7 @@ export function ProducerProfileForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         profile: { name },
-        producerProfile: { bio, isPioneer },
+        producerProfile: { bio },
       }),
     })
     if (res.ok) {
@@ -48,17 +48,9 @@ export function ProducerProfileForm() {
         <label className={labelClass}>Bio</label>
         <TipTapEditor value={bio} onChange={setBio} minHeight={200} />
       </div>
-      <div className={checkboxRowClass}>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
-          <input
-            type="checkbox"
-            className="rounded border-stone-600"
-            checked={isPioneer}
-            onChange={(e) => setIsPioneer(e.target.checked)}
-          />
-          Pioneer producer
-        </label>
-      </div>
+      {isPioneer && (
+        <p className="mb-4 text-sm text-stone-400">Pioneer producer (set by station admin)</p>
+      )}
       <button type="button" className={btnPrimary} onClick={() => void save()}>
         Save
       </button>
