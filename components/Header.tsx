@@ -10,15 +10,35 @@ import { canAccessProducerPortal } from '@/lib/can-access-producer-portal'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
+/** Top-level items: same hit box for links and buttons. */
+const navLinkClass =
+  'inline-flex min-h-10 w-full items-center rounded-md border-0 bg-transparent px-3.5 py-2.5 text-left text-sm font-normal leading-5 tracking-wide text-stone-200 no-underline hover:bg-stone-800 hover:text-white md:w-auto'
+
+const menuItemClass =
+  'flex min-h-12 w-full items-center px-7 py-3 text-sm leading-5 text-stone-200 no-underline hover:bg-stone-800'
+
+const menuPanelClass =
+  'relative z-10 mt-1 min-w-[15rem] rounded-md border border-stone-700 bg-stone-900 py-2 shadow-lg md:absolute md:right-0 md:mt-2'
+
+function Chevron() {
+  return (
+    <svg className="ml-1.5 h-3 w-3 shrink-0 opacity-70" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+      <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+    </svg>
+  )
+}
+
 export function Header({ session: initialSession }: { session: Session | null }) {
   const { data: clientSession } = useSession()
   const session = clientSession ?? initialSession
   const [navOpen, setNavOpen] = useState(false)
+  const [producerOpen, setProducerOpen] = useState(false)
   const [extrasOpen, setExtrasOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
 
   const closeMenus = useCallback(() => {
     setNavOpen(false)
+    setProducerOpen(false)
     setExtrasOpen(false)
     setAdminOpen(false)
   }, [])
@@ -27,14 +47,12 @@ export function Header({ session: initialSession }: { session: Session | null })
     if (!navOpen) return
     const onResize = () => {
       if (typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches) {
-        setNavOpen(false)
-        setExtrasOpen(false)
-        setAdminOpen(false)
+        closeMenus()
       }
     }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [navOpen])
+  }, [navOpen, closeMenus])
 
   if (!session?.user) return null
   const user = session.user
@@ -50,16 +68,13 @@ export function Header({ session: initialSession }: { session: Session | null })
   )
   const unreadCount = unreadData?.count ?? 0
 
-  const navLinkClass =
-    'block rounded px-3 py-2 text-sm text-stone-200 hover:bg-stone-800 hover:text-white md:inline-block'
-
   return (
     <nav className="relative z-[1030] border-b border-stone-800 bg-stone-950">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-3 py-2 md:px-4">
-        <div className="flex min-w-0 flex-1 items-center justify-between md:flex-none md:justify-start md:gap-4">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-3 md:px-6">
+        <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md p-2 text-stone-200 hover:bg-stone-800 md:hidden"
+            className="inline-flex items-center justify-center rounded-md p-2.5 text-stone-200 hover:bg-stone-800 md:hidden"
             onClick={() => setNavOpen((o) => !o)}
             aria-expanded={navOpen}
             aria-controls="kuzu-navbar-collapse"
@@ -86,15 +101,183 @@ export function Header({ session: initialSession }: { session: Session | null })
         <div
           id="kuzu-navbar-collapse"
           className={cn(
-            'w-full flex-col gap-2 md:flex md:max-w-none md:flex-1 md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-x-4',
+            'absolute left-0 right-0 top-full flex-col gap-1 border-b border-stone-800 bg-stone-950 px-4 py-3 md:static md:flex md:flex-row md:items-center md:justify-end md:gap-1 md:border-0 md:bg-transparent md:p-0',
             navOpen ? 'flex' : 'hidden md:flex'
           )}
         >
-          <ul className="mt-2 flex list-none flex-col gap-2 md:mt-0 md:flex-row md:flex-wrap md:items-center md:gap-x-4">
+          <ul className="flex list-none flex-col gap-1 md:flex-row md:items-center md:gap-x-1 lg:gap-x-2">
+            {showProducerPortal && (
+              <>
+                <li>
+                  <Link href="/producer/shows" className={navLinkClass} onClick={closeMenus}>
+                    My Shows
+                  </Link>
+                </li>
+                <li className="relative">
+                  <button
+                    type="button"
+                    className={navLinkClass}
+                    aria-expanded={producerOpen}
+                    onClick={() => {
+                      setProducerOpen((o) => !o)
+                      setExtrasOpen(false)
+                      setAdminOpen(false)
+                    }}
+                  >
+                    Producer
+                    <Chevron />
+                  </button>
+                  {producerOpen && (
+                    <ul className={menuPanelClass} role="menu">
+                      <li>
+                        <Link href="/track-imports" className={menuItemClass} onClick={closeMenus}>
+                          Track Imports
+                        </Link>
+                      </li>
+                      <li>
+                        <Link href="/producer/profile" className={menuItemClass} onClick={closeMenus}>
+                          Profile
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/producer/program-information"
+                          className={menuItemClass}
+                          onClick={closeMenus}
+                        >
+                          Program Information
+                        </Link>
+                      </li>
+                      {messagingEnabled && (
+                        <li>
+                          <Link href="/producer/messages" className={menuItemClass} onClick={closeMenus}>
+                            Messages{unreadCount > 0 ? ` (${unreadCount})` : ''}
+                          </Link>
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                </li>
+              </>
+            )}
+
+            {(isAdmin || isManagingArtists) && (
+              <li>
+                <Link href="/artists" className={navLinkClass} onClick={closeMenus}>
+                  Artists
+                </Link>
+              </li>
+            )}
+
+            <li className="relative">
+              <button
+                type="button"
+                className={navLinkClass}
+                aria-expanded={extrasOpen}
+                onClick={() => {
+                  setExtrasOpen((o) => !o)
+                  setProducerOpen(false)
+                  setAdminOpen(false)
+                }}
+              >
+                Extras
+                <Chevron />
+              </button>
+              {extrasOpen && (
+                <ul className={menuPanelClass} role="menu">
+                  {(isAdmin || producerProfile?.isPioneer) && (
+                    <li>
+                      <Link href="/kuzu-stats" className={menuItemClass} onClick={closeMenus}>
+                        Listener Stats
+                      </Link>
+                    </li>
+                  )}
+                  <li>
+                    <Link href="/calendar" className={menuItemClass} onClick={closeMenus}>
+                      Calendar
+                    </Link>
+                  </li>
+                  {(isAdmin || producerProfile?.isPioneer) && (
+                    <li>
+                      <Link href="/feature-requests" className={menuItemClass} onClick={closeMenus}>
+                        Feature Requests
+                      </Link>
+                    </li>
+                  )}
+                </ul>
+              )}
+            </li>
+
+            {isAdmin && (
+              <li className="relative md:ml-3 md:border-l md:border-stone-700 md:pl-3">
+                <button
+                  type="button"
+                  className={navLinkClass}
+                  aria-expanded={adminOpen}
+                  onClick={() => {
+                    setAdminOpen((o) => !o)
+                    setProducerOpen(false)
+                    setExtrasOpen(false)
+                  }}
+                >
+                  Admin
+                  <Chevron />
+                </button>
+                {adminOpen && (
+                  <ul className={menuPanelClass} role="menu">
+                    <li>
+                      <Link href="/admin/users" className={menuItemClass} onClick={closeMenus}>
+                        Users
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/admin/producers" className={menuItemClass} onClick={closeMenus}>
+                        Producers
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/admin/shows" className={menuItemClass} onClick={closeMenus}>
+                        Shows
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/admin/tracks" className={menuItemClass} onClick={closeMenus}>
+                        Tracks
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/admin/posts" className={menuItemClass} onClick={closeMenus}>
+                        Posts
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/admin/auto-dj-playlists" className={menuItemClass} onClick={closeMenus}>
+                        Auto DJ Playlists
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/admin/production-statuses"
+                        className={menuItemClass}
+                        onClick={closeMenus}
+                      >
+                        Kuzu Statuses
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/admin/live-chat" className={menuItemClass} onClick={closeMenus}>
+                        Live Chat
+                      </Link>
+                    </li>
+                  </ul>
+                )}
+              </li>
+            )}
+
             <li>
               <button
                 type="button"
-                className={cn(navLinkClass, 'w-full text-left')}
+                className={navLinkClass}
                 onClick={() => {
                   closeMenus()
                   signOut()
@@ -103,196 +286,6 @@ export function Header({ session: initialSession }: { session: Session | null })
                 Logout
               </button>
             </li>
-            {showProducerPortal && (
-              <>
-                <li>
-                  <Link href="/producer/shows" className={navLinkClass} onClick={closeMenus}>
-                    My Shows
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/track-imports" className={navLinkClass} onClick={closeMenus}>
-                    Track Imports
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/producer/profile" className={navLinkClass} onClick={closeMenus}>
-                    My Producer Profile
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/producer/program-information" className={navLinkClass} onClick={closeMenus}>
-                    My Program Information
-                  </Link>
-                </li>
-                {messagingEnabled && (
-                  <li>
-                    <Link href="/producer/messages" className={navLinkClass} onClick={closeMenus}>
-                      My Messages{unreadCount > 0 ? ` ${unreadCount}` : ''}
-                    </Link>
-                  </li>
-                )}
-              </>
-            )}
-          </ul>
-
-          <ul className="flex list-none flex-col gap-2 md:ml-3 md:flex-row md:items-center md:gap-x-3">
-            {(isAdmin || isManagingArtists) && (
-              <li>
-                <Link href="/artists" className={navLinkClass} onClick={closeMenus}>
-                  Artists
-                </Link>
-              </li>
-            )}
-            <li className="relative">
-              <button
-                type="button"
-                className={cn(navLinkClass, 'flex w-full items-center gap-1 text-left md:w-auto')}
-                onClick={() => {
-                  setExtrasOpen((o) => !o)
-                  setAdminOpen(false)
-                }}
-              >
-                Extras
-                <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
-                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                </svg>
-              </button>
-              {extrasOpen && (
-                <ul
-                  className="relative z-10 mt-1 min-w-[12rem] rounded-md border border-stone-700 bg-stone-900 py-1 shadow-lg md:absolute md:right-0 md:mt-0"
-                  role="menu"
-                >
-                  {(isAdmin || producerProfile?.isPioneer) && (
-                    <li>
-                      <Link
-                        href="/kuzu-stats"
-                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
-                        onClick={closeMenus}
-                      >
-                        Listener Stats
-                      </Link>
-                    </li>
-                  )}
-                  <li>
-                    <Link
-                      href="/calendar"
-                      className="block px-4 py-2 text-sm text-stone-200 no-underline hover:bg-stone-800"
-                      onClick={closeMenus}
-                    >
-                      Calendar
-                    </Link>
-                  </li>
-                  {(isAdmin || producerProfile?.isPioneer) && (
-                    <li>
-                      <Link
-                        href="/feature-requests"
-                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
-                        onClick={closeMenus}
-                      >
-                        Feature Requests
-                      </Link>
-                    </li>
-                  )}
-                </ul>
-              )}
-            </li>
-            {isAdmin && (
-              <li className="relative">
-                <button
-                  type="button"
-                  className={cn(navLinkClass, 'flex w-full items-center gap-1 text-left md:w-auto')}
-                  onClick={() => {
-                    setAdminOpen((o) => !o)
-                    setExtrasOpen(false)
-                  }}
-                >
-                  Admin
-                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
-                    <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                  </svg>
-                </button>
-                {adminOpen && (
-                  <ul
-                    className="relative z-10 mt-1 min-w-[12rem] rounded-md border border-stone-700 bg-stone-900 py-1.5 shadow-lg md:absolute md:right-0 md:mt-0"
-                    role="menu"
-                  >
-                    <li>
-                      <Link
-                        href="/admin/users"
-                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
-                        onClick={closeMenus}
-                      >
-                        Users
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/admin/producers"
-                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
-                        onClick={closeMenus}
-                      >
-                        Producers
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/admin/shows"
-                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
-                        onClick={closeMenus}
-                      >
-                        Shows
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/admin/tracks"
-                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
-                        onClick={closeMenus}
-                      >
-                        Tracks
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/admin/posts"
-                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
-                        onClick={closeMenus}
-                      >
-                        Posts
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/admin/auto-dj-playlists"
-                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
-                        onClick={closeMenus}
-                      >
-                        Auto DJ Playlists
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/admin/production-statuses"
-                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
-                        onClick={closeMenus}
-                      >
-                        Kuzu Statuses
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/admin/live-chat"
-                        className="block px-4 py-2.5 text-sm text-stone-200 no-underline hover:bg-stone-800"
-                        onClick={closeMenus}
-                      >
-                        Live Chat
-                      </Link>
-                    </li>
-                  </ul>
-                )}
-              </li>
-            )}
           </ul>
         </div>
       </div>
