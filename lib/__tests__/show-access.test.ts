@@ -323,3 +323,58 @@ describe('requireLiveShowControl', () => {
     }
   })
 })
+
+describe('requireLiveTrackStart', () => {
+  it('allows starting a track on the active show', async () => {
+    mocks.prisma.user.findUnique.mockResolvedValue(mocks.owner)
+    mocks.prisma.show.findFirst.mockResolvedValue({
+      ...mocks.show,
+      isActive: true,
+    })
+    mocks.prisma.tracklist.findUnique.mockResolvedValue(mocks.track)
+    mocks.prisma.show.findUnique.mockResolvedValue(mocks.show)
+
+    const { requireLiveTrackStart } = await import('@/lib/show-access')
+    const result = await requireLiveTrackStart('track-1', 'user-owner')
+
+    expect('error' in result).toBe(false)
+    if (!('error' in result)) {
+      expect(result.track.id).toBe('track-1')
+      expect(result.active.id).toBe('show-1')
+    }
+  })
+
+  it('returns 403 when the track belongs to a different show than the live one', async () => {
+    mocks.prisma.user.findUnique.mockResolvedValue(mocks.admin)
+    mocks.prisma.show.findFirst.mockResolvedValue({
+      id: 'show-live',
+      userId: 'user-other',
+      helperUserId: null,
+      isActive: true,
+    })
+    mocks.prisma.tracklist.findUnique.mockResolvedValue(mocks.track)
+    mocks.prisma.show.findUnique.mockResolvedValue(mocks.show)
+
+    const { requireLiveTrackStart } = await import('@/lib/show-access')
+    const result = await requireLiveTrackStart('track-1', 'user-admin')
+
+    expect('error' in result).toBe(true)
+    if ('error' in result) {
+      expect(result.error.status).toBe(403)
+      await expect(result.error.json()).resolves.toEqual({ error: 'Forbidden' })
+    }
+  })
+
+  it('returns 403 when no show is live', async () => {
+    mocks.prisma.user.findUnique.mockResolvedValue(mocks.owner)
+    mocks.prisma.show.findFirst.mockResolvedValue(null)
+
+    const { requireLiveTrackStart } = await import('@/lib/show-access')
+    const result = await requireLiveTrackStart('track-1', 'user-owner')
+
+    expect('error' in result).toBe(true)
+    if ('error' in result) {
+      expect(result.error.status).toBe(403)
+    }
+  })
+})

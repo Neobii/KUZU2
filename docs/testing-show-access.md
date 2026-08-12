@@ -31,6 +31,7 @@ Use at least three accounts:
 - [ ] Duplicate show — succeeds
 - [ ] Activate (Go Live) and deactivate — succeeds
 - [ ] While live: start a track, toggle autoplay / show meta — succeeds
+- [ ] Start track on a different (non-live) show via API — **denied** (403); live autoplay continues
 
 ### 2. Helper — manage access; producer message clear-only
 

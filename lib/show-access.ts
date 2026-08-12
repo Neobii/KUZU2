@@ -83,3 +83,22 @@ export async function requireLiveShowControl(userId: string) {
   }
   return access
 }
+
+/**
+ * Start/restart a track — caller must control the live show, and the track
+ * must belong to that active show. Starting a track on any other show would
+ * clear the global autoplay timer and pollute on-air current-track metadata.
+ */
+export async function requireLiveTrackStart(trackId: string, userId: string) {
+  const live = await requireLiveShowControl(userId)
+  if ('error' in live) return live
+
+  const access = await requireTrackAccess(trackId, userId)
+  if ('error' in access) return access
+
+  if (access.track.showId !== live.active!.id) {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+  }
+
+  return { ...access, active: live.active! }
+}

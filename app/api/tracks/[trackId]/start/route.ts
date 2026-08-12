@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { startTrack } from '@/lib/show-actions'
 import { requireSession } from '@/lib/api-auth'
-import { requireTrackAccess } from '@/lib/show-access'
+import { requireLiveTrackStart } from '@/lib/show-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +13,7 @@ export async function POST(
   if ('error' in auth) return auth.error
 
   const { trackId } = await params
-  const access = await requireTrackAccess(trackId, auth.userId)
+  const access = await requireLiveTrackStart(trackId, auth.userId)
   if ('error' in access) return access.error
 
   try {
