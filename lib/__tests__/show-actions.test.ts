@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => {
     show: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn(),
     },
@@ -42,19 +43,30 @@ const mocks = vi.hoisted(() => {
     cancelStopShowAtEnd: vi.fn(),
   }
   const fillAutoDJTrack = vi.fn()
-  return { prisma, baseShow, baseTrack, cron, fillAutoDJTrack }
+  const clearAutoplayTimer = vi.fn()
+  const scheduleNextTrackAfter = vi.fn()
+  return {
+    prisma,
+    baseShow,
+    baseTrack,
+    cron,
+    fillAutoDJTrack,
+    clearAutoplayTimer,
+    scheduleNextTrackAfter,
+  }
 })
 
 vi.mock('@/lib/prisma', () => ({ prisma: mocks.prisma }))
 vi.mock('@/lib/cron', () => mocks.cron)
 vi.mock('@/lib/auto-dj-fill', () => ({ fillAutoDJTrack: mocks.fillAutoDJTrack }))
 vi.mock('@/lib/live-timer', () => ({
-  clearAutoplayTimer: vi.fn(),
-  scheduleNextTrackAfter: vi.fn(),
+  clearAutoplayTimer: mocks.clearAutoplayTimer,
+  scheduleNextTrackAfter: mocks.scheduleNextTrackAfter,
 }))
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.prisma.show.findMany.mockResolvedValue([])
   mocks.prisma.show.updateMany.mockResolvedValue({ count: 0 })
   mocks.prisma.show.update.mockResolvedValue({ ...mocks.baseShow, isActive: true })
   mocks.prisma.show.findFirst.mockResolvedValue({ ...mocks.baseShow, isActive: true })
@@ -184,6 +196,25 @@ describe('activateShow', () => {
 
     expect(mocks.cron.scheduleStopShowAtEnd).toHaveBeenCalledWith('show-1')
   })
+
+  it('clears prior live timers and calendar-stop jobs when taking over', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      autoplayOnStart: false,
+    })
+    mocks.prisma.show.findMany.mockResolvedValue([{ id: 'show-old' }])
+    const { activateShow } = await import('@/lib/show-actions')
+
+    await activateShow('show-1')
+
+    expect(mocks.clearAutoplayTimer).toHaveBeenCalled()
+    expect(mocks.cron.cancelStopShowAtEnd).toHaveBeenCalledWith('show-old')
+    expect(mocks.prisma.show.updateMany).toHaveBeenCalledWith({
+      where: { isActive: true },
+      data: { isActive: false, isAutoPlaying: false },
+    })
+    expect(mocks.fillAutoDJTrack).not.toHaveBeenCalled()
+  })
 })
 
 describe('startNextTrackAfterCurrent', () => {
@@ -226,6 +257,21 @@ describe('startNextTrackAfterCurrent', () => {
         data: { isAutoPlaying: false },
       })
     )
+    expect(mocks.fillAutoDJTrack).not.toHaveBeenCalled()
+  })
+
+  it('ignores stale timers for shows that are no longer active', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: false,
+      stopAfterLastSong: true,
+    })
+    const { startNextTrackAfterCurrent } = await import('@/lib/show-actions')
+
+    await startNextTrackAfterCurrent('show-1', 0)
+
+    expect(mocks.prisma.tracklist.findFirst).not.toHaveBeenCalled()
+    expect(mocks.prisma.show.update).not.toHaveBeenCalled()
     expect(mocks.fillAutoDJTrack).not.toHaveBeenCalled()
   })
 })

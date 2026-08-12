@@ -51,9 +51,9 @@ ul {
   padding: 0;
 }
 
+/* List reset only — do not zero padding here; it overrides Tailwind nav/menu utilities. */
 ul li a {
   margin: 0;
-  padding: 0;
 }
 
 .dropdown-menu {

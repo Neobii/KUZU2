@@ -40,7 +40,9 @@ export async function startTrack(trackId: string) {
 
 export async function startNextTrackAfterCurrent(showId: string, currentIndex: number) {
   const show = await prisma.show.findUnique({ where: { id: showId } })
-  if (!show) return
+  // Ignore stale timers from a show that is no longer live (e.g. after Go Live
+  // switched to a different show without the previous timeout being cleared).
+  if (!show?.isActive) return
 
   const nextTrack = await prisma.tracklist.findFirst({
     where: { showId, indexNumber: currentIndex + 1 },
@@ -164,14 +166,34 @@ export async function deactivateShow(showId: string) {
   await fillAutoDJTrack()
 }
 
+/**
+ * Tear down in-process live runtime for any currently active show before
+ * another show takes over. Does not call fillAutoDJTrack — that belongs to an
+ * intentional stop, not a live handoff.
+ */
+export async function clearActiveShowRuntime() {
+  clearAutoplayTimer()
+  const { cancelStopShowAtEnd } = await import('@/lib/cron')
+  const active = await prisma.show.findMany({
+    where: { isActive: true },
+    select: { id: true },
+  })
+  for (const prev of active) {
+    cancelStopShowAtEnd(prev.id)
+  }
+  if (active.length > 0) {
+    await prisma.show.updateMany({
+      where: { isActive: true },
+      data: { isActive: false, isAutoPlaying: false },
+    })
+  }
+}
+
 export async function activateShow(showId: string) {
   const show = await prisma.show.findUnique({ where: { id: showId } })
   if (!show) return
 
-  await prisma.show.updateMany({
-    where: { isActive: true },
-    data: { isActive: false },
-  })
+  await clearActiveShowRuntime()
   await prisma.show.update({
     where: { id: showId },
     data: {
