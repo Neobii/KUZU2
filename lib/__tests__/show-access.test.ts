@@ -89,6 +89,31 @@ describe('showsListWhereForUser', () => {
   it('returns empty filter for admins (all shows)', async () => {
     const { showsListWhereForUser } = await import('@/lib/show-access')
     expect(showsListWhereForUser('user-admin', true)).toEqual({})
+    expect(
+      showsListWhereForUser('user-admin', {
+        isAdmin: true,
+        isBoardMember: false,
+        isFieldProducer: false,
+      })
+    ).toEqual({})
+  })
+
+  it('returns empty filter for board and field producers (all shows)', async () => {
+    const { showsListWhereForUser } = await import('@/lib/show-access')
+    expect(
+      showsListWhereForUser('user-board', {
+        isAdmin: false,
+        isBoardMember: true,
+        isFieldProducer: false,
+      })
+    ).toEqual({})
+    expect(
+      showsListWhereForUser('user-field', {
+        isAdmin: false,
+        isBoardMember: false,
+        isFieldProducer: true,
+      })
+    ).toEqual({})
   })
 
   it('includes owned and helped shows for producers', async () => {

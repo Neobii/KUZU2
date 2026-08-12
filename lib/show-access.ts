@@ -16,10 +16,18 @@ export function isShowMember(
 
 /**
  * Prisma `where` for listing shows on My Shows / GET /api/shows.
- * Admins see all; everyone else sees shows they own or help on.
+ * Station ops (admin, board, field producer) see all; everyone else sees
+ * shows they own or help on.
  */
-export function showsListWhereForUser(userId: string | undefined, isAdmin: boolean) {
-  if (isAdmin) return {}
+export function showsListWhereForUser(
+  userId: string | undefined,
+  flags: Pick<User, 'isAdmin' | 'isBoardMember' | 'isFieldProducer'> | boolean
+) {
+  const ops =
+    typeof flags === 'boolean'
+      ? { isAdmin: flags, isBoardMember: false, isFieldProducer: false }
+      : flags
+  if (isStationOps(ops)) return {}
   if (!userId) return { id: '__none__' }
   return {
     OR: [{ userId }, { helperUserId: userId }],

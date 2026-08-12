@@ -11,10 +11,18 @@ export async function GET() {
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  const userId = (session.user as { id?: string }).id
-  const isAdmin = (session.user as { isAdmin?: boolean }).isAdmin === true
+  const user = session.user as {
+    id?: string
+    isAdmin?: boolean
+    isBoardMember?: boolean
+    isFieldProducer?: boolean
+  }
   const shows = await prisma.show.findMany({
-    where: showsListWhereForUser(userId, isAdmin),
+    where: showsListWhereForUser(user.id, {
+      isAdmin: user.isAdmin === true,
+      isBoardMember: user.isBoardMember === true,
+      isFieldProducer: user.isFieldProducer === true,
+    }),
     orderBy: { showStart: 'desc' },
   })
   return NextResponse.json(shows)

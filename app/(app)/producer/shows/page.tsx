@@ -15,9 +15,13 @@ export default async function ProducerShowsPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
   const userId = (session.user as { id?: string }).id
-  const isAdmin = session.user.isAdmin === true
+  const listFlags = {
+    isAdmin: session.user.isAdmin === true,
+    isBoardMember: session.user.isBoardMember === true,
+    isFieldProducer: session.user.isFieldProducer === true,
+  }
   const shows = await prisma.show.findMany({
-    where: showsListWhereForUser(userId, isAdmin),
+    where: showsListWhereForUser(userId, listFlags),
     orderBy: { showStart: 'desc' },
   })
 
@@ -31,7 +35,7 @@ export default async function ProducerShowsPage() {
     <div>
       <PageHeader
         title="My Shows"
-        description="Shows you own or help on."
+        description="Shows you own or help on. Board and field producers see every show."
         action={createAction}
       />
       <StackedList
