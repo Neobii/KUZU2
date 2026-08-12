@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireArtistManager } from '@/lib/require-admin'
+import { parseArtistShowDate } from '@/lib/local-artist-show'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,7 @@ export async function PATCH(
   const data: {
     flyerImageUrl?: string | null
     content?: string | null
+    showDate?: Date | null
     isActive?: boolean
   } = {}
   if (body.flyerImageUrl !== undefined) {
@@ -30,6 +32,9 @@ export async function PATCH(
   }
   if (body.content !== undefined) {
     data.content = typeof body.content === 'string' ? body.content : null
+  }
+  if (body.showDate !== undefined) {
+    data.showDate = parseArtistShowDate(body.showDate) ?? null
   }
   if (body.isActive !== undefined) data.isActive = Boolean(body.isActive)
 

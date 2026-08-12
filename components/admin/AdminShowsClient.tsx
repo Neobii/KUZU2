@@ -33,6 +33,7 @@ type ArtistShowRow = {
   id: string
   flyerImageUrl: string | null
   content: string | null
+  showDate: string | null
   isActive: boolean
   updatedAt: string
   artist: {
@@ -202,8 +203,9 @@ export function AdminShowsClient() {
 
       <h3 className="mb-2 mt-8 text-lg font-semibold text-stone-100">Local artist shows</h3>
       <p className="mb-3 text-sm text-stone-400">
-        Flyer + TipTap promos from Artists. Manage details on the Artists page; toggle Active here
-        for tracking additional info.
+        Flyer + TipTap promos from Artists. Delivered via{' '}
+        <code className="text-stone-300">/api/tracking/local-artist-show</code> when a local artist
+        is playing (show date within ±1 month).
       </p>
       {artistShowsLoading ? (
         <EmptyState message="Loading local artist shows…" />
@@ -225,6 +227,9 @@ export function AdminShowsClient() {
           {artistShows.map((row) => {
             const metaParts = [
               row.isActive ? 'Active promo' : 'Inactive',
+              row.showDate
+                ? `show ${prettifyDate(row.showDate)}`
+                : 'no show date',
               !row.artist.isLocalArtist ? 'artist not marked local' : null,
             ].filter(Boolean)
 

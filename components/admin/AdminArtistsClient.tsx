@@ -20,6 +20,7 @@ import {
   tableHeadClass,
 } from '@/lib/ui'
 import { cn } from '@/lib/cn'
+import { formatShowDateInputValue } from '@/lib/local-artist-show'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -27,6 +28,7 @@ type ArtistShow = {
   id: string
   flyerImageUrl: string | null
   content: string | null
+  showDate: string | null
   isActive: boolean
   updatedAt: string
 }
@@ -296,8 +298,8 @@ function ArtistShowsPanel({
         </div>
       </div>
       <p className="mb-3 text-sm text-stone-600">
-        Put date, doors, and show time in the TipTap content. Mark one show Active so it can appear
-        when this local artist is playing.
+        Set a show date so tracking can pick the latest promo within a month of today. Put doors,
+        venue, and other details in TipTap. Mark shows Active to make them eligible.
       </p>
       {(creating || editing) && (
         <ShowForm
@@ -308,9 +310,10 @@ function ArtistShowsPanel({
               ? {
                   flyerImageUrl: editing.flyerImageUrl ?? '',
                   content: editing.content ?? '',
+                  showDate: formatShowDateInputValue(editing.showDate),
                   isActive: editing.isActive,
                 }
-              : { flyerImageUrl: '', content: '', isActive: true }
+              : { flyerImageUrl: '', content: '', showDate: '', isActive: true }
           }
           showId={editing?.id}
           onDone={async () => {
@@ -348,6 +351,13 @@ function ArtistShowsPanel({
                 ) : (
                   <span className="text-stone-500">Inactive</span>
                 )}
+                {s.showDate ? (
+                  <span className="ml-2 text-stone-600">
+                    · {formatShowDateInputValue(s.showDate)}
+                  </span>
+                ) : (
+                  <span className="ml-2 text-amber-700">· no show date</span>
+                )}
               </div>
               <div
                 className="prose prose-sm max-w-none text-stone-700"
@@ -383,7 +393,7 @@ function ShowForm({
   artistId: string
   showId?: string
   title: string
-  initial: { flyerImageUrl: string; content: string; isActive: boolean }
+  initial: { flyerImageUrl: string; content: string; showDate: string; isActive: boolean }
   onDone: () => void | Promise<void>
   onCancel: () => void
 }) {
@@ -418,6 +428,7 @@ function ShowForm({
         body: JSON.stringify({
           flyerImageUrl: v.flyerImageUrl,
           content: v.content,
+          showDate: v.showDate || null,
           isActive: v.isActive,
         }),
       }
@@ -432,6 +443,15 @@ function ShowForm({
   return (
     <div className="mb-4 rounded border border-stone-300 bg-stone-50 p-3">
       <div className="mb-3 font-medium">{title}</div>
+      <div className={formGroupClass}>
+        <label className={labelClassLight}>Show date</label>
+        <input
+          type="date"
+          className={inputClassLight}
+          value={v.showDate}
+          onChange={(e) => setV({ ...v, showDate: e.target.value })}
+        />
+      </div>
       <div className={formGroupClass}>
         <label className={labelClassLight}>Flyer image</label>
         <div className="flex flex-wrap items-center gap-2">
@@ -469,7 +489,7 @@ function ShowForm({
         ) : null}
       </div>
       <div className={formGroupClass}>
-        <label className={labelClassLight}>Show details (date, doors, show time, venue…)</label>
+        <label className={labelClassLight}>Show details (doors, venue, notes…)</label>
         <TipTapEditor value={v.content} onChange={(html) => setV({ ...v, content: html })} />
       </div>
       <div className={checkboxRowClass}>

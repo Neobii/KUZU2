@@ -26,52 +26,12 @@ export function formatLocalArtistShowHtml(show: {
   return parts.length > 0 ? parts.join('') : ' '
 }
 
-async function getLocalArtistShowHtml(): Promise<string | null> {
-  const track = await prisma.tracklist.findFirst({
-    where: { playDate: { not: null } },
-    orderBy: { playDate: 'desc' },
-    select: { artistId: true, artist: true },
-  })
-  if (!track) return null
-
-  let artist =
-    track.artistId != null
-      ? await prisma.artist.findUnique({ where: { id: track.artistId } })
-      : null
-
-  if (!artist && track.artist?.trim()) {
-    artist = await prisma.artist.findFirst({
-      where: {
-        isLocalArtist: true,
-        artistName: { equals: track.artist.trim(), mode: 'insensitive' },
-      },
-    })
-  }
-
-  if (!artist?.isLocalArtist) return null
-
-  const show = await prisma.artistShow.findFirst({
-    where: { artistId: artist.id, isActive: true },
-    orderBy: { updatedAt: 'desc' },
-    include: { artist: { select: { artistName: true } } },
-  })
-  if (!show) return null
-
-  const html = formatLocalArtistShowHtml(show)
-  return html.trim() ? html : null
-}
-
-/** Mirrors legacy Meteor `getCurrentAdditionalInfo`, plus local artist show promos. */
+/** Mirrors legacy Meteor `getCurrentAdditionalInfo` (local artist promos use `/api/tracking/local-artist-show`). */
 export async function getCurrentAdditionalInfo(): Promise<string> {
   const [productionStatus, show] = await Promise.all([
     prisma.productionStatus.findFirst({ where: { isActive: true } }),
     prisma.show.findFirst({ where: { isActive: true } }),
   ])
-
-  if (productionStatus?.isDisplayingLocalArtistShows) {
-    const localHtml = await getLocalArtistShowHtml()
-    if (localHtml) return localHtml
-  }
 
   if (productionStatus?.isShowingAdditionalContent) {
     return productionStatus.additionalContent ?? ' '

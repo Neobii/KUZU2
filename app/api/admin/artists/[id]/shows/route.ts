@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireArtistManager } from '@/lib/require-admin'
+import { parseArtistShowDate } from '@/lib/local-artist-show'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ export async function GET(
 
   const shows = await prisma.artistShow.findMany({
     where: { artistId: id },
-    orderBy: { updatedAt: 'desc' },
+    orderBy: [{ showDate: 'desc' }, { updatedAt: 'desc' }],
   })
   return NextResponse.json({ shows })
 }
@@ -32,6 +33,7 @@ export async function POST(
   if (!artist) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
+  const showDate = parseArtistShowDate(body.showDate)
   const show = await prisma.artistShow.create({
     data: {
       artistId: id,
@@ -40,6 +42,7 @@ export async function POST(
           ? body.flyerImageUrl.trim()
           : null,
       content: typeof body.content === 'string' ? body.content : null,
+      ...(showDate !== undefined && { showDate }),
       isActive: body.isActive === undefined ? true : Boolean(body.isActive),
     },
   })
