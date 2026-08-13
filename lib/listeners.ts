@@ -49,14 +49,19 @@ export async function recordIcecastTrackIfChanged(
 
   const activeShow = await prisma.show.findFirst({ where: { isActive: true } })
 
+  // Match Meteor `insertTrack`: stream metadata is only persisted when there is
+  // no KUZU-managed live show, or the show uses Radio Logik tracking. Never attach
+  // Icecast rows to a show — they are for licensing/admin export only.
+  if (activeShow && !activeShow.hasRadioLogikTracking) {
+    return { stored: false, track: displayKey }
+  }
+
   await prisma.tracklist.create({
     data: {
       artist: parts.artist || null,
       songTitle: parts.songTitle,
       trackType: 'song',
       playDate: new Date(),
-      showId: activeShow?.id ?? null,
-      userId: activeShow?.userId ?? null,
     },
   })
 
