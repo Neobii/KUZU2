@@ -29,18 +29,24 @@ const mocks = vi.hoisted(() => {
       findMany: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn(),
+      delete: vi.fn(),
     },
     tracklist: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
       update: vi.fn(),
       create: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    message: {
+      deleteMany: vi.fn(),
     },
     $transaction: vi.fn(),
   }
   const cron = {
     scheduleStopShowAtEnd: vi.fn(),
     cancelStopShowAtEnd: vi.fn(),
+    cancelAutoStartShow: vi.fn(),
   }
   const fillAutoDJTrack = vi.fn()
   const clearAutoplayTimer = vi.fn()
@@ -273,5 +279,53 @@ describe('startNextTrackAfterCurrent', () => {
     expect(mocks.prisma.tracklist.findFirst).not.toHaveBeenCalled()
     expect(mocks.prisma.show.update).not.toHaveBeenCalled()
     expect(mocks.fillAutoDJTrack).not.toHaveBeenCalled()
+  })
+})
+
+describe('deleteShow', () => {
+  it('deactivates the live show before deleting so Auto DJ can take over', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: true,
+    })
+    const { deleteShow } = await import('@/lib/show-actions')
+
+    await deleteShow('show-1')
+
+    expect(mocks.clearAutoplayTimer).toHaveBeenCalled()
+    expect(mocks.cron.cancelStopShowAtEnd).toHaveBeenCalledWith('show-1')
+    expect(mocks.prisma.show.update).toHaveBeenCalledWith({
+      where: { id: 'show-1' },
+      data: { isActive: false, isAutoPlaying: false },
+    })
+    expect(mocks.fillAutoDJTrack).toHaveBeenCalled()
+    expect(mocks.cron.cancelAutoStartShow).toHaveBeenCalledWith('show-1')
+    expect(mocks.prisma.tracklist.deleteMany).toHaveBeenCalledWith({
+      where: { showId: 'show-1' },
+    })
+    expect(mocks.prisma.message.deleteMany).toHaveBeenCalledWith({
+      where: { showId: 'show-1' },
+    })
+    expect(mocks.prisma.show.delete).toHaveBeenCalledWith({
+      where: { id: 'show-1' },
+    })
+  })
+
+  it('cancels scheduled jobs when deleting an inactive show without live teardown', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: false,
+    })
+    const { deleteShow } = await import('@/lib/show-actions')
+
+    await deleteShow('show-1')
+
+    expect(mocks.clearAutoplayTimer).not.toHaveBeenCalled()
+    expect(mocks.fillAutoDJTrack).not.toHaveBeenCalled()
+    expect(mocks.cron.cancelStopShowAtEnd).toHaveBeenCalledWith('show-1')
+    expect(mocks.cron.cancelAutoStartShow).toHaveBeenCalledWith('show-1')
+    expect(mocks.prisma.show.delete).toHaveBeenCalledWith({
+      where: { id: 'show-1' },
+    })
   })
 })

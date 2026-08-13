@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => {
     show: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
+      updateMany: vi.fn(),
     },
   }
   const scheduleJob = vi.fn()
@@ -27,6 +28,56 @@ vi.mock('@/lib/listeners', () => ({ pollListenerStats: vi.fn() }))
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.scheduleJob.mockReturnValue({ cancel: vi.fn() })
+  mocks.prisma.show.updateMany.mockResolvedValue({ count: 1 })
+})
+
+describe('scheduleAutoStartShow', () => {
+  it('arms only when autoStartEnd is still true (immediate path)', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      id: 'show-1',
+      showStart: new Date(Date.now() + 60_000),
+      autoStartEnd: true,
+    })
+    const { scheduleAutoStartShow } = await import('@/lib/cron')
+    scheduleAutoStartShow('show-1')
+    await vi.waitFor(() => {
+      expect(mocks.prisma.show.updateMany).toHaveBeenCalled()
+    })
+
+    expect(mocks.prisma.show.updateMany).toHaveBeenCalledWith({
+      where: { id: 'show-1', autoStartEnd: true },
+      data: { isArmedForAutoStart: true },
+    })
+    expect(mocks.scheduleJob).not.toHaveBeenCalled()
+  })
+
+  it('re-checks autoStartEnd when a future arm job fires', async () => {
+    const showStart = new Date(Date.now() + 60 * 60_000)
+    const armTime = new Date(showStart.getTime() - 5 * 60_000)
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      id: 'show-1',
+      showStart,
+      autoStartEnd: true,
+    })
+    let jobCb: (() => Promise<void>) | undefined
+    mocks.scheduleJob.mockImplementation((_when, cb) => {
+      jobCb = cb
+      return { cancel: vi.fn() }
+    })
+
+    const { scheduleAutoStartShow } = await import('@/lib/cron')
+    scheduleAutoStartShow('show-1')
+    await vi.waitFor(() => {
+      expect(mocks.scheduleJob).toHaveBeenCalled()
+    })
+    expect(mocks.scheduleJob).toHaveBeenCalledWith(armTime, expect.any(Function))
+
+    await jobCb!()
+    expect(mocks.prisma.show.updateMany).toHaveBeenCalledWith({
+      where: { id: 'show-1', autoStartEnd: true },
+      data: { isArmedForAutoStart: true },
+    })
+  })
 })
 
 describe('scheduleStopShowAtEnd', () => {

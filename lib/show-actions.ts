@@ -167,6 +167,28 @@ export async function deactivateShow(showId: string) {
 }
 
 /**
+ * Delete a show after tearing down any live/scheduled runtime. Deleting the
+ * active show without deactivateShow would orphan the autoplay timer, skip
+ * Auto DJ handoff, and leave /api/tracking/current-track on stale metadata.
+ */
+export async function deleteShow(showId: string) {
+  const show = await prisma.show.findUnique({ where: { id: showId } })
+  if (!show) return
+
+  const { cancelAutoStartShow, cancelStopShowAtEnd } = await import('@/lib/cron')
+  if (show.isActive) {
+    await deactivateShow(showId)
+  } else {
+    cancelStopShowAtEnd(showId)
+  }
+  cancelAutoStartShow(showId)
+
+  await prisma.tracklist.deleteMany({ where: { showId } })
+  await prisma.message.deleteMany({ where: { showId } })
+  await prisma.show.delete({ where: { id: showId } })
+}
+
+/**
  * Tear down in-process live runtime for any currently active show before
  * another show takes over. Does not call fillAutoDJTrack — that belongs to an
  * intentional stop, not a live handoff.

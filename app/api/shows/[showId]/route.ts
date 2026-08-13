@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireSession } from '@/lib/api-auth'
 import { canWriteProducerMessage, requireShowAccess } from '@/lib/show-access'
 import { scheduleStopShowAtEnd } from '@/lib/cron'
+import { deleteShow } from '@/lib/show-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -96,8 +97,6 @@ export async function DELETE(
   const access = await requireShowAccess(showId, auth.userId)
   if ('error' in access) return access.error
 
-  await prisma.tracklist.deleteMany({ where: { showId } })
-  await prisma.message.deleteMany({ where: { showId } })
-  await prisma.show.delete({ where: { id: showId } })
+  await deleteShow(showId)
   return NextResponse.json({ ok: true })
 }
