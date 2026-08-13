@@ -38,3 +38,39 @@ export async function streamTrackArtistFields(artistName: string | null | undefi
     artistId: artist?.id ?? null,
   }
 }
+
+/** Link existing tracklist rows (artist name set, no artistId) to Artist records. */
+export async function syncArtistsFromTracklist(): Promise<{
+  tracksLinked: number
+  artistCount: number
+}> {
+  const tracks = await prisma.tracklist.findMany({
+    where: {
+      artistId: null,
+      artist: { not: null },
+      NOT: { artist: '' },
+    },
+    select: { id: true, artist: true },
+    orderBy: { playDate: 'desc' },
+  })
+
+  const artistIds = new Set<string>()
+  let tracksLinked = 0
+
+  for (const track of tracks) {
+    const fields = await streamTrackArtistFields(track.artist)
+    if (!fields.artistId) continue
+
+    await prisma.tracklist.update({
+      where: { id: track.id },
+      data: {
+        artistId: fields.artistId,
+        artist: fields.artist,
+      },
+    })
+    artistIds.add(fields.artistId)
+    tracksLinked++
+  }
+
+  return { tracksLinked, artistCount: artistIds.size }
+}

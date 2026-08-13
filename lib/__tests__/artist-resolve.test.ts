@@ -6,12 +6,16 @@ const mocks = vi.hoisted(() => ({
       findFirst: vi.fn(),
       create: vi.fn(),
     },
+    tracklist: {
+      findMany: vi.fn(),
+      update: vi.fn(),
+    },
   },
 }))
 
 vi.mock('@/lib/prisma', () => ({ prisma: mocks.prisma }))
 
-import { findOrCreateArtistByName } from '@/lib/artist-resolve'
+import { findOrCreateArtistByName, syncArtistsFromTracklist } from '@/lib/artist-resolve'
 
 describe('findOrCreateArtistByName', () => {
   beforeEach(() => {
@@ -46,6 +50,32 @@ describe('findOrCreateArtistByName', () => {
     await expect(findOrCreateArtistByName('Sarah Jaffe')).resolves.toEqual({
       id: 'artist-2',
       artistName: 'Sarah Jaffe',
+    })
+  })
+})
+
+describe('syncArtistsFromTracklist', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('creates artists and links unlinked track rows', async () => {
+    mocks.prisma.tracklist.findMany.mockResolvedValue([
+      { id: 'track-1', artist: 'The Jayhawks' },
+    ])
+    mocks.prisma.artist.findFirst.mockResolvedValue(null)
+    mocks.prisma.artist.create.mockResolvedValue({
+      id: 'artist-jayhawks',
+      artistName: 'The Jayhawks',
+    })
+    mocks.prisma.tracklist.update.mockResolvedValue({})
+
+    const result = await syncArtistsFromTracklist()
+
+    expect(result).toEqual({ tracksLinked: 1, artistCount: 1 })
+    expect(mocks.prisma.tracklist.update).toHaveBeenCalledWith({
+      where: { id: 'track-1' },
+      data: { artistId: 'artist-jayhawks', artist: 'The Jayhawks' },
     })
   })
 })

@@ -57,6 +57,8 @@ export function AdminArtistsClient() {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<ArtistRow | null>(null)
   const [managingShows, setManagingShows] = useState<ArtistRow | null>(null)
+  const [syncMessage, setSyncMessage] = useState('')
+  const [syncing, setSyncing] = useState(false)
 
   async function save(v: ArtistValues, id?: string) {
     const body: Record<string, string | boolean> = {
@@ -85,6 +87,25 @@ export function AdminArtistsClient() {
     void mutate()
   }
 
+  async function syncFromTracks() {
+    setSyncMessage('')
+    setSyncing(true)
+    try {
+      const res = await fetch('/api/admin/artists/sync-from-tracks', { method: 'POST' })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setSyncMessage(body.error ?? 'Sync failed.')
+        return
+      }
+      setSyncMessage(
+        `Linked ${body.tracksLinked ?? 0} track(s) to ${body.artistCount ?? 0} artist(s).`
+      )
+      void mutate()
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   const artists = data?.artists ?? []
 
   return (
@@ -95,10 +116,19 @@ export function AdminArtistsClient() {
         active promo via{' '}
         <code className="text-stone-300">/api/tracking/current-additional-info</code>.
       </p>
-      <p className="mb-4">
+      <p className="mb-4 flex flex-wrap items-center gap-3">
         <button type="button" className={btnPrimary} onClick={() => setCreating(true)}>
           Add artist
         </button>
+        <button
+          type="button"
+          className={btnSecondary}
+          disabled={syncing}
+          onClick={() => void syncFromTracks()}
+        >
+          {syncing ? 'Syncing…' : 'Sync artists from tracks'}
+        </button>
+        {syncMessage ? <span className="text-sm text-stone-300">{syncMessage}</span> : null}
       </p>
       {creating && (
         <ArtistForm
