@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
-import { findOrCreateArtistByName, streamTrackArtistFields } from '@/lib/artist-resolve'
+import { streamTrackArtistFields } from '@/lib/artist-resolve'
+import { createStreamTrackLog } from '@/lib/stream-track-log'
 import {
   fetchIcecastStats,
   getIcecastSource,
@@ -9,16 +10,6 @@ import {
   parseIcecastTrackParts,
   type IcecastStats,
 } from '@/lib/icecast'
-
-function latestTrackDisplayKey(track: {
-  artist: string | null
-  songTitle: string
-}): string {
-  if (track.artist && track.songTitle) {
-    return `${track.artist} - ${track.songTitle}`
-  }
-  return track.songTitle || track.artist || ''
-}
 
 /** Insert a tracklist row when Icecast now-playing changes (cron / local poll). */
 export async function recordIcecastTrackIfChanged(
@@ -35,18 +26,6 @@ export async function recordIcecastTrackIfChanged(
   }
 
   const displayKey = icecastTrackDisplayKey(parts)
-  const latest = await prisma.tracklist.findFirst({
-    where: { playDate: { not: null } },
-    orderBy: { playDate: 'desc' },
-    select: { artist: true, songTitle: true },
-  })
-
-  if (
-    latest &&
-    latestTrackDisplayKey(latest).trim().toLowerCase() === displayKey.trim().toLowerCase()
-  ) {
-    return { stored: false, track: displayKey }
-  }
 
   const activeShow = await prisma.show.findFirst({ where: { isActive: true } })
 
@@ -59,16 +38,10 @@ export async function recordIcecastTrackIfChanged(
 
   const artistFields = await streamTrackArtistFields(parts.artist)
 
-  await prisma.tracklist.create({
-    data: {
-      ...artistFields,
-      songTitle: parts.songTitle,
-      trackType: 'song',
-      playDate: new Date(),
-    },
+  return createStreamTrackLog({
+    ...artistFields,
+    songTitle: parts.songTitle,
   })
-
-  return { stored: true, track: displayKey }
 }
 
 export async function pollListenerStats(): Promise<{

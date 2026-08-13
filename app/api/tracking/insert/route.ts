@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { streamTrackArtistFields } from '@/lib/artist-resolve'
+import { createStreamTrackLog } from '@/lib/stream-track-log'
 import { setPendingAutoDJTrack } from '@/lib/auto-dj-global'
 import { autoplayNextTrack, clearActiveShowRuntime } from '@/lib/show-actions'
 import { scheduleStopShowAtEnd } from '@/lib/cron'
@@ -30,15 +31,12 @@ export async function POST(req: NextRequest) {
     if (!(global as unknown as { preshowTracksStarted?: boolean }).preshowTracksStarted) {
       ;(global as unknown as { preshowTracksStarted?: boolean }).preshowTracksStarted = true
     }
-    await prisma.tracklist.create({
-      data: {
-        ...artistFields,
-        songTitle,
-        album,
-        label: cleanLabel,
-        trackLength: duration,
-        playDate: new Date(),
-      },
+    await createStreamTrackLog({
+      ...artistFields,
+      songTitle: typeof songTitle === 'string' ? songTitle : '',
+      album: typeof album === 'string' ? album : null,
+      label: cleanLabel,
+      trackLength: typeof duration === 'string' ? duration : null,
     })
     const nextArmed = await prisma.show.findFirst({
       where: { isArmedForAutoStart: true },
@@ -59,15 +57,12 @@ export async function POST(req: NextRequest) {
     }
   } else if (!activeShow || activeShow.hasRadioLogikTracking) {
     ;(global as unknown as { preshowTracksStarted?: boolean }).preshowTracksStarted = false
-    await prisma.tracklist.create({
-      data: {
-        ...artistFields,
-        songTitle,
-        album,
-        label,
-        trackLength: duration,
-        playDate: new Date(),
-      },
+    await createStreamTrackLog({
+      ...artistFields,
+      songTitle: typeof songTitle === 'string' ? songTitle : '',
+      album: typeof album === 'string' ? album : null,
+      label: typeof label === 'string' ? label : null,
+      trackLength: typeof duration === 'string' ? duration : null,
     })
   } else {
     setPendingAutoDJTrack({

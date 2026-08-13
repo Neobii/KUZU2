@@ -2,25 +2,44 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   prisma: {
-    tracklist: {
-      findFirst: vi.fn(),
-      create: vi.fn(),
-    },
     show: {
       findFirst: vi.fn(),
     },
   },
-}))
-
-vi.mock('@/lib/artist-resolve', () => ({
-  streamTrackArtistFields: vi.fn(async (name: string | null | undefined) => {
-    const trimmed = name?.trim()
-    if (!trimmed) return { artist: null, artistId: null }
-    return { artist: trimmed, artistId: 'artist-1' }
-  }),
+  createStreamTrackLog: vi.fn(),
+  streamTrackArtistFields: vi.fn(),
 }))
 
 vi.mock('@/lib/prisma', () => ({ prisma: mocks.prisma }))
+
+vi.mock('@/lib/stream-track-log', () => ({
+  createStreamTrackLog: mocks.createStreamTrackLog,
+}))
+
+vi.mock('@/lib/artist-resolve', () => ({
+  streamTrackArtistFields: mocks.streamTrackArtistFields,
+}))
+
+vi.mock('@/lib/icecast', () => ({
+  fetchIcecastStats: vi.fn(),
+  getIcecastSource: (data: { icestats?: { source?: { title?: string } } }) =>
+    data.icestats?.source ?? null,
+  icecastTrackDisplayKey: (parts: { artist: string; songTitle: string }) =>
+    parts.artist ? `${parts.artist} - ${parts.songTitle}` : parts.songTitle,
+  isIcecastAvailable: (data: { icestats?: { source?: unknown } }) => !!data.icestats?.source,
+  parseIcecastListeners: () => 1,
+  parseIcecastTrackParts: (source: { title?: string } | null) => {
+    if (!source?.title) return null
+    const idx = source.title.indexOf(' - ')
+    if (idx > 0) {
+      return {
+        artist: source.title.slice(0, idx),
+        songTitle: source.title.slice(idx + 3),
+      }
+    }
+    return { artist: '', songTitle: source.title }
+  },
+}))
 
 import { recordIcecastTrackIfChanged } from '@/lib/listeners'
 
@@ -28,15 +47,14 @@ describe('recordIcecastTrackIfChanged', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.prisma.show.findFirst.mockResolvedValue(null)
-    mocks.prisma.tracklist.create.mockResolvedValue({ id: 'track-1' })
+    mocks.streamTrackArtistFields.mockResolvedValue({
+      artist: 'Sarah Jaffe',
+      artistId: 'artist-1',
+    })
+    mocks.createStreamTrackLog.mockResolvedValue({ stored: true, track: 'Sarah Jaffe - Clementine' })
   })
 
   it('stores a new track when Icecast now-playing changes', async () => {
-    mocks.prisma.tracklist.findFirst.mockResolvedValue({
-      artist: 'Old Artist',
-      songTitle: 'Old Song',
-    })
-
     const result = await recordIcecastTrackIfChanged({
       icestats: {
         source: { title: 'Sarah Jaffe - Clementine', listeners: 3 },
@@ -44,15 +62,10 @@ describe('recordIcecastTrackIfChanged', () => {
     })
 
     expect(result.stored).toBe(true)
-    expect(result.track).toBe('Sarah Jaffe - Clementine')
-    expect(mocks.prisma.tracklist.create).toHaveBeenCalledWith({
-      data: {
-        artist: 'Sarah Jaffe',
-        artistId: 'artist-1',
-        songTitle: 'Clementine',
-        trackType: 'song',
-        playDate: expect.any(Date),
-      },
+    expect(mocks.createStreamTrackLog).toHaveBeenCalledWith({
+      artist: 'Sarah Jaffe',
+      artistId: 'artist-1',
+      songTitle: 'Clementine',
     })
   })
 
@@ -61,7 +74,6 @@ describe('recordIcecastTrackIfChanged', () => {
       id: 'show-1',
       hasRadioLogikTracking: false,
     })
-    mocks.prisma.tracklist.findFirst.mockResolvedValue(null)
 
     const result = await recordIcecastTrackIfChanged({
       icestats: {
@@ -71,7 +83,7 @@ describe('recordIcecastTrackIfChanged', () => {
 
     expect(result.stored).toBe(false)
     expect(result.track).toBe('The Cure - Hot Hot Hot!!!')
-    expect(mocks.prisma.tracklist.create).not.toHaveBeenCalled()
+    expect(mocks.createStreamTrackLog).not.toHaveBeenCalled()
   })
 
   it('still saves licensing log rows when the live show uses Radio Logik tracking', async () => {
@@ -79,35 +91,13 @@ describe('recordIcecastTrackIfChanged', () => {
       id: 'show-1',
       hasRadioLogikTracking: true,
     })
-    mocks.prisma.tracklist.findFirst.mockResolvedValue(null)
 
-    const result = await recordIcecastTrackIfChanged({
+    await recordIcecastTrackIfChanged({
       icestats: {
         source: { title: 'The Cure - Hot Hot Hot!!!', listeners: 3 },
       },
     })
 
-    expect(result.stored).toBe(true)
-    expect(mocks.prisma.tracklist.create).toHaveBeenCalledTimes(1)
-    const createArg = mocks.prisma.tracklist.create.mock.calls[0][0]
-    expect(createArg.data.artistId).toBe('artist-1')
-    expect(createArg.data.showId).toBeUndefined()
-    expect(createArg.data.userId).toBeUndefined()
-  })
-
-  it('skips insert when the latest track matches Icecast', async () => {
-    mocks.prisma.tracklist.findFirst.mockResolvedValue({
-      artist: 'Sarah Jaffe',
-      songTitle: 'Clementine',
-    })
-
-    const result = await recordIcecastTrackIfChanged({
-      icestats: {
-        source: { title: 'Sarah Jaffe - Clementine', listeners: 3 },
-      },
-    })
-
-    expect(result.stored).toBe(false)
-    expect(mocks.prisma.tracklist.create).not.toHaveBeenCalled()
+    expect(mocks.createStreamTrackLog).toHaveBeenCalledTimes(1)
   })
 })
