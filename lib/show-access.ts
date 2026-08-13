@@ -54,7 +54,14 @@ export function canWriteProducerMessage(
   return canWrite || (isClear && isShowMember(userId, show))
 }
 
-export async function requireShowAccess(showId: string, userId: string) {
+type AccessError = { error: NextResponse }
+
+type ShowAccessOk = { show: Show; user: User }
+
+export async function requireShowAccess(
+  showId: string,
+  userId: string
+): Promise<AccessError | ShowAccessOk> {
   const [show, user] = await Promise.all([
     prisma.show.findUnique({ where: { id: showId } }),
     prisma.user.findUnique({ where: { id: userId } }),
@@ -73,7 +80,18 @@ export async function requireShowAccess(showId: string, userId: string) {
   return { show, user }
 }
 
-export async function requireTrackAccess(trackId: string, userId: string) {
+type TrackAccessResult =
+  | AccessError
+  | {
+      track: NonNullable<Awaited<ReturnType<typeof prisma.tracklist.findUnique>>>
+      show: Show
+      user: User
+    }
+
+export async function requireTrackAccess(
+  trackId: string,
+  userId: string
+): Promise<TrackAccessResult> {
   const track = await prisma.tracklist.findUnique({
     where: { id: trackId },
     include: { show: true },

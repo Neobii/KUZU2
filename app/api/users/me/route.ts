@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/require-admin'
 import {
@@ -43,9 +44,11 @@ export async function PATCH(req: NextRequest) {
   const updated = await prisma.user.update({
     where: { id: auth.userId },
     data: {
-      ...(patch.profile !== undefined && { profile: patch.profile }),
+      ...(patch.profile !== undefined && {
+        profile: patch.profile as Prisma.InputJsonValue,
+      }),
       ...(patch.producerProfile !== undefined && {
-        producerProfile: patch.producerProfile,
+        producerProfile: patch.producerProfile as Prisma.InputJsonValue,
       }),
       ...(patch.isProducer !== undefined && { isProducer: patch.isProducer }),
       ...(patch.isAdmin !== undefined && { isAdmin: patch.isAdmin }),
