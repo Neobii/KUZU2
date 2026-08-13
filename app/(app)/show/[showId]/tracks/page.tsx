@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canManageShow } from '@/lib/show-access'
 import { prettifySimpleTime } from '@/lib/utils'
+import { DeleteTrackButton } from '@/components/show/DeleteTrackButton'
+import { btnXsPrimary, tableCellClass, tableClass, tableHeadClass } from '@/lib/ui'
+import { cn } from '@/lib/cn'
 
 export default async function ShowTracksPage({
   params,
@@ -38,33 +41,36 @@ export default async function ShowTracksPage({
         </Link>
       </p>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left text-sm text-stone-200">
+        <table className={tableClass}>
           <thead>
-            <tr className="border-b border-stone-600 bg-stone-900/80 text-stone-300">
-              <th className="border-b border-stone-700 px-3 py-2">#</th>
-              <th className="border-b border-stone-700 px-3 py-2">Title</th>
-              <th className="border-b border-stone-700 px-3 py-2">Artist</th>
-              <th className="border-b border-stone-700 px-3 py-2">Album</th>
-              <th className="border-b border-stone-700 px-3 py-2">Label</th>
-              <th className="border-b border-stone-700 px-3 py-2">Played</th>
-              <th className="border-b border-stone-700 px-3 py-2" />
+            <tr className={tableHeadClass}>
+              <th className={tableCellClass}>#</th>
+              <th className={tableCellClass}>Title</th>
+              <th className={tableCellClass}>Artist</th>
+              <th className={tableCellClass}>Album</th>
+              <th className={tableCellClass}>Label</th>
+              <th className={tableCellClass}>Played</th>
+              <th className={tableCellClass} />
             </tr>
           </thead>
           <tbody>
             {tracks.map((track, i) => (
-              <tr key={track.id} className="track border-b border-stone-800">
-                <td className="border-b border-stone-700 px-3 py-2">{track.indexNumber ?? i + 1}</td>
-                <td className="border-b border-stone-700 px-3 py-2">{track.songTitle}</td>
-                <td className="border-b border-stone-700 px-3 py-2">{track.artist}</td>
-                <td className="border-b border-stone-700 px-3 py-2">{track.album}</td>
-                <td className="border-b border-stone-700 px-3 py-2">{track.label}</td>
-                <td className="border-b border-stone-700 px-3 py-2">
+              <tr key={track.id} className="border-b border-stone-800">
+                <td className={tableCellClass}>{track.indexNumber ?? i + 1}</td>
+                <td className={tableCellClass}>{track.songTitle}</td>
+                <td className={tableCellClass}>{track.artist}</td>
+                <td className={tableCellClass}>{track.album}</td>
+                <td className={tableCellClass}>{track.label}</td>
+                <td className={tableCellClass}>
                   {track.playDate ? prettifySimpleTime(track.playDate) : '-'}
                 </td>
-                <td className="border-b border-stone-700 px-3 py-2">
-                  <Link href={`/edit-track/${track.id}`} className="no-underline">
-                    Edit
-                  </Link>
+                <td className={tableCellClass}>
+                  <div className="flex flex-wrap gap-2">
+                    <Link href={`/edit-track/${track.id}`} className={cn(btnXsPrimary, 'no-underline')}>
+                      Edit
+                    </Link>
+                    <DeleteTrackButton trackId={track.id} songTitle={track.songTitle} />
+                  </div>
                 </td>
               </tr>
             ))}
