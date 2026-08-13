@@ -14,43 +14,68 @@ import {
   tableHeadClass,
 } from '@/lib/ui'
 import { cn } from '@/lib/cn'
+import {
+  parseLocalDateInputValue,
+  parseLocalDateRangeEndExclusive,
+} from '@/lib/datetime-local'
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+async function fetcher(url: string) {
+  const res = await fetch(url)
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(typeof body.error === 'string' ? body.error : `Request failed (${res.status})`)
+  }
+  return res.json()
+}
 
 type Track = {
   id: string
   songTitle: string
   artist: string | null
+  playDate: string | null
   show: { id: string; showName: string } | null
 }
 
-function parseLocalDate(value: string): Date | null {
-  if (!value) return null
-  const d = new Date(`${value}T00:00:00`)
-  return Number.isNaN(d.getTime()) ? null : d
+function todayDateInputValue(): string {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function formatPlayDate(iso: string | null): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }
 
 export function AdminTracksClient() {
   const [q, setQ] = useState('')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [dateFrom, setDateFrom] = useState(todayDateInputValue)
+  const [dateTo, setDateTo] = useState(todayDateInputValue)
   const [exportError, setExportError] = useState('')
   const [exporting, setExporting] = useState(false)
-  const { data: tracks } = useSWR<Track[]>(
+  const { data: tracks, error, isLoading } = useSWR<Track[]>(
     `/api/admin/tracks?search=${encodeURIComponent(q)}&take=150`,
     fetcher
   )
 
   async function exportLicensingCsv() {
     setExportError('')
-    const from = parseLocalDate(dateFrom)
-    const to = parseLocalDate(dateTo)
-    if (!from || !to) {
+    const from = parseLocalDateInputValue(dateFrom)
+    const toExclusive = parseLocalDateRangeEndExclusive(dateTo)
+    if (!from || !toExclusive) {
       setExportError('Choose both a start date and end date.')
       return
     }
-    if (from >= to) {
-      setExportError('End date must be after start date.')
+    if (from >= toExclusive) {
+      setExportError('End date must be on or after start date.')
       return
     }
 
@@ -59,7 +84,7 @@ export function AdminTracksClient() {
       const params = new URLSearchParams({
         format: 'licensing',
         dateFrom: from.toISOString(),
-        dateTo: to.toISOString(),
+        dateTo: toExclusive.toISOString(),
       })
       const res = await fetch(`/api/export/tracks?${params}`)
       if (!res.ok) {
@@ -117,7 +142,7 @@ export function AdminTracksClient() {
             {exporting ? 'Exporting…' : 'Export as CSV'}
           </button>
           <p className="mt-2 text-xs text-stone-400">
-            Pipe-delimited song tracks only, for licensing export.
+            Pipe-delimited song tracks only. End date is inclusive.
           </p>
           {exportError ? <p className="mt-2 text-sm text-red-400">{exportError}</p> : null}
         </div>
@@ -131,10 +156,22 @@ export function AdminTracksClient() {
           onChange={(e) => setQ(e.target.value)}
         />
       </div>
+
+      {isLoading ? <p className="text-sm text-stone-400">Loading tracks…</p> : null}
+      {error ? (
+        <p className="text-sm text-red-400">
+          {error instanceof Error ? error.message : 'Could not load tracks.'}
+        </p>
+      ) : null}
+      {!isLoading && !error && tracks?.length === 0 ? (
+        <p className="text-sm text-stone-400">No tracks found.</p>
+      ) : null}
+
       <div className="overflow-x-auto">
         <table className={tableClass}>
           <thead>
             <tr className={tableHeadClass}>
+              <th className={tableCellClass}>Played</th>
               <th className={tableCellClass}>Title</th>
               <th className={tableCellClass}>Artist</th>
               <th className={tableCellClass}>Show</th>
@@ -144,8 +181,9 @@ export function AdminTracksClient() {
           <tbody>
             {tracks?.map((t) => (
               <tr key={t.id}>
+                <td className={tableCellClass}>{formatPlayDate(t.playDate)}</td>
                 <td className={tableCellClass}>{t.songTitle}</td>
-                <td className={tableCellClass}>{t.artist}</td>
+                <td className={tableCellClass}>{t.artist ?? '—'}</td>
                 <td className={tableCellClass}>{t.show?.showName ?? '—'}</td>
                 <td className={tableCellClass}>
                   <Link href={`/edit-track/${t.id}`} className={cn(btnXsPrimary, 'no-underline')}>

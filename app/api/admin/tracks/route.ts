@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     : {}
   const tracks = await prisma.tracklist.findMany({
     where,
-    orderBy: { playDate: 'desc' },
+    orderBy: { playDate: { sort: 'desc', nulls: 'last' } },
     take,
     include: {
       show: { select: { id: true, showName: true } },
