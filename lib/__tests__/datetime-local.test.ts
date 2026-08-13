@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  formatStationSimpleTime,
   parseLocalDateInputValue,
   parseLocalDateRangeEndExclusive,
   parseStationCalendarDayStart,
@@ -25,6 +26,12 @@ describe('parseLocalDateRangeEndExclusive', () => {
     expect(end).not.toBeNull()
     expect(start!.getTime()).toBeLessThan(end!.getTime())
     expect(end!.getDate()).toBe(14)
+  })
+})
+
+describe('formatStationSimpleTime', () => {
+  it('formats UTC instants in America/Chicago', () => {
+    expect(formatStationSimpleTime('2026-08-13T19:18:00.000Z')).toBe('2:18 PM')
   })
 })
 

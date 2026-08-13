@@ -1,4 +1,5 @@
 import moment from 'moment'
+import { formatStationSimpleTime } from '@/lib/datetime-local'
 
 export function prettifyTime(date: Date | string | null | undefined): string {
   if (!date) return ''
@@ -11,8 +12,7 @@ export function prettifyDate(date: Date | string | null | undefined): string {
 }
 
 export function prettifySimpleTime(date: Date | string | null | undefined): string {
-  if (!date) return ''
-  return moment(date).format('h:mm a')
+  return formatStationSimpleTime(date)
 }
 
 export function getEmail(emails?: { address: string }[]): string {

@@ -5,6 +5,19 @@ export const KUZU_STATION_TIMEZONE = 'America/Chicago'
 
 const CALENDAR_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
 
+/** Format a UTC instant as wall-clock time in the station timezone. */
+export function formatStationSimpleTime(date: Date | string | null | undefined): string {
+  if (!date) return ''
+  const d = date instanceof Date ? date : new Date(date)
+  if (Number.isNaN(d.getTime())) return ''
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: KUZU_STATION_TIMEZONE,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(d)
+}
+
 function getTimeZoneOffsetMs(timeZone: string, date: Date): number {
   const dtf = new Intl.DateTimeFormat('en-US', {
     timeZone,
