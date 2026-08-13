@@ -38,30 +38,7 @@ export function CalendarView() {
   }
 
   return (
-    <>
-      <div
-        style={{
-          backgroundColor: '#c0a821',
-          marginTop: '-21px',
-          padding: '15px 5px',
-          textAlign: 'center',
-        }}
-      >
-        <h3 className="m-0 text-base font-semibold text-stone-900 sm:text-lg">
-          For KUZU weekly program calendar/speadsheet click{' '}
-          <u>
-            <a
-              href="https://docs.google.com/spreadsheets/d/1iaYn7bkeqfWaOFXVAmHba2KPoZMD8LkmlxwzFk7wU_U/edit#gid=0"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: 'rgb(115, 115, 0)' }}
-            >
-              HERE
-            </a>
-          </u>
-        </h3>
-      </div>
-      <div className="calendar-container rounded-lg bg-white p-4 text-stone-900 shadow">
+    <div className="calendar-container rounded-lg bg-white p-4 text-stone-900 shadow">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin]}
         initialView="dayGridMonth"
@@ -88,7 +65,6 @@ export function CalendarView() {
         }}
         height="auto"
       />
-      </div>
-    </>
+    </div>
   )
 }
