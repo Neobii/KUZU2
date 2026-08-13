@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { prettifyDate } from '@/lib/utils'
 import { canSeePost } from '@/lib/post-visibility'
+import { DeletePostButton } from '@/components/admin/DeletePostButton'
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions)
@@ -34,13 +35,14 @@ export default async function HomePage() {
           <h3 className="text-lg font-medium text-stone-100">
             {post.title}
             {isAdmin && (
-              <span className="ml-3">
+              <span className="ml-3 inline-flex items-center gap-2">
                 <a
                   href={`/admin/posts/${post.id}/edit`}
                   className="inline-flex rounded-md bg-amber-600 px-2 py-0.5 text-xs font-medium text-white no-underline hover:bg-amber-700"
                 >
                   Edit
                 </a>
+                <DeletePostButton postId={post.id} title={post.title} />
               </span>
             )}
             <br />

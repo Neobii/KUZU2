@@ -4,6 +4,7 @@ import { btnPrimary, btnXsPrimary } from '@/lib/ui'
 import { cn } from '@/lib/cn'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { DataTable, DataTableCell } from '@/components/ui/DataTable'
+import { DeletePostButton } from '@/components/admin/DeletePostButton'
 
 export default async function AdminPostsPage() {
   const posts = await prisma.post.findMany({
@@ -30,12 +31,15 @@ export default async function AdminPostsPage() {
             <DataTableCell>{p.title}</DataTableCell>
             <DataTableCell>{p.postDate.toISOString().slice(0, 10)}</DataTableCell>
             <DataTableCell>
-              <Link
-                href={`/admin/posts/${p.id}/edit`}
-                className={cn(btnXsPrimary, 'no-underline')}
-              >
-                Edit
-              </Link>
+              <span className="inline-flex items-center gap-2">
+                <Link
+                  href={`/admin/posts/${p.id}/edit`}
+                  className={cn(btnXsPrimary, 'no-underline')}
+                >
+                  Edit
+                </Link>
+                <DeletePostButton postId={p.id} title={p.title} />
+              </span>
             </DataTableCell>
           </tr>
         ))}
