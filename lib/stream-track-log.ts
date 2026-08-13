@@ -72,3 +72,43 @@ export async function createStreamTrackLog(
 
   return { stored: true, track: displayKey }
 }
+
+/** Remove near-duplicate stream/licensing rows (same song within `windowMs`), keeping earliest play. */
+export async function cleanupNearDuplicateStreamTracks(options?: {
+  windowMs?: number
+  since?: Date
+}): Promise<{ deleted: number; scanned: number }> {
+  const windowMs = options?.windowMs ?? STREAM_TRACK_DEDUP_MS
+  const since =
+    options?.since ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
+  const tracks = await prisma.tracklist.findMany({
+    where: {
+      showId: null,
+      trackType: 'song',
+      playDate: { not: null, gte: since },
+    },
+    orderBy: { playDate: 'asc' },
+    select: { id: true, artist: true, songTitle: true, playDate: true },
+  })
+
+  const lastKeptByKey = new Map<string, Date>()
+  const toDelete: string[] = []
+
+  for (const track of tracks) {
+    if (!track.playDate) continue
+    const key = normalizeStreamTrackKey(track.artist, track.songTitle)
+    const lastKept = lastKeptByKey.get(key)
+    if (lastKept && track.playDate.getTime() - lastKept.getTime() < windowMs) {
+      toDelete.push(track.id)
+    } else {
+      lastKeptByKey.set(key, track.playDate)
+    }
+  }
+
+  if (toDelete.length > 0) {
+    await prisma.tracklist.deleteMany({ where: { id: { in: toDelete } } })
+  }
+
+  return { deleted: toDelete.length, scanned: tracks.length }
+}

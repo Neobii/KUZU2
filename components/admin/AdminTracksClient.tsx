@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   btnPrimary,
+  btnSecondary,
   btnXsPrimary,
   formGroupClass,
   inputClass,
@@ -57,6 +58,8 @@ export function AdminTracksClient() {
   const [dateTo, setDateTo] = useState(todayDateInputValue)
   const [exportError, setExportError] = useState('')
   const [exporting, setExporting] = useState(false)
+  const [cleanupMessage, setCleanupMessage] = useState('')
+  const [cleaning, setCleaning] = useState(false)
 
   const listUrl = useMemo(() => {
     const params = new URLSearchParams({
@@ -78,7 +81,7 @@ export function AdminTracksClient() {
     return `/api/export/tracks?${params}`
   }, [dateFrom, dateTo])
 
-  const { data: tracks, error, isLoading } = useSWR<Track[]>(listUrl, fetcher)
+  const { data: tracks, error, isLoading, mutate } = useSWR<Track[]>(listUrl, fetcher)
   const { data: preview } = useSWR<{ count: number }>(previewUrl, fetcher)
 
   async function exportLicensingCsv() {
@@ -119,6 +122,30 @@ export function AdminTracksClient() {
   }
 
   const exportCount = preview?.count
+
+  async function cleanupDuplicates() {
+    if (
+      !window.confirm(
+        'Remove duplicate stream track rows from the last 30 days? Keeps the earliest play when the same song was logged within 4 minutes.'
+      )
+    ) {
+      return
+    }
+    setCleanupMessage('')
+    setCleaning(true)
+    try {
+      const res = await fetch('/api/admin/tracks/cleanup-duplicates', { method: 'POST' })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setCleanupMessage(body.error ?? 'Cleanup failed.')
+        return
+      }
+      setCleanupMessage(`Removed ${body.deleted ?? 0} duplicate row(s).`)
+      await mutate()
+    } finally {
+      setCleaning(false)
+    }
+  }
 
   return (
     <div>
@@ -170,13 +197,22 @@ export function AdminTracksClient() {
         </div>
       </div>
 
-      <div className={formGroupClass}>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
           className={cn(inputClass, 'max-w-md')}
           placeholder="Search title, artist, album, label…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
+        <button
+          type="button"
+          className={btnSecondary}
+          disabled={cleaning}
+          onClick={() => void cleanupDuplicates()}
+        >
+          {cleaning ? 'Cleaning…' : 'Remove duplicate plays'}
+        </button>
+        {cleanupMessage ? <p className="text-sm text-stone-300">{cleanupMessage}</p> : null}
       </div>
 
       {isLoading ? <p className="text-sm text-stone-400">Loading tracks…</p> : null}

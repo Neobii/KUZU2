@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
     tracklist: {
       findMany: vi.fn(),
       create: vi.fn(),
+      deleteMany: vi.fn(),
     },
   },
 }))
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma: mocks.prisma }))
 
 import {
+  cleanupNearDuplicateStreamTracks,
   createStreamTrackLog,
   hasRecentStreamTrackPlay,
   normalizeStreamTrackKey,
@@ -83,6 +85,29 @@ describe('createStreamTrackLog', () => {
         artistId: 'artist-1',
         trackType: 'song',
       }),
+    })
+  })
+})
+
+describe('cleanupNearDuplicateStreamTracks', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.prisma.tracklist.deleteMany = vi.fn().mockResolvedValue({ count: 1 })
+  })
+
+  it('deletes later rows when the same song was logged within the dedup window', async () => {
+    const t0 = new Date('2026-08-13T19:01:01.223Z')
+    const t1 = new Date('2026-08-13T19:01:01.545Z')
+    mocks.prisma.tracklist.findMany.mockResolvedValue([
+      { id: 'keep-1', artist: 'AMPARO OCHOA', songTitle: 'LA CALACA', playDate: t0 },
+      { id: 'drop-1', artist: 'AMPARO OCHOA', songTitle: 'LA CALACA', playDate: t1 },
+    ])
+
+    const result = await cleanupNearDuplicateStreamTracks()
+
+    expect(result.deleted).toBe(1)
+    expect(mocks.prisma.tracklist.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ['drop-1'] } },
     })
   })
 })
