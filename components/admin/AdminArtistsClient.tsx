@@ -57,16 +57,23 @@ export function AdminArtistsClient() {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<ArtistRow | null>(null)
   const [managingShows, setManagingShows] = useState<ArtistRow | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   async function save(v: ArtistValues, id?: string) {
-    const body: Record<string, string | boolean> = {
-      artistName: v.artistName,
+    setSaveError(null)
+    const name = v.artistName.trim()
+    if (!name) {
+      setSaveError('Artist name is required')
+      return
+    }
+    const body: Record<string, string | boolean | null> = {
+      artistName: name,
       isLocalArtist: v.isLocalArtist,
     }
     if (v.imageUrl.trim() !== '') body.imageUrl = v.imageUrl.trim()
-    else if (id) body.imageUrl = ''
+    else if (id) body.imageUrl = null
     if (v.bio.trim() !== '') body.bio = v.bio.trim()
-    else if (id) body.bio = ''
+    else if (id) body.bio = null
     const res = await fetch(id ? `/api/admin/artists/${id}` : '/api/admin/artists', {
       method: id ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -76,7 +83,19 @@ export function AdminArtistsClient() {
       setCreating(false)
       setEditing(null)
       void mutate()
+      return
     }
+    let message = `Could not save artist (${res.status})`
+    try {
+      const payload = (await res.json()) as { error?: string }
+      if (payload.error) message = payload.error
+    } catch {
+      /* keep status message */
+    }
+    if (res.status === 403) {
+      message = 'Forbidden — you need Admin or Artist Manager permission to edit artists.'
+    }
+    setSaveError(message)
   }
 
   async function remove(id: string) {
@@ -100,12 +119,16 @@ export function AdminArtistsClient() {
           Add artist
         </button>
       </p>
+      {saveError ? <p className="mb-3 text-sm text-red-400">{saveError}</p> : null}
       {creating && (
         <ArtistForm
           title="Add artist"
           initial={{ artistName: '', imageUrl: '', bio: '', isLocalArtist: false }}
           onSave={(v) => void save(v)}
-          onCancel={() => setCreating(false)}
+          onCancel={() => {
+            setSaveError(null)
+            setCreating(false)
+          }}
         />
       )}
       {editing && (
@@ -118,7 +141,10 @@ export function AdminArtistsClient() {
             isLocalArtist: editing.isLocalArtist,
           }}
           onSave={(v) => void save(v, editing.id)}
-          onCancel={() => setEditing(null)}
+          onCancel={() => {
+            setSaveError(null)
+            setEditing(null)
+          }}
         />
       )}
       {managingShows && (

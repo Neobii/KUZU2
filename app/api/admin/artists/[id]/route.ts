@@ -17,8 +17,8 @@ export async function PATCH(
 
   const data: {
     artistName?: string
-    imageUrl?: string
-    bio?: string
+    imageUrl?: string | null
+    bio?: string | null
     isLocalArtist?: boolean
   } = {}
   if (body.artistName !== undefined) {
@@ -28,12 +28,29 @@ export async function PATCH(
     }
     data.artistName = artistName
   }
-  if (body.imageUrl !== undefined) data.imageUrl = String(body.imageUrl)
-  if (body.bio !== undefined) data.bio = String(body.bio)
+  if (body.imageUrl !== undefined) {
+    data.imageUrl =
+      body.imageUrl === null || String(body.imageUrl).trim() === ''
+        ? null
+        : String(body.imageUrl).trim()
+  }
+  if (body.bio !== undefined) {
+    data.bio =
+      body.bio === null || String(body.bio).trim() === '' ? null : String(body.bio)
+  }
   if (body.isLocalArtist !== undefined) data.isLocalArtist = Boolean(body.isLocalArtist)
 
-  const artist = await prisma.artist.update({ where: { id }, data })
-  return NextResponse.json({ artist })
+  try {
+    const artist = await prisma.artist.update({ where: { id }, data })
+    return NextResponse.json({ artist })
+  } catch (e) {
+    const code = typeof e === 'object' && e && 'code' in e ? String((e as { code: unknown }).code) : ''
+    if (code === 'P2002') {
+      return NextResponse.json({ error: 'An artist with that name already exists' }, { status: 409 })
+    }
+    console.error('PATCH /api/admin/artists/[id]', e)
+    return NextResponse.json({ error: 'Failed to update artist' }, { status: 500 })
+  }
 }
 
 export async function DELETE(
