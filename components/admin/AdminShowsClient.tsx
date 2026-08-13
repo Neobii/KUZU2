@@ -29,8 +29,27 @@ type Show = {
   episodeNumber: number | null
 }
 
+type ArtistShowRow = {
+  id: string
+  flyerImageUrl: string | null
+  content: string | null
+  showDate: string | null
+  isActive: boolean
+  updatedAt: string
+  artist: {
+    id: string
+    artistName: string
+    isLocalArtist: boolean
+  }
+}
+
 export function AdminShowsClient() {
   const { data: shows, mutate, isLoading } = useSWR<Show[]>('/api/shows', fetcher)
+  const {
+    data: artistShowsData,
+    mutate: mutateArtistShows,
+    isLoading: artistShowsLoading,
+  } = useSWR<{ shows?: ArtistShowRow[] }>('/api/admin/artist-shows', fetcher)
   const [q, setQ] = useState('')
 
   const filtered = useMemo(() => {
@@ -39,6 +58,17 @@ export function AdminShowsClient() {
     const s = q.toLowerCase()
     return shows.filter((x) => x.showName.toLowerCase().includes(s))
   }, [shows, q])
+
+  const artistShows = useMemo(() => {
+    const list = artistShowsData?.shows ?? []
+    if (!q.trim()) return list
+    const s = q.toLowerCase()
+    return list.filter(
+      (row) =>
+        row.artist.artistName.toLowerCase().includes(s) ||
+        (row.content ?? '').toLowerCase().includes(s)
+    )
+  }, [artistShowsData, q])
 
   async function activate(id: string) {
     await fetch(`/api/shows/${id}/activate`, { method: 'POST' })
@@ -56,25 +86,39 @@ export function AdminShowsClient() {
     void mutate()
   }
 
+  async function setArtistShowActive(artistId: string, showId: string, isActive: boolean) {
+    await fetch(`/api/admin/artists/${artistId}/shows/${showId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isActive }),
+    })
+    void mutateArtistShows()
+  }
+
+  async function removeArtistShow(artistId: string, showId: string) {
+    if (!confirm('Delete this local artist show promo?')) return
+    await fetch(`/api/admin/artists/${artistId}/shows/${showId}`, { method: 'DELETE' })
+    void mutateArtistShows()
+  }
+
   return (
     <div>
       <div className="mb-4">
         <input
           className={cn(inputClass, 'max-w-md')}
-          placeholder="Search shows…"
+          placeholder="Search radio shows or local artist shows…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           aria-label="Search shows"
         />
       </div>
 
+      <h3 className="mb-3 text-lg font-semibold text-stone-100">Radio shows</h3>
       {isLoading ? (
         <EmptyState message="Loading shows…" />
       ) : (
         <StackedList
-          emptyMessage={
-            q.trim() ? 'No shows match that search.' : 'No shows found.'
-          }
+          emptyMessage={q.trim() ? 'No radio shows match that search.' : 'No radio shows found.'}
         >
           {filtered.map((show) => {
             const endAfter =
@@ -152,6 +196,101 @@ export function AdminShowsClient() {
                   </>
                 }
               />
+            )
+          })}
+        </StackedList>
+      )}
+
+      <h3 className="mb-2 mt-8 text-lg font-semibold text-stone-100">Local artist shows</h3>
+      <p className="mb-3 text-sm text-stone-400">
+        Flyer + TipTap promos from Artists. Delivered via{' '}
+        <code className="text-stone-300">/api/tracking/local-artist-show</code> when a local artist
+        is playing (show date within ±1 month).
+      </p>
+      {artistShowsLoading ? (
+        <EmptyState message="Loading local artist shows…" />
+      ) : (
+        <StackedList
+          emptyMessage={
+            q.trim()
+              ? 'No local artist shows match that search.'
+              : 'No local artist show promos yet.'
+          }
+          emptyAction={
+            !q.trim() ? (
+              <Link href="/artists" className={cn(btnSmPrimary, 'no-underline')}>
+                Add one on Artists
+              </Link>
+            ) : undefined
+          }
+        >
+          {artistShows.map((row) => {
+            const metaParts = [
+              row.isActive ? 'Active promo' : 'Inactive',
+              row.showDate
+                ? `show ${prettifyDate(row.showDate)}`
+                : 'no show date',
+              !row.artist.isLocalArtist ? 'artist not marked local' : null,
+            ].filter(Boolean)
+
+            return (
+              <StackedListItem
+                key={row.id}
+                title={row.artist.artistName}
+                href="/artists"
+                meta={metaParts.join(' · ')}
+                actions={
+                  <>
+                    <Link href="/artists" className={cn(btnSmSecondary, 'no-underline')}>
+                      Open Artists
+                    </Link>
+                    {row.isActive ? (
+                      <button
+                        type="button"
+                        className={btnSmWarning}
+                        onClick={() => void setArtistShowActive(row.artist.id, row.id, false)}
+                      >
+                        Deactivate promo
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={btnSmPrimary}
+                        onClick={() => void setArtistShowActive(row.artist.id, row.id, true)}
+                      >
+                        Activate promo
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className={btnSmDanger}
+                      onClick={() => void removeArtistShow(row.artist.id, row.id)}
+                    >
+                      Delete
+                    </button>
+                  </>
+                }
+              >
+                <div className="flex flex-wrap gap-3">
+                  {row.flyerImageUrl ? (
+                    <img
+                      src={row.flyerImageUrl}
+                      alt=""
+                      className="h-24 w-16 rounded object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-24 w-16 items-center justify-center rounded bg-stone-800 text-xs text-stone-500">
+                      No flyer
+                    </div>
+                  )}
+                  <div
+                    className="min-w-0 flex-1 text-stone-300"
+                    dangerouslySetInnerHTML={{
+                      __html: row.content || '<p><em>No details</em></p>',
+                    }}
+                  />
+                </div>
+              </StackedListItem>
             )
           })}
         </StackedList>

@@ -15,7 +15,12 @@ export async function PATCH(
   const existing = await prisma.artist.findUnique({ where: { id } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const data: { artistName?: string; imageUrl?: string; bio?: string } = {}
+  const data: {
+    artistName?: string
+    imageUrl?: string
+    bio?: string
+    isLocalArtist?: boolean
+  } = {}
   if (body.artistName !== undefined) {
     const artistName = String(body.artistName).trim()
     if (!artistName) {
@@ -25,6 +30,7 @@ export async function PATCH(
   }
   if (body.imageUrl !== undefined) data.imageUrl = String(body.imageUrl)
   if (body.bio !== undefined) data.bio = String(body.bio)
+  if (body.isLocalArtist !== undefined) data.isLocalArtist = Boolean(body.isLocalArtist)
 
   const artist = await prisma.artist.update({ where: { id }, data })
   return NextResponse.json({ artist })

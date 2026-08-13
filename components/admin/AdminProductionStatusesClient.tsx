@@ -24,6 +24,7 @@ type Row = {
   isShowingMetaData: boolean | null
   additionalContent: string | null
   isShowingAdditionalContent: boolean | null
+  isDisplayingLocalArtistShows: boolean
   isActive: boolean
   producersNote: string | null
 }
@@ -63,6 +64,7 @@ export function AdminProductionStatusesClient() {
         isShowingMetaData: false,
         additionalContent: '',
         isShowingAdditionalContent: false,
+        isDisplayingLocalArtistShows: false,
         isActive: false,
         producersNote: '',
       }}
@@ -165,6 +167,17 @@ function StatusForm({
             onChange={(e) => setV({ ...v, isShowingAdditionalContent: e.target.checked })}
           />
           Show additional content
+        </label>
+      </div>
+      <div className={checkboxRowClass}>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700">
+          <input
+            type="checkbox"
+            className="rounded border-stone-400"
+            checked={!!v.isDisplayingLocalArtistShows}
+            onChange={(e) => setV({ ...v, isDisplayingLocalArtistShows: e.target.checked })}
+          />
+          Display local artist shows
         </label>
       </div>
       <div className={checkboxRowClass}>
