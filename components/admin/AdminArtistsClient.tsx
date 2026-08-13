@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import useSWR from 'swr'
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { TipTapEditor } from '@/components/TipTapEditor'
 import { uploadEditorImage } from '@/lib/tiptap-upload'
 import {
@@ -15,6 +15,8 @@ import {
   formGroupClass,
   inputClassLight,
   labelClassLight,
+  modalBackdropClass,
+  modalDialogLgClass,
   tableClass,
   tableCellClass,
   tableHeadClass,
@@ -59,6 +61,8 @@ export function AdminArtistsClient() {
   const [managingShows, setManagingShows] = useState<ArtistRow | null>(null)
   const [syncMessage, setSyncMessage] = useState('')
   const [syncing, setSyncing] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   async function save(v: ArtistValues, id?: string) {
     const body: Record<string, string | boolean> = {
@@ -108,6 +112,22 @@ export function AdminArtistsClient() {
 
   const artists = data?.artists ?? []
 
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return artists
+    return artists.filter((a) => a.artistName.toLowerCase().includes(q))
+  }, [artists, searchQuery])
+
+  function openSearch() {
+    setSearchQuery('')
+    setSearchOpen(true)
+  }
+
+  function closeSearch() {
+    setSearchOpen(false)
+    setSearchQuery('')
+  }
+
   return (
     <div>
       <p className="mb-4 text-sm text-stone-400">
@@ -119,6 +139,9 @@ export function AdminArtistsClient() {
       <p className="mb-4 flex flex-wrap items-center gap-3">
         <button type="button" className={btnPrimary} onClick={() => setCreating(true)}>
           Add artist
+        </button>
+        <button type="button" className={btnSecondary} onClick={openSearch}>
+          Search artists
         </button>
         <button
           type="button"
@@ -158,6 +181,22 @@ export function AdminArtistsClient() {
           onChanged={() => void mutate()}
         />
       )}
+      {searchOpen ? (
+        <ArtistSearchDialog
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
+          results={searchResults}
+          onClose={closeSearch}
+          onEdit={(artist) => {
+            closeSearch()
+            setEditing(artist)
+          }}
+          onManageShows={(artist) => {
+            closeSearch()
+            setManagingShows(artist)
+          }}
+        />
+      ) : null}
       <div className="overflow-x-auto">
         <table className={cn(tableClass, 'text-stone-300')}>
           <thead>
@@ -218,6 +257,124 @@ export function AdminArtistsClient() {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+function ArtistSearchDialog({
+  query,
+  onQueryChange,
+  results,
+  onClose,
+  onEdit,
+  onManageShows,
+}: {
+  query: string
+  onQueryChange: (value: string) => void
+  results: ArtistRow[]
+  onClose: () => void
+  onEdit: (artist: ArtistRow) => void
+  onManageShows: (artist: ArtistRow) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
+  return (
+    <div
+      className={modalBackdropClass}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search artists"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      <div className={modalDialogLgClass}>
+        <div className="border-b border-stone-200 p-4">
+          <div className="flex items-start justify-between gap-2">
+            <h4 className="text-lg font-semibold text-stone-900">Search artists</h4>
+            <button
+              type="button"
+              className="rounded p-1 text-2xl leading-none text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <div className="p-4">
+          <input
+            ref={inputRef}
+            className={inputClassLight}
+            type="search"
+            placeholder="Search by artist name…"
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            aria-label="Search artists"
+          />
+          <ul className="mt-4 max-h-[min(60vh,28rem)] divide-y divide-stone-200 overflow-y-auto rounded-md border border-stone-200">
+            {results.length === 0 ? (
+              <li className="px-4 py-6 text-center text-sm text-stone-500">
+                {query.trim() ? 'No artists match that search.' : 'No artists yet.'}
+              </li>
+            ) : (
+              results.map((artist) => (
+                <li
+                  key={artist.id}
+                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium text-stone-900">{artist.artistName}</div>
+                    <div className="text-sm text-stone-500">
+                      {artist.isLocalArtist ? 'Local artist' : 'Not local'}
+                      {' · '}
+                      {(artist._count?.tracks ?? 0) > 0 ? (
+                        <Link
+                          href={`/artists/${artist.id}/tracks`}
+                          className="text-amber-700 no-underline hover:text-amber-600"
+                          onClick={onClose}
+                        >
+                          {artist._count.tracks} track
+                          {artist._count.tracks === 1 ? '' : 's'}
+                        </Link>
+                      ) : (
+                        '0 tracks'
+                      )}
+                      {' · '}
+                      {artist._count?.shows ?? artist.shows?.length ?? 0} show promo
+                      {(artist._count?.shows ?? artist.shows?.length ?? 0) === 1 ? '' : 's'}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" className={btnXsPrimary} onClick={() => onEdit(artist)}>
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className={btnXsSecondary}
+                      onClick={() => onManageShows(artist)}
+                    >
+                      Shows
+                    </button>
+                  </div>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
       </div>
     </div>
   )
