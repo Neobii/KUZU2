@@ -1,5 +1,75 @@
 /** Values compatible with `<input type="datetime-local">` and react-hook-form string fields (local wall time). */
 
+/** KUZU stream / station calendar (Denton, TX). */
+export const KUZU_STATION_TIMEZONE = 'America/Chicago'
+
+const CALENDAR_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
+
+function getTimeZoneOffsetMs(timeZone: string, date: Date): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+  const parts = Object.fromEntries(
+    dtf.formatToParts(date).filter((p) => p.type !== 'literal').map((p) => [p.type, p.value])
+  )
+  const asUtc = Date.UTC(
+    +parts.year,
+    +parts.month - 1,
+    +parts.day,
+    +parts.hour,
+    +parts.minute,
+    +parts.second
+  )
+  return asUtc - date.getTime()
+}
+
+function addCalendarDays(dateStr: string, days: number): string | null {
+  const m = CALENDAR_DATE_RE.exec(dateStr.trim())
+  if (!m) return null
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + days))
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
+}
+
+/** Midnight at the start of a calendar day in the station timezone, as a UTC instant. */
+export function parseStationCalendarDayStart(
+  dateStr: string,
+  timeZone = KUZU_STATION_TIMEZONE
+): Date | null {
+  const m = CALENDAR_DATE_RE.exec(dateStr.trim())
+  if (!m) return null
+  const y = +m[1]
+  const mo = +m[2]
+  const d = +m[3]
+  const ref = new Date(Date.UTC(y, mo - 1, d, 12, 0, 0))
+  const offset = getTimeZoneOffsetMs(timeZone, ref)
+  return new Date(Date.UTC(y, mo - 1, d, 0, 0, 0) - offset)
+}
+
+/** Licensing export range: `[from, toExclusive)` in station local calendar days. */
+export function parseStationExportDateRange(
+  dateFrom: string,
+  dateToInclusive: string,
+  timeZone = KUZU_STATION_TIMEZONE
+): { from: Date; toExclusive: Date } | null {
+  const from = parseStationCalendarDayStart(dateFrom, timeZone)
+  const nextDay = addCalendarDays(dateToInclusive, 1)
+  const toExclusive = nextDay ? parseStationCalendarDayStart(nextDay, timeZone) : null
+  if (!from || !toExclusive) return null
+  return { from, toExclusive }
+}
+
+export function isCalendarDateString(value: string): boolean {
+  return CALENDAR_DATE_RE.test(value.trim())
+}
+
 export function dateToLocalDatetimeInputValue(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`

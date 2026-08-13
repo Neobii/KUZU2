@@ -1,7 +1,7 @@
 'use client'
 
 import useSWR from 'swr'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   btnPrimary,
@@ -14,10 +14,6 @@ import {
   tableHeadClass,
 } from '@/lib/ui'
 import { cn } from '@/lib/cn'
-import {
-  parseLocalDateInputValue,
-  parseLocalDateRangeEndExclusive,
-} from '@/lib/datetime-local'
 
 async function fetcher(url: string) {
   const res = await fetch(url)
@@ -61,20 +57,37 @@ export function AdminTracksClient() {
   const [dateTo, setDateTo] = useState(todayDateInputValue)
   const [exportError, setExportError] = useState('')
   const [exporting, setExporting] = useState(false)
-  const { data: tracks, error, isLoading } = useSWR<Track[]>(
-    `/api/admin/tracks?search=${encodeURIComponent(q)}&take=150`,
-    fetcher
-  )
+
+  const listUrl = useMemo(() => {
+    const params = new URLSearchParams({
+      search: q,
+      take: '150',
+      dateFrom,
+      dateTo,
+    })
+    return `/api/admin/tracks?${params}`
+  }, [q, dateFrom, dateTo])
+
+  const previewUrl = useMemo(() => {
+    const params = new URLSearchParams({
+      format: 'licensing',
+      preview: 'count',
+      dateFrom,
+      dateTo,
+    })
+    return `/api/export/tracks?${params}`
+  }, [dateFrom, dateTo])
+
+  const { data: tracks, error, isLoading } = useSWR<Track[]>(listUrl, fetcher)
+  const { data: preview } = useSWR<{ count: number }>(previewUrl, fetcher)
 
   async function exportLicensingCsv() {
     setExportError('')
-    const from = parseLocalDateInputValue(dateFrom)
-    const toExclusive = parseLocalDateRangeEndExclusive(dateTo)
-    if (!from || !toExclusive) {
+    if (!dateFrom || !dateTo) {
       setExportError('Choose both a start date and end date.')
       return
     }
-    if (from >= toExclusive) {
+    if (dateFrom > dateTo) {
       setExportError('End date must be on or after start date.')
       return
     }
@@ -83,8 +96,8 @@ export function AdminTracksClient() {
     try {
       const params = new URLSearchParams({
         format: 'licensing',
-        dateFrom: from.toISOString(),
-        dateTo: toExclusive.toISOString(),
+        dateFrom,
+        dateTo,
       })
       const res = await fetch(`/api/export/tracks?${params}`)
       if (!res.ok) {
@@ -104,6 +117,8 @@ export function AdminTracksClient() {
       setExporting(false)
     }
   }
+
+  const exportCount = preview?.count
 
   return (
     <div>
@@ -136,14 +151,21 @@ export function AdminTracksClient() {
           <button
             type="button"
             className={btnPrimary}
-            disabled={exporting}
+            disabled={exporting || exportCount === 0}
             onClick={() => void exportLicensingCsv()}
           >
             {exporting ? 'Exporting…' : 'Export as CSV'}
           </button>
           <p className="mt-2 text-xs text-stone-400">
-            Pipe-delimited song tracks only. End date is inclusive.
+            Pipe-delimited song tracks with play dates (Central Time days). End date is inclusive.
           </p>
+          {exportCount != null ? (
+            <p className="mt-1 text-xs text-stone-300">
+              {exportCount === 0
+                ? 'No exportable tracks in this date range.'
+                : `${exportCount} track${exportCount === 1 ? '' : 's'} ready to export.`}
+            </p>
+          ) : null}
           {exportError ? <p className="mt-2 text-sm text-red-400">{exportError}</p> : null}
         </div>
       </div>
@@ -164,7 +186,7 @@ export function AdminTracksClient() {
         </p>
       ) : null}
       {!isLoading && !error && tracks?.length === 0 ? (
-        <p className="text-sm text-stone-400">No tracks found.</p>
+        <p className="text-sm text-stone-400">No tracks with play dates in this range.</p>
       ) : null}
 
       <div className="overflow-x-auto">
