@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { findOrCreateArtistByName, streamTrackArtistFields } from '@/lib/artist-resolve'
 import {
   fetchIcecastStats,
   getIcecastSource,
@@ -56,9 +57,11 @@ export async function recordIcecastTrackIfChanged(
     return { stored: false, track: displayKey }
   }
 
+  const artistFields = await streamTrackArtistFields(parts.artist)
+
   await prisma.tracklist.create({
     data: {
-      artist: parts.artist || null,
+      ...artistFields,
       songTitle: parts.songTitle,
       trackType: 'song',
       playDate: new Date(),

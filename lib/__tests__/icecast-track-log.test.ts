@@ -12,6 +12,14 @@ const mocks = vi.hoisted(() => ({
   },
 }))
 
+vi.mock('@/lib/artist-resolve', () => ({
+  streamTrackArtistFields: vi.fn(async (name: string | null | undefined) => {
+    const trimmed = name?.trim()
+    if (!trimmed) return { artist: null, artistId: null }
+    return { artist: trimmed, artistId: 'artist-1' }
+  }),
+}))
+
 vi.mock('@/lib/prisma', () => ({ prisma: mocks.prisma }))
 
 import { recordIcecastTrackIfChanged } from '@/lib/listeners'
@@ -40,6 +48,7 @@ describe('recordIcecastTrackIfChanged', () => {
     expect(mocks.prisma.tracklist.create).toHaveBeenCalledWith({
       data: {
         artist: 'Sarah Jaffe',
+        artistId: 'artist-1',
         songTitle: 'Clementine',
         trackType: 'song',
         playDate: expect.any(Date),
@@ -81,6 +90,7 @@ describe('recordIcecastTrackIfChanged', () => {
     expect(result.stored).toBe(true)
     expect(mocks.prisma.tracklist.create).toHaveBeenCalledTimes(1)
     const createArg = mocks.prisma.tracklist.create.mock.calls[0][0]
+    expect(createArg.data.artistId).toBe('artist-1')
     expect(createArg.data.showId).toBeUndefined()
     expect(createArg.data.userId).toBeUndefined()
   })

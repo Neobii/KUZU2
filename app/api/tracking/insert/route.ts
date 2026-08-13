@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { streamTrackArtistFields } from '@/lib/artist-resolve'
 import { setPendingAutoDJTrack } from '@/lib/auto-dj-global'
 import { autoplayNextTrack, clearActiveShowRuntime } from '@/lib/show-actions'
 import { scheduleStopShowAtEnd } from '@/lib/cron'
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
   }
   const body = await req.json().catch(() => ({}))
   const { artist = '', songTitle = '', album = '', label = '', duration = '' } = body
+  const artistFields = await streamTrackArtistFields(typeof artist === 'string' ? artist : '')
   const activeShow = await prisma.show.findFirst({
     where: { isActive: true },
   })
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
     await prisma.tracklist.create({
       data: {
-        artist,
+        ...artistFields,
         songTitle,
         album,
         label: cleanLabel,
@@ -59,7 +61,7 @@ export async function POST(req: NextRequest) {
     ;(global as unknown as { preshowTracksStarted?: boolean }).preshowTracksStarted = false
     await prisma.tracklist.create({
       data: {
-        artist,
+        ...artistFields,
         songTitle,
         album,
         label,
