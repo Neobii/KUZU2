@@ -6,6 +6,14 @@ export async function startTrack(trackId: string) {
   const track = await prisma.tracklist.findUnique({ where: { id: trackId } })
   if (!track?.showId) throw new Error('Track has no show')
 
+  const show = await prisma.show.findUnique({ where: { id: track.showId } })
+  if (!show) return
+  // Refuse before clearing the global autoplay timer — starting a track on a
+  // non-live show would kill the active show's autoplay and skew current-track.
+  if (!show.isActive) {
+    throw new Error('Show is not live')
+  }
+
   clearAutoplayTimer()
 
   if (track.trackType === 'showMeta') {
@@ -24,9 +32,6 @@ export async function startTrack(trackId: string) {
     where: { id: trackId },
     data: { playDate: new Date(), isHighlighted: true },
   })
-
-  const show = await prisma.show.findUnique({ where: { id: track.showId } })
-  if (!show) return
 
   if (track.trackLength && show.isAutoPlaying) {
     scheduleNextTrackAfter(track.trackLength, track.showId, track.indexNumber ?? 0)
@@ -156,6 +161,21 @@ export async function decrementPosition(trackId: string) {
 }
 
 export async function deactivateShow(showId: string) {
+  const show = await prisma.show.findUnique({ where: { id: showId } })
+  if (!show) return
+
+  // Stopping a show that is not live must not clear the active show's
+  // autoplay timer or insert Auto DJ as if the live show had ended.
+  if (!show.isActive) {
+    if (show.isAutoPlaying) {
+      await prisma.show.update({
+        where: { id: showId },
+        data: { isAutoPlaying: false },
+      })
+    }
+    return
+  }
+
   clearAutoplayTimer()
   const { cancelStopShowAtEnd } = await import('@/lib/cron')
   cancelStopShowAtEnd(showId)
