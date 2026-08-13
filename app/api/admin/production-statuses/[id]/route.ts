@@ -28,6 +28,9 @@ export async function PATCH(
       ...(body.isShowingAdditionalContent !== undefined && {
         isShowingAdditionalContent: Boolean(body.isShowingAdditionalContent),
       }),
+      ...(body.isDisplayingLocalArtistShows !== undefined && {
+        isDisplayingLocalArtistShows: Boolean(body.isDisplayingLocalArtistShows),
+      }),
       ...(body.isActive !== undefined && { isActive: Boolean(body.isActive) }),
       ...(body.producersNote !== undefined && {
         producersNote: String(body.producersNote),

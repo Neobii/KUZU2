@@ -85,6 +85,50 @@ describe('isShowMember', () => {
   })
 })
 
+describe('showsListWhereForUser', () => {
+  it('returns empty filter for admins (all shows)', async () => {
+    const { showsListWhereForUser } = await import('@/lib/show-access')
+    expect(showsListWhereForUser('user-admin', true)).toEqual({})
+    expect(
+      showsListWhereForUser('user-admin', {
+        isAdmin: true,
+        isBoardMember: false,
+        isFieldProducer: false,
+      })
+    ).toEqual({})
+  })
+
+  it('returns empty filter for board and field producers (all shows)', async () => {
+    const { showsListWhereForUser } = await import('@/lib/show-access')
+    expect(
+      showsListWhereForUser('user-board', {
+        isAdmin: false,
+        isBoardMember: true,
+        isFieldProducer: false,
+      })
+    ).toEqual({})
+    expect(
+      showsListWhereForUser('user-field', {
+        isAdmin: false,
+        isBoardMember: false,
+        isFieldProducer: true,
+      })
+    ).toEqual({})
+  })
+
+  it('includes owned and helped shows for producers', async () => {
+    const { showsListWhereForUser } = await import('@/lib/show-access')
+    expect(showsListWhereForUser('user-helper', false)).toEqual({
+      OR: [{ userId: 'user-helper' }, { helperUserId: 'user-helper' }],
+    })
+  })
+
+  it('returns a no-match filter when user id is missing', async () => {
+    const { showsListWhereForUser } = await import('@/lib/show-access')
+    expect(showsListWhereForUser(undefined, false)).toEqual({ id: '__none__' })
+  })
+})
+
 describe('canManageShow', () => {
   it('allows owner, helper, and station ops', async () => {
     const { canManageShow } = await import('@/lib/show-access')
@@ -316,6 +360,61 @@ describe('requireLiveShowControl', () => {
 
     const { requireLiveShowControl } = await import('@/lib/show-access')
     const result = await requireLiveShowControl('user-stranger')
+
+    expect('error' in result).toBe(true)
+    if ('error' in result) {
+      expect(result.error.status).toBe(403)
+    }
+  })
+})
+
+describe('requireLiveTrackStart', () => {
+  it('allows starting a track on the active show', async () => {
+    mocks.prisma.user.findUnique.mockResolvedValue(mocks.owner)
+    mocks.prisma.show.findFirst.mockResolvedValue({
+      ...mocks.show,
+      isActive: true,
+    })
+    mocks.prisma.tracklist.findUnique.mockResolvedValue(mocks.track)
+    mocks.prisma.show.findUnique.mockResolvedValue(mocks.show)
+
+    const { requireLiveTrackStart } = await import('@/lib/show-access')
+    const result = await requireLiveTrackStart('track-1', 'user-owner')
+
+    expect('error' in result).toBe(false)
+    if (!('error' in result)) {
+      expect(result.track.id).toBe('track-1')
+      expect(result.active.id).toBe('show-1')
+    }
+  })
+
+  it('returns 403 when the track belongs to a different show than the live one', async () => {
+    mocks.prisma.user.findUnique.mockResolvedValue(mocks.admin)
+    mocks.prisma.show.findFirst.mockResolvedValue({
+      id: 'show-live',
+      userId: 'user-other',
+      helperUserId: null,
+      isActive: true,
+    })
+    mocks.prisma.tracklist.findUnique.mockResolvedValue(mocks.track)
+    mocks.prisma.show.findUnique.mockResolvedValue(mocks.show)
+
+    const { requireLiveTrackStart } = await import('@/lib/show-access')
+    const result = await requireLiveTrackStart('track-1', 'user-admin')
+
+    expect('error' in result).toBe(true)
+    if ('error' in result) {
+      expect(result.error.status).toBe(403)
+      await expect(result.error.json()).resolves.toEqual({ error: 'Forbidden' })
+    }
+  })
+
+  it('returns 403 when no show is live', async () => {
+    mocks.prisma.user.findUnique.mockResolvedValue(mocks.owner)
+    mocks.prisma.show.findFirst.mockResolvedValue(null)
+
+    const { requireLiveTrackStart } = await import('@/lib/show-access')
+    const result = await requireLiveTrackStart('track-1', 'user-owner')
 
     expect('error' in result).toBe(true)
     if ('error' in result) {

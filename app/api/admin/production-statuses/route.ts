@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       isShowingMetaData: Boolean(body.isShowingMetaData),
       additionalContent: body.additionalContent ?? '',
       isShowingAdditionalContent: Boolean(body.isShowingAdditionalContent),
+      isDisplayingLocalArtistShows: Boolean(body.isDisplayingLocalArtistShows),
       isActive: Boolean(body.isActive),
       producersNote: body.producersNote ?? '',
       userId: auth.userId,

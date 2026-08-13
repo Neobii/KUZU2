@@ -9,7 +9,10 @@ export async function GET() {
   if ('error' in auth) return auth.error
   const artists = await prisma.artist.findMany({
     orderBy: { artistName: 'asc' },
-    include: { _count: { select: { tracks: true } } },
+    include: {
+      _count: { select: { tracks: true, shows: true } },
+      shows: { orderBy: { updatedAt: 'desc' } },
+    },
   })
   return NextResponse.json({ artists })
 }
@@ -25,6 +28,7 @@ export async function POST(req: NextRequest) {
   const artist = await prisma.artist.create({
     data: {
       artistName,
+      isLocalArtist: Boolean(body.isLocalArtist),
       ...(typeof body.imageUrl === 'string' && body.imageUrl.trim() !== ''
         ? { imageUrl: body.imageUrl.trim() }
         : {}),

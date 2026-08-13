@@ -76,7 +76,11 @@ beforeEach(() => {
   mocks.prisma.show.updateMany.mockResolvedValue({ count: 0 })
   mocks.prisma.show.update.mockResolvedValue({ ...mocks.baseShow, isActive: true })
   mocks.prisma.show.findFirst.mockResolvedValue({ ...mocks.baseShow, isActive: true })
-  mocks.prisma.show.findUnique.mockResolvedValue({ ...mocks.baseShow, isAutoPlaying: true })
+  mocks.prisma.show.findUnique.mockResolvedValue({
+    ...mocks.baseShow,
+    isActive: true,
+    isAutoPlaying: true,
+  })
   mocks.prisma.tracklist.findUnique.mockResolvedValue({ ...mocks.baseTrack })
   mocks.prisma.tracklist.findFirst.mockResolvedValue({ ...mocks.baseTrack })
   mocks.prisma.tracklist.update.mockResolvedValue({
@@ -291,6 +295,59 @@ describe('deleteShow', () => {
     const { deleteShow } = await import('@/lib/show-actions')
 
     await deleteShow('show-1')
+describe('startTrack', () => {
+  it('refuses to start a track on a non-live show without clearing autoplay', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: false,
+      isAutoPlaying: false,
+    })
+    const { startTrack } = await import('@/lib/show-actions')
+
+    await expect(startTrack('track-1')).rejects.toThrow('Show is not live')
+    expect(mocks.clearAutoplayTimer).not.toHaveBeenCalled()
+    expect(mocks.prisma.tracklist.update).not.toHaveBeenCalled()
+  })
+
+  it('starts a track on the live show and schedules autoplay when enabled', async () => {
+    mocks.prisma.tracklist.findUnique.mockResolvedValue({
+      ...mocks.baseTrack,
+      trackLength: 120,
+      indexNumber: 2,
+    })
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: true,
+      isAutoPlaying: true,
+    })
+    const { startTrack } = await import('@/lib/show-actions')
+
+    await startTrack('track-1')
+
+    expect(mocks.clearAutoplayTimer).toHaveBeenCalled()
+    expect(mocks.prisma.tracklist.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'track-1' },
+        data: expect.objectContaining({
+          playDate: expect.any(Date),
+          isHighlighted: true,
+        }),
+      })
+    )
+    expect(mocks.scheduleNextTrackAfter).toHaveBeenCalledWith(120, 'show-1', 2)
+  })
+})
+
+describe('deactivateShow', () => {
+  it('clears live runtime when stopping the active show', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: true,
+      isAutoPlaying: true,
+    })
+    const { deactivateShow } = await import('@/lib/show-actions')
+
+    await deactivateShow('show-1')
 
     expect(mocks.clearAutoplayTimer).toHaveBeenCalled()
     expect(mocks.cron.cancelStopShowAtEnd).toHaveBeenCalledWith('show-1')
@@ -327,5 +384,21 @@ describe('deleteShow', () => {
     expect(mocks.prisma.show.delete).toHaveBeenCalledWith({
       where: { id: 'show-1' },
     })
+  })
+
+  it('does not clear the live autoplay timer when stopping an inactive show', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: false,
+      isAutoPlaying: false,
+    })
+    const { deactivateShow } = await import('@/lib/show-actions')
+
+    await deactivateShow('show-1')
+
+    expect(mocks.clearAutoplayTimer).not.toHaveBeenCalled()
+    expect(mocks.cron.cancelStopShowAtEnd).not.toHaveBeenCalled()
+    expect(mocks.fillAutoDJTrack).not.toHaveBeenCalled()
+    expect(mocks.prisma.show.update).not.toHaveBeenCalled()
   })
 })
