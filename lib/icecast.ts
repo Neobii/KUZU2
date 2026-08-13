@@ -37,6 +37,43 @@ export function formatIcecastNowPlaying(source: IcecastSource | null): string | 
   return null
 }
 
+function splitArtistTitle(combined: string): { artist: string; songTitle: string } {
+  const idx = combined.indexOf(' - ')
+  if (idx > 0) {
+    return {
+      artist: combined.slice(0, idx).trim(),
+      songTitle: combined.slice(idx + 3).trim() || combined,
+    }
+  }
+  return { artist: '', songTitle: combined }
+}
+
+/** Parse Icecast mount metadata into artist + song title for tracklist rows. */
+export function parseIcecastTrackParts(
+  source: IcecastSource | null
+): { artist: string; songTitle: string } | null {
+  if (!source) return null
+  const artistField = source.artist?.trim()
+  const titleField = source.title?.trim()
+
+  if (artistField && titleField) {
+    if (titleField.toLowerCase().startsWith(artistField.toLowerCase())) {
+      return splitArtistTitle(titleField)
+    }
+    return { artist: artistField, songTitle: titleField }
+  }
+  if (titleField) return splitArtistTitle(titleField)
+  if (artistField) return { artist: artistField, songTitle: artistField }
+  return null
+}
+
+export function icecastTrackDisplayKey(parts: { artist: string; songTitle: string }): string {
+  if (parts.artist && parts.songTitle) {
+    return `${parts.artist} - ${parts.songTitle}`
+  }
+  return parts.songTitle || parts.artist
+}
+
 /** Read listener count from Icecast status-json (single mount or sum of mounts). */
 export function parseIcecastListeners(data: IcecastStats): number | null {
   const src = data.icestats?.source

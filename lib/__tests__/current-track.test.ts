@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   formatIcecastNowPlaying,
   getIcecastSource,
+  parseIcecastTrackParts,
   type IcecastStats,
 } from '@/lib/icecast'
 import { formatCurrentTrackString } from '@/lib/current-track'
@@ -40,6 +41,15 @@ describe('getIcecastSource', () => {
       },
     }
     expect(getIcecastSource(data)?.artist).toBe('zoogz rift')
+  })
+})
+
+describe('parseIcecastTrackParts', () => {
+  it('splits combined title into artist and song', () => {
+    expect(parseIcecastTrackParts({ title: 'The Dirtbombs - Lupita Screams' })).toEqual({
+      artist: 'The Dirtbombs',
+      songTitle: 'Lupita Screams',
+    })
   })
 })
 
