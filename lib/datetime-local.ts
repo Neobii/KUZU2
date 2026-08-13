@@ -13,6 +13,26 @@ export function isoToLocalDatetimeInputValue(iso: string | null | undefined): st
   return dateToLocalDatetimeInputValue(d)
 }
 
+/** Parse `<input type="date">` value as local calendar day at 00:00:00. */
+export function parseLocalDateInputValue(s: string): Date | null {
+  if (!s?.trim()) return null
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim())
+  if (m) {
+    const dt = new Date(+m[1], +m[2] - 1, +m[3], 0, 0, 0, 0)
+    return isNaN(dt.getTime()) ? null : dt
+  }
+  return parseLocalDatetimeInputValue(s)
+}
+
+/** Inclusive date-only range end → exclusive upper bound (start of next local day). */
+export function parseLocalDateRangeEndExclusive(s: string): Date | null {
+  const dayStart = parseLocalDateInputValue(s)
+  if (!dayStart) return null
+  const end = new Date(dayStart)
+  end.setDate(end.getDate() + 1)
+  return end
+}
+
 /** Parse form value to Date in local timezone (avoids UTC misreads on `YYYY-MM-DDTHH:mm`). */
 export function parseLocalDatetimeInputValue(s: string): Date | null {
   if (!s?.trim()) return null
