@@ -12,15 +12,17 @@ export function scheduleAutoStartShow(showId: string) {
     if (!show?.showStart || !show.autoStartEnd) return
     const armTime = moment(show.showStart).subtract(5, 'minutes').toDate()
     if (armTime.getTime() <= Date.now()) {
-      void prisma.show.update({
-        where: { id: showId },
+      // Re-check autoStartEnd so a concurrent remove/cancel cannot arm after
+      // opt-out (cancel may have run before this job was registered).
+      void prisma.show.updateMany({
+        where: { id: showId, autoStartEnd: true },
         data: { isArmedForAutoStart: true },
       })
       return
     }
     const job = schedule.scheduleJob(armTime, async () => {
-      await prisma.show.update({
-        where: { id: showId },
+      await prisma.show.updateMany({
+        where: { id: showId, autoStartEnd: true },
         data: { isArmedForAutoStart: true },
       })
       scheduledJobs.delete(`AutoStart_${showId}`)
