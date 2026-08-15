@@ -49,8 +49,12 @@ export async function startNextTrackAfterCurrent(showId: string, currentIndex: n
   // switched to a different show without the previous timeout being cleared).
   if (!show?.isActive) return
 
+  // Use the next higher index, not currentIndex+1 only — deleting a middle
+  // track leaves gaps, and exact +1 would stop autoplay (or kill the show
+  // when stopAfterLastSong is on) while later tracks remain.
   const nextTrack = await prisma.tracklist.findFirst({
-    where: { showId, indexNumber: currentIndex + 1 },
+    where: { showId, indexNumber: { gt: currentIndex } },
+    orderBy: { indexNumber: 'asc' },
   })
 
   if (nextTrack) {
