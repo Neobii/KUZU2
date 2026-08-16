@@ -5,9 +5,10 @@ export const dynamic = 'force-dynamic'
 
 function isAuthorizedCron(req: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET?.trim()
+  // When CRON_SECRET is configured, only the Bearer token is trusted.
+  // `x-vercel-cron` is spoofable by any client and must not bypass the secret.
   if (cronSecret) {
-    const auth = req.headers.get('authorization')
-    if (auth === `Bearer ${cronSecret}`) return true
+    return req.headers.get('authorization') === `Bearer ${cronSecret}`
   }
   return req.headers.get('x-vercel-cron') === '1'
 }
