@@ -1,11 +1,28 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   formatIcecastNowPlaying,
   getIcecastSource,
   parseIcecastTrackParts,
   type IcecastStats,
 } from '@/lib/icecast'
-import { formatCurrentTrackString } from '@/lib/current-track'
+import { formatCurrentTrackString, getCurrentTrackString } from '@/lib/current-track'
+
+const mocks = vi.hoisted(() => ({
+  prisma: {
+    show: { findFirst: vi.fn() },
+    tracklist: { findFirst: vi.fn() },
+  },
+  fetchIcecastNowPlaying: vi.fn(),
+}))
+
+vi.mock('@/lib/prisma', () => ({ prisma: mocks.prisma }))
+vi.mock('@/lib/icecast', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/icecast')>()
+  return {
+    ...actual,
+    fetchIcecastNowPlaying: mocks.fetchIcecastNowPlaying,
+  }
+})
 
 describe('formatIcecastNowPlaying', () => {
   it('formats separate artist and title fields', () => {
@@ -61,5 +78,44 @@ describe('formatCurrentTrackString', () => {
         songTitle: 'look at the fool',
       })
     ).toBe('zoogz rift - look at the fool')
+  })
+})
+
+describe('getCurrentTrackString', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('scopes Icecast-down DB fallback to the active show', async () => {
+    mocks.prisma.show.findFirst.mockResolvedValue({
+      id: 'show-live',
+      isShowingDefaultMeta: false,
+      defaultMeta: 'Live Show',
+    })
+    mocks.fetchIcecastNowPlaying.mockResolvedValue(null)
+    mocks.prisma.tracklist.findFirst.mockResolvedValue({
+      artist: 'Live Artist',
+      songTitle: 'Live Song',
+    })
+
+    await expect(getCurrentTrackString()).resolves.toBe('Live Artist - Live Song')
+
+    expect(mocks.prisma.tracklist.findFirst).toHaveBeenCalledWith({
+      where: { showId: 'show-live', playDate: { not: null } },
+      orderBy: { playDate: { sort: 'desc', nulls: 'last' } },
+      select: { artist: true, songTitle: true },
+    })
+  })
+
+  it('returns blank when the live show has no played tracks and Icecast is down', async () => {
+    mocks.prisma.show.findFirst.mockResolvedValue({
+      id: 'show-live',
+      isShowingDefaultMeta: false,
+      defaultMeta: 'Live Show',
+    })
+    mocks.fetchIcecastNowPlaying.mockResolvedValue(null)
+    mocks.prisma.tracklist.findFirst.mockResolvedValue(null)
+
+    await expect(getCurrentTrackString()).resolves.toBe(' ')
   })
 })
