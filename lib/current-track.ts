@@ -35,8 +35,12 @@ export async function getCurrentTrackString(): Promise<string> {
     return ' '
   }
 
+  // Scope to the live show only. A global latest-playDate query can return a
+  // prior show's track or a stream/licensing row (e.g. after "Display song title"
+  // turns off default meta before any playlist track has playDate, or when a
+  // concurrent stream log is newer than the on-air track).
   const track = await prisma.tracklist.findFirst({
-    where: { playDate: { not: null } },
+    where: { showId: show.id, playDate: { not: null } },
     orderBy: { playDate: { sort: 'desc', nulls: 'last' } },
     select: { artist: true, songTitle: true },
   })
