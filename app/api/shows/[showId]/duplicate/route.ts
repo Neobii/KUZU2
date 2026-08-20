@@ -36,6 +36,11 @@ export async function POST(
       autoplayOnDate: src.autoplayOnDate,
       stopAfterLastSong: src.stopAfterLastSong,
       stopOnCalendarEnd: src.stopOnCalendarEnd,
+      // Recurring-show copies must keep stream/licensing + listener messaging
+      // settings. Defaults are false; omitting these silently sends Radio Logik
+      // plays to pending Auto DJ (one track kept at show end) and turns messaging off.
+      hasRadioLogikTracking: src.hasRadioLogikTracking,
+      hasMessagingEnabled: src.hasMessagingEnabled,
     },
   })
   let idx = 0
