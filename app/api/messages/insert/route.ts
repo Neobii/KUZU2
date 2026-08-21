@@ -17,7 +17,13 @@ export async function POST(req: NextRequest) {
   const activeShow = await prisma.show.findFirst({
     where: { isActive: true },
   })
-  if (activeShow && messageBody) {
+  // Match GET /api/tracking/has-messaging: public clients hide the form when
+  // messaging is off, but this unauthenticated CORS endpoint must enforce the
+  // same flag or anyone can inject into the producer inbox for a live show.
+  if (!activeShow?.hasMessagingEnabled) {
+    return NextResponse.json({ ok: false }, { status: 403, headers })
+  }
+  if (messageBody) {
     await prisma.message.create({
       data: {
         content: messageBody,
