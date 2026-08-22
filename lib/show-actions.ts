@@ -33,9 +33,15 @@ export async function startTrack(trackId: string) {
     data: { playDate: new Date(), isHighlighted: true },
   })
 
-  if (track.trackLength && show.isAutoPlaying) {
-    scheduleNextTrackAfter(track.trackLength, track.showId, track.indexNumber ?? 0)
-  } else {
+  // Truthy but zero/unparseable lengths (e.g. "0:00") used to call schedule
+  // and return early without a timer, leaving isAutoPlaying stuck true.
+  const length =
+    typeof track.trackLength === 'string' ? track.trackLength.trim() : ''
+  const scheduled =
+    length.length > 0 &&
+    show.isAutoPlaying &&
+    scheduleNextTrackAfter(length, track.showId, track.indexNumber ?? 0)
+  if (!scheduled) {
     await prisma.show.update({
       where: { id: track.showId },
       data: { isAutoPlaying: false },
