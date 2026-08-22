@@ -383,9 +383,10 @@ describe('startTrack', () => {
   })
 
   it('starts a track on the live show and schedules autoplay when enabled', async () => {
+    mocks.scheduleNextTrackAfter.mockReturnValue(true)
     mocks.prisma.tracklist.findUnique.mockResolvedValue({
       ...mocks.baseTrack,
-      trackLength: 120,
+      trackLength: '2:00',
       indexNumber: 2,
     })
     mocks.prisma.show.findUnique.mockResolvedValue({
@@ -407,7 +408,35 @@ describe('startTrack', () => {
         }),
       })
     )
-    expect(mocks.scheduleNextTrackAfter).toHaveBeenCalledWith(120, 'show-1', 2)
+    expect(mocks.scheduleNextTrackAfter).toHaveBeenCalledWith('2:00', 'show-1', 2)
+    expect(mocks.prisma.show.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { isAutoPlaying: false },
+      })
+    )
+  })
+
+  it('clears isAutoPlaying when schedule returns false for 0:00 length', async () => {
+    mocks.scheduleNextTrackAfter.mockReturnValue(false)
+    mocks.prisma.tracklist.findUnique.mockResolvedValue({
+      ...mocks.baseTrack,
+      trackLength: '0:00',
+      indexNumber: 1,
+    })
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: true,
+      isAutoPlaying: true,
+    })
+    const { startTrack } = await import('@/lib/show-actions')
+
+    await startTrack('track-1')
+
+    expect(mocks.scheduleNextTrackAfter).toHaveBeenCalledWith('0:00', 'show-1', 1)
+    expect(mocks.prisma.show.update).toHaveBeenCalledWith({
+      where: { id: 'show-1' },
+      data: { isAutoPlaying: false },
+    })
   })
 })
 
