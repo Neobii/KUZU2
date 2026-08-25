@@ -127,3 +127,41 @@ it('rejects requests with wrong CRON_SECRET', async () => {
   expect(res.status).toBe(401)
   delete process.env.CRON_SECRET
 })
+
+it('rejects spoofed x-vercel-cron when CRON_SECRET is set', async () => {
+  process.env.CRON_SECRET = 'real-secret'
+  const { GET } = await import('@/app/api/cron/listeners/route')
+  const req = new Request('http://localhost:3000/api/cron/listeners', {
+    headers: { 'x-vercel-cron': '1' },
+  })
+  const res = await GET(req as any)
+  expect(res.status).toBe(401)
+  const body = await res.json()
+  expect(body.error).toBe('Unauthorized')
+  delete process.env.CRON_SECRET
+})
+
+it('rejects wrong Bearer even when x-vercel-cron is present', async () => {
+  process.env.CRON_SECRET = 'real-secret'
+  const { GET } = await import('@/app/api/cron/listeners/route')
+  const req = new Request('http://localhost:3000/api/cron/listeners', {
+    headers: {
+      Authorization: 'Bearer wrong-secret',
+      'x-vercel-cron': '1',
+    },
+  })
+  const res = await GET(req as any)
+  expect(res.status).toBe(401)
+  delete process.env.CRON_SECRET
+})
+
+it('accepts x-vercel-cron when CRON_SECRET is unset', async () => {
+  delete process.env.CRON_SECRET
+  const { GET } = await import('@/app/api/cron/listeners/route')
+  const req = new Request('http://localhost:3000/api/cron/listeners', {
+    headers: { 'x-vercel-cron': '1' },
+  })
+  const res = await GET(req as any)
+  // Auth passes → poll runs (may fail without Icecast) → not 401
+  expect(res.status).not.toBe(401)
+})
