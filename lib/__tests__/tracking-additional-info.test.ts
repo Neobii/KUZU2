@@ -77,10 +77,11 @@ describe('getCurrentLocalArtistShowHtml', () => {
     await expect(getCurrentLocalArtistShowHtml()).resolves.toBeNull()
   })
 
-  it('returns latest in-window show HTML when local artist is playing', async () => {
+  it('scopes the live-show path to that show and returns promo HTML', async () => {
     mocks.prisma.productionStatus.findFirst.mockResolvedValue({
       isDisplayingLocalArtistShows: true,
     })
+    mocks.prisma.show.findFirst.mockResolvedValue({ id: 'show-live' })
     mocks.prisma.tracklist.findFirst.mockResolvedValue({
       artistId: 'artist-1',
       artist: 'Local Band',
@@ -100,7 +101,57 @@ describe('getCurrentLocalArtistShowHtml', () => {
     await expect(getCurrentLocalArtistShowHtml()).resolves.toBe(
       '<img src="https://example.com/flyer.webp" alt="Local Band" /><p>Doors 7pm</p>'
     )
+    expect(mocks.prisma.tracklist.findFirst).toHaveBeenCalledWith({
+      where: { showId: 'show-live', playDate: { not: null } },
+      orderBy: { playDate: { sort: 'desc', nulls: 'last' } },
+      select: { artistId: true, artist: true },
+    })
     expect(mocks.prisma.artistShow.findFirst).toHaveBeenCalled()
+  })
+
+  it('returns null when a live show has no played tracks (no stale stream fallback)', async () => {
+    mocks.prisma.productionStatus.findFirst.mockResolvedValue({
+      isDisplayingLocalArtistShows: true,
+    })
+    mocks.prisma.show.findFirst.mockResolvedValue({ id: 'show-live' })
+    mocks.prisma.tracklist.findFirst.mockResolvedValue(null)
+
+    await expect(getCurrentLocalArtistShowHtml()).resolves.toBeNull()
+    expect(mocks.prisma.tracklist.findFirst).toHaveBeenCalledWith({
+      where: { showId: 'show-live', playDate: { not: null } },
+      orderBy: { playDate: { sort: 'desc', nulls: 'last' } },
+      select: { artistId: true, artist: true },
+    })
+    expect(mocks.prisma.artist.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('uses stream/licensing rows only when no live show is active', async () => {
+    mocks.prisma.productionStatus.findFirst.mockResolvedValue({
+      isDisplayingLocalArtistShows: true,
+    })
+    mocks.prisma.show.findFirst.mockResolvedValue(null)
+    mocks.prisma.tracklist.findFirst.mockResolvedValue({
+      artistId: 'artist-2',
+      artist: 'Stream Local',
+    })
+    mocks.prisma.artist.findUnique.mockResolvedValue({
+      id: 'artist-2',
+      artistName: 'Stream Local',
+      isLocalArtist: true,
+    })
+    mocks.prisma.artistShow.findFirst.mockResolvedValue({
+      flyerImageUrl: null,
+      content: '<p>Tonight</p>',
+      showDate: new Date(),
+      artist: { artistName: 'Stream Local' },
+    })
+
+    await expect(getCurrentLocalArtistShowHtml()).resolves.toBe('<p>Tonight</p>')
+    expect(mocks.prisma.tracklist.findFirst).toHaveBeenCalledWith({
+      where: { showId: null, playDate: { not: null } },
+      orderBy: { playDate: { sort: 'desc', nulls: 'last' } },
+      select: { artistId: true, artist: true },
+    })
   })
 })
 
