@@ -39,6 +39,29 @@ export function formatShowDateInputValue(showDate: Date | string | null | undefi
 }
 
 /**
+ * Resolve the track that represents who is currently on air for local-artist promo.
+ * Live show → that show's latest play only. Otherwise → latest stream/licensing row.
+ * Never use a global latest-playDate query (stale overnight / cross-show bleed).
+ */
+export async function findCurrentlyPlayingTrackForLocalArtist(): Promise<{
+  artistId: string | null
+  artist: string | null
+} | null> {
+  const liveShow = await prisma.show.findFirst({
+    where: { isActive: true },
+    select: { id: true },
+  })
+
+  return prisma.tracklist.findFirst({
+    where: liveShow
+      ? { showId: liveShow.id, playDate: { not: null } }
+      : { showId: null, playDate: { not: null } },
+    orderBy: { playDate: { sort: 'desc', nulls: 'last' } },
+    select: { artistId: true, artist: true },
+  })
+}
+
+/**
  * When a local artist is currently playing and the display flag is on,
  * return the latest active show within ±1 month of today.
  */
@@ -48,11 +71,7 @@ export async function getCurrentLocalArtistShowHtml(): Promise<string | null> {
   })
   if (!productionStatus?.isDisplayingLocalArtistShows) return null
 
-  const track = await prisma.tracklist.findFirst({
-    where: { playDate: { not: null } },
-    orderBy: { playDate: 'desc' },
-    select: { artistId: true, artist: true },
-  })
+  const track = await findCurrentlyPlayingTrackForLocalArtist()
   if (!track) return null
 
   let artist =
@@ -72,7 +91,7 @@ export async function getCurrentLocalArtistShowHtml(): Promise<string | null> {
   if (!artist?.isLocalArtist) return null
 
   const { from, to } = localArtistShowDateWindow()
-  const show = await prisma.artistShow.findFirst({
+  const artistShow = await prisma.artistShow.findFirst({
     where: {
       artistId: artist.id,
       isActive: true,
@@ -81,8 +100,8 @@ export async function getCurrentLocalArtistShowHtml(): Promise<string | null> {
     orderBy: { showDate: 'desc' },
     include: { artist: { select: { artistName: true } } },
   })
-  if (!show) return null
+  if (!artistShow) return null
 
-  const html = formatLocalArtistShowHtml(show)
+  const html = formatLocalArtistShowHtml(artistShow)
   return html.trim() ? html : null
 }
