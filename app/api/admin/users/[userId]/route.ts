@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/require-admin'
+import { deleteUserAccount } from '@/lib/user-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,6 +67,6 @@ export async function DELETE(
   if (userId === auth.userId) {
     return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 })
   }
-  await prisma.user.delete({ where: { id: userId } })
+  await deleteUserAccount(userId)
   return NextResponse.json({ ok: true })
 }
