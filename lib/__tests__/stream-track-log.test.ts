@@ -47,6 +47,42 @@ describe('hasRecentStreamTrackPlay', () => {
 
     await expect(hasRecentStreamTrackPlay('The Cure', 'Hot Hot Hot!!!')).resolves.toBe(false)
   })
+
+  it('scopes the recent-play query to stream/licensing rows (showId null)', async () => {
+    mocks.prisma.tracklist.findMany.mockResolvedValue([])
+
+    await hasRecentStreamTrackPlay('The Cure', 'Hot Hot Hot!!!')
+
+    expect(mocks.prisma.tracklist.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          showId: null,
+          trackType: 'song',
+        }),
+      })
+    )
+  })
+})
+
+describe('createStreamTrackLog vs show playlist plays', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.prisma.tracklist.create.mockResolvedValue({ id: 'track-1' })
+  })
+
+  it('still inserts a licensing row when only a show-attached play would have matched', async () => {
+    // hasRecentStreamTrackPlay queries showId: null, so show playlist rows are
+    // invisible here — findMany returns [] even if a live show just played it.
+    mocks.prisma.tracklist.findMany.mockResolvedValue([])
+
+    const result = await createStreamTrackLog({
+      artist: 'The Cure',
+      songTitle: 'Hot Hot Hot!!!',
+    })
+
+    expect(result.stored).toBe(true)
+    expect(mocks.prisma.tracklist.create).toHaveBeenCalled()
+  })
 })
 
 describe('createStreamTrackLog', () => {

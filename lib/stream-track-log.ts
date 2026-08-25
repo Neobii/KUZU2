@@ -21,8 +21,13 @@ export async function hasRecentStreamTrackPlay(
   const since = new Date(Date.now() - windowMs)
   const targetKey = normalizeStreamTrackKey(artist, titleTrim)
 
+  // Only compare against stream/licensing rows (showId null). Show playlist
+  // plays of the same song must not suppress the durable licensing log — e.g.
+  // after a live show ends, Icecast often still shows the last track, and
+  // deleteShow removes show-attached rows.
   const recent = await prisma.tracklist.findMany({
     where: {
+      showId: null,
       playDate: { gte: since },
       trackType: 'song',
     },
