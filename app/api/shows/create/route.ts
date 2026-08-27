@@ -1,23 +1,18 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
+import { requireSession } from '@/lib/api-auth'
+import { requireShowCreateAccess } from '@/lib/show-access'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  const userId = (session.user as { id?: string }).id
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  })
-  const producerProfile = user?.producerProfile as {
+  const auth = await requireSession()
+  if ('error' in auth) return auth.error
+
+  const access = await requireShowCreateAccess(auth.userId)
+  if ('error' in access) return access.error
+
+  const producerProfile = access.user.producerProfile as {
     showName?: string
     description?: string
     defaultMeta?: string
@@ -31,7 +26,7 @@ export async function POST(request: Request) {
   }
   const show = await prisma.show.create({
     data: {
-      userId,
+      userId: auth.userId,
       showName: producerProfile?.showName?.trim() || 'Kuzu Show',
       description: producerProfile?.description ?? ' ',
       defaultMeta: producerProfile?.defaultMeta ?? 'Kuzu Show',

@@ -7,6 +7,28 @@ export function isStationOps(user: Pick<User, 'isAdmin' | 'isBoardMember' | 'isF
   return user.isAdmin || user.isBoardMember || user.isFieldProducer
 }
 
+function hasProducerProfile(producerProfile: User['producerProfile']) {
+  return (
+    !!producerProfile &&
+    typeof producerProfile === 'object' &&
+    Object.keys(producerProfile as object).length > 0
+  )
+}
+
+/**
+ * Who may create a new show (and thus become an owner who can Go Live).
+ * Open registration must not be enough — owning a show bypasses object-level
+ * activate checks and can displace the real on-air show.
+ */
+export function canCreateShows(
+  user: Pick<
+    User,
+    'isAdmin' | 'isBoardMember' | 'isFieldProducer' | 'isProducer' | 'producerProfile'
+  >
+) {
+  return isStationOps(user) || user.isProducer || hasProducerProfile(user.producerProfile)
+}
+
 export function isShowMember(
   userId: string,
   show: Pick<Show, 'userId' | 'helperUserId'>
@@ -78,6 +100,20 @@ export async function requireShowAccess(
   }
 
   return { show, user }
+}
+
+/** Create-show API — producers / station ops only (not every signed-in account). */
+export async function requireShowCreateAccess(
+  userId: string
+): Promise<AccessError | { user: User }> {
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) {
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
+  }
+  if (!canCreateShows(user)) {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+  }
+  return { user }
 }
 
 type TrackAccessResult =

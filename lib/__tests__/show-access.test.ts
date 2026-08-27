@@ -69,6 +69,35 @@ describe('isStationOps', () => {
   })
 })
 
+describe('canCreateShows', () => {
+  const base = {
+    isAdmin: false,
+    isBoardMember: false,
+    isFieldProducer: false,
+    isProducer: false,
+    producerProfile: null as object | null,
+  }
+
+  it('allows station ops and evergreen producers', async () => {
+    const { canCreateShows } = await import('@/lib/show-access')
+    expect(canCreateShows({ ...base, isAdmin: true })).toBe(true)
+    expect(canCreateShows({ ...base, isBoardMember: true })).toBe(true)
+    expect(canCreateShows({ ...base, isFieldProducer: true })).toBe(true)
+    expect(canCreateShows({ ...base, isProducer: true })).toBe(true)
+  })
+
+  it('allows legacy users with a non-empty producer profile', async () => {
+    const { canCreateShows } = await import('@/lib/show-access')
+    expect(canCreateShows({ ...base, producerProfile: { showName: 'Late Night' } })).toBe(true)
+  })
+
+  it('rejects open-registration accounts with no producer role', async () => {
+    const { canCreateShows } = await import('@/lib/show-access')
+    expect(canCreateShows(base)).toBe(false)
+    expect(canCreateShows({ ...base, producerProfile: {} })).toBe(false)
+  })
+})
+
 describe('isShowMember', () => {
   it('identifies owner and helper', async () => {
     const { isShowMember } = await import('@/lib/show-access')
