@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { pollListenerStats } from '@/lib/listeners'
+import { runScheduledMaintenance } from '@/lib/cron'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,14 +13,18 @@ function isAuthorizedCron(req: NextRequest): boolean {
   return req.headers.get('x-vercel-cron') === '1'
 }
 
-/** Vercel Cron + manual trigger for listener stat polling (every 5 min in production). */
+/**
+ * Vercel Cron + manual trigger (every 5 min in production).
+ * Polls Icecast listener/track stats and applies durable auto-start arming /
+ * calendar-end stops (in-process node-schedule does not survive serverless).
+ */
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const result = await pollListenerStats()
+    const result = await runScheduledMaintenance()
     return NextResponse.json({ ok: true, ...result })
   } catch (e) {
     console.error('[cron/listeners]', e)
