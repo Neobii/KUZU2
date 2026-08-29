@@ -200,6 +200,9 @@ export async function deactivateShow(showId: string) {
  * Delete a show after tearing down any live/scheduled runtime. Deleting the
  * active show without deactivateShow would orphan the autoplay timer, skip
  * Auto DJ handoff, and leave /api/tracking/current-track on stale metadata.
+ *
+ * Played song rows are detached (showId → null), not deleted — they are part of
+ * the licensing export. Unplayed playlist rows and non-song cues are removed.
  */
 export async function deleteShow(showId: string) {
   const show = await prisma.show.findUnique({ where: { id: showId } })
@@ -213,9 +216,20 @@ export async function deleteShow(showId: string) {
   }
   cancelAutoStartShow(showId)
 
-  await prisma.tracklist.deleteMany({ where: { showId } })
-  await prisma.message.deleteMany({ where: { showId } })
-  await prisma.show.delete({ where: { id: showId } })
+  await prisma.$transaction([
+    prisma.tracklist.updateMany({
+      where: { showId, playDate: { not: null }, trackType: 'song' },
+      data: { showId: null, isHighlighted: false, indexNumber: null },
+    }),
+    prisma.tracklist.deleteMany({
+      where: {
+        showId,
+        OR: [{ playDate: null }, { trackType: { not: 'song' } }],
+      },
+    }),
+    prisma.message.deleteMany({ where: { showId } }),
+    prisma.show.delete({ where: { id: showId } }),
+  ])
 }
 
 /**
