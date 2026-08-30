@@ -17,6 +17,7 @@ import {
   createStreamTrackLog,
   hasRecentStreamTrackPlay,
   normalizeStreamTrackKey,
+  streamTracksMatch,
 } from '@/lib/stream-track-log'
 
 describe('normalizeStreamTrackKey', () => {
@@ -24,6 +25,22 @@ describe('normalizeStreamTrackKey', () => {
     expect(normalizeStreamTrackKey('The Cure', 'Hot Hot Hot!!!')).toBe(
       'the cure - hot hot hot!!!'
     )
+  })
+
+  it('splits artist and title when only the title field is populated', () => {
+    expect(normalizeStreamTrackKey(null, 'The Cure - Hot Hot Hot!!!')).toBe(
+      'the cure - hot hot hot!!!'
+    )
+  })
+})
+
+describe('streamTracksMatch', () => {
+  it('matches rows when artist metadata is missing on one side', () => {
+    expect(streamTracksMatch('The Cure', 'Hot Hot Hot!!!', null, 'Hot Hot Hot!!!')).toBe(true)
+  })
+
+  it('does not match different songs with the same title and distinct artists', () => {
+    expect(streamTracksMatch('Artist A', 'Love', 'Artist B', 'Love')).toBe(false)
   })
 })
 
@@ -38,6 +55,14 @@ describe('hasRecentStreamTrackPlay', () => {
     ])
 
     await expect(hasRecentStreamTrackPlay('The Cure', 'Hot Hot Hot!!!')).resolves.toBe(true)
+  })
+
+  it('returns true when artist metadata differs but the title matches', async () => {
+    mocks.prisma.tracklist.findMany.mockResolvedValue([
+      { artist: 'The Cure', songTitle: 'Hot Hot Hot!!!' },
+    ])
+
+    await expect(hasRecentStreamTrackPlay(null, 'Hot Hot Hot!!!')).resolves.toBe(true)
   })
 
   it('returns false when only a different song was logged recently', async () => {
@@ -137,6 +162,22 @@ describe('cleanupNearDuplicateStreamTracks', () => {
     mocks.prisma.tracklist.findMany.mockResolvedValue([
       { id: 'keep-1', artist: 'AMPARO OCHOA', songTitle: 'LA CALACA', playDate: t0 },
       { id: 'drop-1', artist: 'AMPARO OCHOA', songTitle: 'LA CALACA', playDate: t1 },
+    ])
+
+    const result = await cleanupNearDuplicateStreamTracks()
+
+    expect(result.deleted).toBe(1)
+    expect(mocks.prisma.tracklist.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ['drop-1'] } },
+    })
+  })
+
+  it('deletes later rows when artist metadata is missing on the duplicate', async () => {
+    const t0 = new Date('2026-08-13T19:01:01.223Z')
+    const t1 = new Date('2026-08-13T19:01:01.545Z')
+    mocks.prisma.tracklist.findMany.mockResolvedValue([
+      { id: 'keep-1', artist: 'The Cure', songTitle: 'Hot Hot Hot!!!', playDate: t0 },
+      { id: 'drop-1', artist: null, songTitle: 'Hot Hot Hot!!!', playDate: t1 },
     ])
 
     const result = await cleanupNearDuplicateStreamTracks()

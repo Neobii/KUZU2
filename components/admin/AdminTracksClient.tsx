@@ -124,9 +124,17 @@ export function AdminTracksClient() {
   const exportCount = preview?.count
 
   async function cleanupDuplicates() {
+    if (!dateFrom || !dateTo) {
+      setCleanupMessage('Choose both a start date and end date.')
+      return
+    }
+    if (dateFrom > dateTo) {
+      setCleanupMessage('End date must be on or after start date.')
+      return
+    }
     if (
       !window.confirm(
-        'Remove duplicate stream track rows from the last 30 days? Keeps the earliest play when the same song was logged within 4 minutes.'
+        `Remove duplicate track rows from ${dateFrom} through ${dateTo}? Keeps the earliest play when the same song was logged within 4 minutes.`
       )
     ) {
       return
@@ -134,7 +142,11 @@ export function AdminTracksClient() {
     setCleanupMessage('')
     setCleaning(true)
     try {
-      const res = await fetch('/api/admin/tracks/cleanup-duplicates', { method: 'POST' })
+      const res = await fetch('/api/admin/tracks/cleanup-duplicates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dateFrom, dateTo }),
+      })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) {
         setCleanupMessage(body.error ?? 'Cleanup failed.')

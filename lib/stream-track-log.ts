@@ -3,11 +3,61 @@ import { prisma } from '@/lib/prisma'
 /** Ignore repeat stream logs for the same song within this window (metadata flicker / dual poll). */
 export const STREAM_TRACK_DEDUP_MS = 4 * 60 * 1000
 
+function splitCombinedArtistTitle(combined: string): { artist: string; songTitle: string } {
+  const idx = combined.indexOf(' - ')
+  if (idx > 0) {
+    return {
+      artist: combined.slice(0, idx).trim(),
+      songTitle: combined.slice(idx + 3).trim() || combined,
+    }
+  }
+  return { artist: '', songTitle: combined }
+}
+
+/** Normalize artist/title the same way Icecast metadata is parsed before logging. */
+export function normalizeStreamTrackParts(
+  artist: string | null,
+  songTitle: string
+): { artist: string; songTitle: string } {
+  let a = artist?.trim() ?? ''
+  let t = songTitle.trim()
+  if (!a && t.includes(' - ')) {
+    const parts = splitCombinedArtistTitle(t)
+    a = parts.artist
+    t = parts.songTitle
+  }
+  const aLower = a.toLowerCase()
+  const tLower = t.toLowerCase()
+  if (aLower && tLower.startsWith(`${aLower} - `)) {
+    t = t.slice(a.length + 3).trim() || t
+  }
+  return {
+    artist: aLower,
+    songTitle: t.toLowerCase(),
+  }
+}
+
 export function normalizeStreamTrackKey(artist: string | null, songTitle: string): string {
-  const a = artist?.trim().toLowerCase() ?? ''
-  const t = songTitle.trim().toLowerCase()
+  const { artist: a, songTitle: t } = normalizeStreamTrackParts(artist, songTitle)
   if (a && t) return `${a} - ${t}`
   return t || a
+}
+
+/** True when two logged rows represent the same on-air song (metadata may omit artist). */
+export function streamTracksMatch(
+  artistA: string | null,
+  songTitleA: string,
+  artistB: string | null,
+  songTitleB: string
+): boolean {
+  const a = normalizeStreamTrackParts(artistA, songTitleA)
+  const b = normalizeStreamTrackParts(artistB, songTitleB)
+  if (!a.songTitle || !b.songTitle) {
+    return normalizeStreamTrackKey(artistA, songTitleA) === normalizeStreamTrackKey(artistB, songTitleB)
+  }
+  if (a.songTitle !== b.songTitle) return false
+  if (a.artist && b.artist) return a.artist === b.artist
+  return true
 }
 
 export async function hasRecentStreamTrackPlay(
@@ -19,7 +69,6 @@ export async function hasRecentStreamTrackPlay(
   if (!titleTrim) return false
 
   const since = new Date(Date.now() - windowMs)
-  const targetKey = normalizeStreamTrackKey(artist, titleTrim)
 
   // Only compare against stream/licensing rows (showId null). Show playlist
   // plays of the same song must not suppress the durable licensing log — e.g.
@@ -36,9 +85,7 @@ export async function hasRecentStreamTrackPlay(
     take: 30,
   })
 
-  return recent.some(
-    (row) => normalizeStreamTrackKey(row.artist, row.songTitle) === targetKey
-  )
+  return recent.some((row) => streamTracksMatch(artist, titleTrim, row.artist, row.songTitle))
 }
 
 export type StreamTrackLogInput = {
@@ -78,10 +125,17 @@ export async function createStreamTrackLog(
   return { stored: true, track: displayKey }
 }
 
-/** Remove near-duplicate stream/licensing rows (same song within `windowMs`), keeping earliest play. */
+type KeptPlay = {
+  playDate: Date
+  artist: string | null
+  songTitle: string
+}
+
+/** Remove near-duplicate licensing rows (same song within `windowMs`), keeping earliest play. */
 export async function cleanupNearDuplicateStreamTracks(options?: {
   windowMs?: number
   since?: Date
+  until?: Date
 }): Promise<{ deleted: number; scanned: number }> {
   const windowMs = options?.windowMs ?? STREAM_TRACK_DEDUP_MS
   const since =
@@ -89,25 +143,39 @@ export async function cleanupNearDuplicateStreamTracks(options?: {
 
   const tracks = await prisma.tracklist.findMany({
     where: {
-      showId: null,
       trackType: 'song',
-      playDate: { not: null, gte: since },
+      playDate: {
+        not: null,
+        gte: since,
+        ...(options?.until ? { lt: options.until } : {}),
+      },
     },
     orderBy: { playDate: 'asc' },
     select: { id: true, artist: true, songTitle: true, playDate: true },
   })
 
-  const lastKeptByKey = new Map<string, Date>()
+  const lastKept: KeptPlay[] = []
   const toDelete: string[] = []
 
   for (const track of tracks) {
     if (!track.playDate) continue
-    const key = normalizeStreamTrackKey(track.artist, track.songTitle)
-    const lastKept = lastKeptByKey.get(key)
-    if (lastKept && track.playDate.getTime() - lastKept.getTime() < windowMs) {
+    const playTime = track.playDate.getTime()
+
+    while (lastKept.length && playTime - lastKept[0].playDate.getTime() >= windowMs) {
+      lastKept.shift()
+    }
+
+    const isDuplicate = lastKept.some((kept) =>
+      streamTracksMatch(track.artist, track.songTitle, kept.artist, kept.songTitle)
+    )
+    if (isDuplicate) {
       toDelete.push(track.id)
     } else {
-      lastKeptByKey.set(key, track.playDate)
+      lastKept.push({
+        playDate: track.playDate,
+        artist: track.artist,
+        songTitle: track.songTitle,
+      })
     }
   }
 
