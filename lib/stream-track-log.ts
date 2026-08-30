@@ -4,9 +4,16 @@ import { getIcecastTrackPollIntervalMs } from '@/lib/icecast'
 /** Minimum near-duplicate window for metadata flicker / dual poll. */
 export const STREAM_TRACK_DEDUP_MS = 4 * 60 * 1000
 
+/** Admin cleanup window — collapses repeat logs from polling / dual sources (keep earliest). */
+export const CLEANUP_NEAR_DUPLICATE_MS = 30 * 60 * 1000
+
 /** Dedup window for stream/licensing logs — always longer than the listener poll interval. */
 export function getStreamTrackDedupMs(): number {
   return Math.max(STREAM_TRACK_DEDUP_MS, getIcecastTrackPollIntervalMs() + 60_000)
+}
+
+function normalizeMatchText(value: string): string {
+  return value.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ')
 }
 
 function splitCombinedArtistTitle(combined: string): { artist: string; songTitle: string } {
@@ -32,14 +39,14 @@ export function normalizeStreamTrackParts(
     a = parts.artist
     t = parts.songTitle
   }
-  const aLower = a.toLowerCase()
-  const tLower = t.toLowerCase()
-  if (aLower && tLower.startsWith(`${aLower} - `)) {
-    t = t.slice(a.length + 3).trim() || t
+  a = normalizeMatchText(a)
+  t = normalizeMatchText(t)
+  if (a && t.startsWith(`${a} - `)) {
+    t = normalizeMatchText(t.slice(a.length + 3)) || t
   }
   return {
-    artist: aLower,
-    songTitle: t.toLowerCase(),
+    artist: a,
+    songTitle: t,
   }
 }
 
@@ -141,8 +148,8 @@ export async function cleanupNearDuplicateStreamTracks(options?: {
   windowMs?: number
   since?: Date
   until?: Date
-}): Promise<{ deleted: number; scanned: number }> {
-  const windowMs = options?.windowMs ?? getStreamTrackDedupMs()
+}): Promise<{ deleted: number; scanned: number; windowMs: number }> {
+  const windowMs = options?.windowMs ?? CLEANUP_NEAR_DUPLICATE_MS
   const since =
     options?.since ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
@@ -159,24 +166,27 @@ export async function cleanupNearDuplicateStreamTracks(options?: {
     select: { id: true, artist: true, songTitle: true, playDate: true },
   })
 
-  const lastKept: KeptPlay[] = []
+  const keptPlays: KeptPlay[] = []
   const toDelete: string[] = []
 
   for (const track of tracks) {
     if (!track.playDate) continue
     const playTime = track.playDate.getTime()
 
-    while (lastKept.length && playTime - lastKept[0].playDate.getTime() >= windowMs) {
-      lastKept.shift()
+    let matchedKept: KeptPlay | undefined
+    for (let i = keptPlays.length - 1; i >= 0; i--) {
+      const kept = keptPlays[i]
+      if (playTime - kept.playDate.getTime() >= windowMs) continue
+      if (streamTracksMatch(track.artist, track.songTitle, kept.artist, kept.songTitle)) {
+        matchedKept = kept
+        break
+      }
     }
 
-    const isDuplicate = lastKept.some((kept) =>
-      streamTracksMatch(track.artist, track.songTitle, kept.artist, kept.songTitle)
-    )
-    if (isDuplicate) {
+    if (matchedKept) {
       toDelete.push(track.id)
     } else {
-      lastKept.push({
+      keptPlays.push({
         playDate: track.playDate,
         artist: track.artist,
         songTitle: track.songTitle,
@@ -188,5 +198,5 @@ export async function cleanupNearDuplicateStreamTracks(options?: {
     await prisma.tracklist.deleteMany({ where: { id: { in: toDelete } } })
   }
 
-  return { deleted: toDelete.length, scanned: tracks.length }
+  return { deleted: toDelete.length, scanned: tracks.length, windowMs }
 }
