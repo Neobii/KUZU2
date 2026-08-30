@@ -11,24 +11,27 @@ export async function POST(req: NextRequest) {
   if ('error' in auth) return auth.error
 
   const body = await req.json().catch(() => ({}))
-  const dateFrom = typeof body.dateFrom === 'string' ? body.dateFrom : null
-  const dateTo = typeof body.dateTo === 'string' ? body.dateTo : null
+  const dateFrom = typeof body.dateFrom === 'string' ? body.dateFrom.trim() : ''
+  const dateTo = typeof body.dateTo === 'string' ? body.dateTo.trim() : ''
 
-  let since: Date | undefined
-  let until: Date | undefined
-  if (
-    dateFrom &&
-    dateTo &&
-    isCalendarDateString(dateFrom) &&
-    isCalendarDateString(dateTo)
-  ) {
-    const range = parseStationExportDateRange(dateFrom, dateTo)
-    if (range && range.from < range.toExclusive) {
-      since = range.from
-      until = range.toExclusive
-    }
+  if (!dateFrom || !dateTo) {
+    return NextResponse.json({ error: 'dateFrom and dateTo are required.' }, { status: 400 })
+  }
+  if (!isCalendarDateString(dateFrom) || !isCalendarDateString(dateTo)) {
+    return NextResponse.json({ error: 'Invalid date range.' }, { status: 400 })
+  }
+  if (dateFrom > dateTo) {
+    return NextResponse.json({ error: 'End date must be on or after start date.' }, { status: 400 })
   }
 
-  const result = await cleanupNearDuplicateStreamTracks({ since, until })
-  return NextResponse.json({ ok: true, ...result })
+  const range = parseStationExportDateRange(dateFrom, dateTo)
+  if (!range || range.from >= range.toExclusive) {
+    return NextResponse.json({ error: 'Invalid date range.' }, { status: 400 })
+  }
+
+  const result = await cleanupNearDuplicateStreamTracks({
+    since: range.from,
+    until: range.toExclusive,
+  })
+  return NextResponse.json({ ok: true, dateFrom, dateTo, ...result })
 }

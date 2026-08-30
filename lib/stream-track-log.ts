@@ -5,7 +5,7 @@ import { getIcecastTrackPollIntervalMs } from '@/lib/icecast'
 /** Minimum near-duplicate window for metadata flicker / dual poll. */
 export const STREAM_TRACK_DEDUP_MS = 4 * 60 * 1000
 
-/** Admin cleanup window — collapses repeat logs from polling / dual sources (keep earliest). */
+/** Admin cleanup window (legacy; cleanup now dedupes per station calendar day). */
 export const CLEANUP_NEAR_DUPLICATE_MS = 2 * 60 * 60 * 1000
 
 /** While Icecast still reports the same song, do not log again (typical song length + buffer). */
@@ -17,7 +17,12 @@ export function getStreamTrackDedupMs(): number {
 }
 
 function normalizeMatchText(value: string): string {
-  return value.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ')
+  return value
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
 }
 
 function splitCombinedArtistTitle(combined: string): { artist: string; songTitle: string } {
@@ -117,7 +122,31 @@ export function tracksDuplicateForCleanup(
   if (streamTracksMatch(artistA, songTitleA, artistB, songTitleB)) return true
   const keyA = normalizeStreamTrackKey(artistA, songTitleA)
   const keyB = normalizeStreamTrackKey(artistB, songTitleB)
-  return Boolean(keyA && keyB && keyA === keyB)
+  if (keyA && keyB && keyA === keyB) return true
+
+  const partsA = normalizeStreamTrackParts(artistA, songTitleA)
+  const partsB = normalizeStreamTrackParts(artistB, songTitleB)
+  if (!partsA.songTitle || !partsB.songTitle) return false
+  if (!looseSongTitleMatch(partsA.songTitle, partsB.songTitle)) return false
+  if (!partsA.artist || !partsB.artist) return true
+  return partsA.artist === partsB.artist
+}
+
+type CleanupTrack = {
+  id: string
+  showId: string | null
+  playDate: Date
+  artist: string | null
+  songTitle: string
+}
+
+function pickClusterKeeper(cluster: CleanupTrack[]): CleanupTrack {
+  return cluster.reduce<CleanupTrack | null>((best, row) => {
+    if (!best) return row
+    if (row.showId && !best.showId) return row
+    if (best.showId && !row.showId) return best
+    return row.playDate.getTime() < best.playDate.getTime() ? row : best
+  }, null)!
 }
 
 export async function hasRecentStreamTrackPlay(
@@ -184,59 +213,24 @@ export async function createStreamTrackLog(
   })
 }
 
-type CleanupTrack = {
-  id: string
-  showId: string | null
-  playDate: Date
-  artist: string | null
-  songTitle: string
-}
-
-type CleanupKeeper = CleanupTrack & {
-  stationDay: string
-}
-
-function preferCleanupKeeper(current: CleanupKeeper, candidate: CleanupTrack): CleanupKeeper {
-  if (candidate.showId && !current.showId) {
-    return { ...candidate, stationDay: current.stationDay }
-  }
-  if (current.showId && !candidate.showId) {
-    return current
-  }
-  return candidate.playDate.getTime() < current.playDate.getTime()
-    ? { ...candidate, stationDay: current.stationDay }
-    : current
-}
-
-/** Remove near-duplicate licensing rows (same song within `windowMs`), keeping earliest play. */
-export async function cleanupNearDuplicateStreamTracks(options?: {
-  windowMs?: number
-  since?: Date
-  until?: Date
-}): Promise<{ deleted: number; scanned: number; windowMs: number }> {
-  const windowMs = options?.windowMs ?? CLEANUP_NEAR_DUPLICATE_MS
-  const since =
-    options?.since ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+/** Remove duplicate plays in range — same song on the same station day keeps earliest row. */
+export async function cleanupNearDuplicateStreamTracks(options: {
+  since: Date
+  until: Date
+}): Promise<{ deleted: number; scanned: number; duplicateGroups: number }> {
+  const { since, until } = options
 
   const tracks = await prisma.tracklist.findMany({
     where: {
-      trackType: 'song',
-      playDate: {
-        not: null,
-        gte: since,
-        ...(options?.until ? { lt: options.until } : {}),
-      },
+      playDate: { not: null, gte: since, lt: until },
     },
     orderBy: { playDate: 'asc' },
     select: { id: true, showId: true, artist: true, songTitle: true, playDate: true },
   })
 
-  const keepers: CleanupKeeper[] = []
-  const toDelete = new Set<string>()
-
+  const byStationDay = new Map<string, CleanupTrack[]>()
   for (const track of tracks) {
     if (!track.playDate) continue
-    const playTime = track.playDate.getTime()
     const stationDay = formatStationCalendarDay(track.playDate)
     const row: CleanupTrack = {
       id: track.id,
@@ -245,35 +239,37 @@ export async function cleanupNearDuplicateStreamTracks(options?: {
       artist: track.artist,
       songTitle: track.songTitle,
     }
+    const bucket = byStationDay.get(stationDay) ?? []
+    bucket.push(row)
+    byStationDay.set(stationDay, bucket)
+  }
 
-    let matchedKeeper: CleanupKeeper | undefined
-    for (const keeper of keepers) {
-      if (keeper.stationDay !== stationDay) continue
-      if (playTime - keeper.playDate.getTime() >= windowMs) continue
-      if (
-        tracksDuplicateForCleanup(
-          row.artist,
-          row.songTitle,
-          keeper.artist,
-          keeper.songTitle
-        )
-      ) {
-        matchedKeeper = keeper
-        break
+  const toDelete = new Set<string>()
+  let duplicateGroups = 0
+
+  for (const dayTracks of byStationDay.values()) {
+    dayTracks.sort((a, b) => a.playDate.getTime() - b.playDate.getTime())
+    const clusters: CleanupTrack[][] = []
+
+    for (const track of dayTracks) {
+      let placed = false
+      for (const cluster of clusters) {
+        if (tracksDuplicateForCleanup(track.artist, track.songTitle, cluster[0].artist, cluster[0].songTitle)) {
+          cluster.push(track)
+          placed = true
+          break
+        }
       }
+      if (!placed) clusters.push([track])
     }
 
-    if (matchedKeeper) {
-      const preferred = preferCleanupKeeper(matchedKeeper, row)
-      if (preferred.id === row.id) {
-        toDelete.add(matchedKeeper.id)
-        const idx = keepers.indexOf(matchedKeeper)
-        keepers[idx] = { ...row, stationDay }
-      } else {
-        toDelete.add(row.id)
+    for (const cluster of clusters) {
+      if (cluster.length <= 1) continue
+      duplicateGroups++
+      const keeper = pickClusterKeeper(cluster)
+      for (const row of cluster) {
+        if (row.id !== keeper.id) toDelete.add(row.id)
       }
-    } else {
-      keepers.push({ ...row, stationDay })
     }
   }
 
@@ -287,5 +283,5 @@ export async function cleanupNearDuplicateStreamTracks(options?: {
     }
   }
 
-  return { deleted: deleteIds.length, scanned: tracks.length, windowMs }
+  return { deleted: deleteIds.length, scanned: tracks.length, duplicateGroups }
 }

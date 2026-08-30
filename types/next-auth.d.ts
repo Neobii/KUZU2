@@ -1,4 +1,5 @@
 import 'next-auth'
+import 'next-auth/jwt'
 
 declare module 'next-auth' {
   interface User {
@@ -18,5 +19,17 @@ declare module 'next-auth' {
     user: User & {
       id: string
     }
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id?: string
+    isAdmin?: boolean
+    isProducer?: boolean
+    isBoardMember?: boolean
+    isFieldProducer?: boolean
+    isManagingArtists?: boolean
+    producerProfile?: object
   }
 }

@@ -134,7 +134,7 @@ export function AdminTracksClient() {
     }
     if (
       !window.confirm(
-        `Remove duplicate track rows from ${dateFrom} through ${dateTo}? Keeps the earliest play when the same song repeats within 2 hours on the same day.`
+        `Remove duplicate track rows from ${dateFrom} through ${dateTo}? Keeps the earliest play of each song per station day (Central Time).`
       )
     ) {
       return
@@ -155,10 +155,10 @@ export function AdminTracksClient() {
       }
       setCleanupMessage(
         body.deleted
-          ? `Removed ${body.deleted} duplicate row(s) from ${body.scanned ?? '?'} scanned.`
-          : `No duplicates found in ${body.scanned ?? '?'} track(s) (same song within 2 hours on the same day).`
+          ? `Removed ${body.deleted} duplicate row(s) from ${body.scanned ?? '?'} scanned (${body.duplicateGroups ?? '?'} song groups).`
+          : `No duplicates found in ${body.scanned ?? '?'} track(s) for ${dateFrom} through ${dateTo}.`
       )
-      await mutate()
+      await mutate(undefined, { revalidate: true })
     } finally {
       setCleaning(false)
     }

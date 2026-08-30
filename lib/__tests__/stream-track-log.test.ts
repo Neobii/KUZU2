@@ -184,6 +184,11 @@ describe('createStreamTrackLog', () => {
 })
 
 describe('cleanupNearDuplicateStreamTracks', () => {
+  const range = {
+    since: new Date('2026-08-01T00:00:00.000Z'),
+    until: new Date('2026-09-01T00:00:00.000Z'),
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.prisma.tracklist.deleteMany = vi.fn().mockResolvedValue({ count: 1 })
@@ -197,7 +202,7 @@ describe('cleanupNearDuplicateStreamTracks', () => {
       { id: 'drop-1', showId: null, artist: 'AMPARO OCHOA', songTitle: 'LA CALACA', playDate: t1 },
     ])
 
-    const result = await cleanupNearDuplicateStreamTracks()
+    const result = await cleanupNearDuplicateStreamTracks(range)
 
     expect(result.deleted).toBe(1)
     expect(mocks.prisma.tracklist.deleteMany).toHaveBeenCalledWith({
@@ -213,7 +218,7 @@ describe('cleanupNearDuplicateStreamTracks', () => {
       { id: 'drop-1', showId: null, artist: null, songTitle: 'Hot Hot Hot!!!', playDate: t1 },
     ])
 
-    const result = await cleanupNearDuplicateStreamTracks()
+    const result = await cleanupNearDuplicateStreamTracks(range)
 
     expect(result.deleted).toBe(1)
     expect(mocks.prisma.tracklist.deleteMany).toHaveBeenCalledWith({
@@ -229,7 +234,7 @@ describe('cleanupNearDuplicateStreamTracks', () => {
       { id: 'drop-1', showId: null, artist: 'Wilco', songTitle: 'ELT', playDate: t1 },
     ])
 
-    const result = await cleanupNearDuplicateStreamTracks()
+    const result = await cleanupNearDuplicateStreamTracks(range)
 
     expect(result.deleted).toBe(1)
     expect(mocks.prisma.tracklist.deleteMany).toHaveBeenCalledWith({
@@ -237,15 +242,31 @@ describe('cleanupNearDuplicateStreamTracks', () => {
     })
   })
 
-  it('keeps a later play when the same song airs again after the cleanup window', async () => {
+  it('deletes a second play of the same song on the same station day', async () => {
     const t0 = new Date('2026-08-13T19:00:00.000Z')
     const t1 = new Date('2026-08-13T21:00:00.000Z')
+    mocks.prisma.tracklist.findMany.mockResolvedValue([
+      { id: 'keep-1', showId: null, artist: 'Wilco', songTitle: 'ELT', playDate: t0 },
+      { id: 'drop-1', showId: null, artist: 'Wilco', songTitle: 'ELT', playDate: t1 },
+    ])
+
+    const result = await cleanupNearDuplicateStreamTracks(range)
+
+    expect(result.deleted).toBe(1)
+    expect(mocks.prisma.tracklist.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ['drop-1'] } },
+    })
+  })
+
+  it('keeps the same song when it airs on different station days', async () => {
+    const t0 = new Date('2026-08-13T21:00:00.000Z')
+    const t1 = new Date('2026-08-14T21:00:00.000Z')
     mocks.prisma.tracklist.findMany.mockResolvedValue([
       { id: 'keep-1', showId: null, artist: 'Wilco', songTitle: 'ELT', playDate: t0 },
       { id: 'keep-2', showId: null, artist: 'Wilco', songTitle: 'ELT', playDate: t1 },
     ])
 
-    const result = await cleanupNearDuplicateStreamTracks()
+    const result = await cleanupNearDuplicateStreamTracks(range)
 
     expect(result.deleted).toBe(0)
     expect(mocks.prisma.tracklist.deleteMany).not.toHaveBeenCalled()
@@ -259,7 +280,7 @@ describe('cleanupNearDuplicateStreamTracks', () => {
       { id: 'show-1', showId: 'show-1', artist: 'Wilco', songTitle: 'ELT', playDate: t1 },
     ])
 
-    const result = await cleanupNearDuplicateStreamTracks()
+    const result = await cleanupNearDuplicateStreamTracks(range)
 
     expect(result.deleted).toBe(1)
     expect(mocks.prisma.tracklist.deleteMany).toHaveBeenCalledWith({
