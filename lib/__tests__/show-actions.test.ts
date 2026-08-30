@@ -477,12 +477,21 @@ describe('deactivateShow', () => {
       isActive: true,
       isAutoPlaying: true,
     })
+    const callOrder: string[] = []
+    mocks.fillAutoDJTrack.mockImplementation(async () => {
+      callOrder.push('fillAutoDJTrack')
+    })
+    mocks.prisma.show.update.mockImplementation(async () => {
+      callOrder.push('show.update')
+      return mocks.baseShow
+    })
     const { deactivateShow } = await import('@/lib/show-actions')
 
     await deactivateShow('show-1')
 
     expect(mocks.clearAutoplayTimer).toHaveBeenCalled()
     expect(mocks.cron.cancelStopShowAtEnd).toHaveBeenCalledWith('show-1')
+    expect(callOrder).toEqual(['fillAutoDJTrack', 'show.update'])
     expect(mocks.prisma.show.update).toHaveBeenCalledWith({
       where: { id: 'show-1' },
       data: { isActive: false, isAutoPlaying: false },

@@ -189,11 +189,13 @@ export async function deactivateShow(showId: string) {
   clearAutoplayTimer()
   const { cancelStopShowAtEnd } = await import('@/lib/cron')
   cancelStopShowAtEnd(showId)
+  // Flush pending Auto DJ metadata while the show is still active so Icecast
+  // polling (blocked during live shows) cannot race and log the same song.
+  await fillAutoDJTrack()
   await prisma.show.update({
     where: { id: showId },
     data: { isActive: false, isAutoPlaying: false },
   })
-  await fillAutoDJTrack()
 }
 
 /**

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { formatStationCalendarDay } from '@/lib/datetime-local'
 import { getIcecastTrackPollIntervalMs } from '@/lib/icecast'
+import { Prisma } from '@prisma/client'
 
 /** Minimum near-duplicate window for metadata flicker / dual poll. */
 export const STREAM_TRACK_DEDUP_MS = 4 * 60 * 1000
@@ -205,26 +206,29 @@ export async function createStreamTrackLog(
 
   const displayKey = normalizeStreamTrackKey(input.artist, songTitle)
 
-  return prisma.$transaction(async (tx) => {
-    if (await shouldSkipDuplicateStreamInsert(input.artist, songTitle, tx)) {
-      return { stored: false, track: displayKey }
-    }
+  return prisma.$transaction(
+    async (tx) => {
+      if (await shouldSkipDuplicateStreamInsert(input.artist, songTitle, tx)) {
+        return { stored: false, track: displayKey }
+      }
 
-    await tx.tracklist.create({
-      data: {
-        artist: input.artist?.trim() || null,
-        artistId: input.artistId ?? null,
-        songTitle,
-        album: input.album ?? null,
-        label: input.label ?? null,
-        trackLength: input.trackLength ?? null,
-        trackType: 'song',
-        playDate: new Date(),
-      },
-    })
+      await tx.tracklist.create({
+        data: {
+          artist: input.artist?.trim() || null,
+          artistId: input.artistId ?? null,
+          songTitle,
+          album: input.album ?? null,
+          label: input.label ?? null,
+          trackLength: input.trackLength ?? null,
+          trackType: 'song',
+          playDate: new Date(),
+        },
+      })
 
-    return { stored: true, track: displayKey }
-  })
+      return { stored: true, track: displayKey }
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  )
 }
 
 /** Remove duplicate plays in range — same song on the same station day keeps earliest row. */

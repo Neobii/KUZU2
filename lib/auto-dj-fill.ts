@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
+import { streamTrackArtistFields } from '@/lib/artist-resolve'
 import { getPendingAutoDJTrack, setPendingAutoDJTrack } from '@/lib/auto-dj-global'
-import { createStreamTrackLog } from '@/lib/stream-track-log'
+import { createStreamTrackLog, shouldSkipDuplicateStreamInsert } from '@/lib/stream-track-log'
 
 /** Insert pending Auto DJ track when show ends (no RadioLogik on active show) */
 export async function fillAutoDJTrack() {
@@ -14,12 +15,25 @@ export async function fillAutoDJTrack() {
     return
   }
 
+  const songTitle = pending.songTitle.trim()
+  if (!songTitle) {
+    setPendingAutoDJTrack(null)
+    return
+  }
+
+  const artistFields = await streamTrackArtistFields(pending.artist)
+
+  if (await shouldSkipDuplicateStreamInsert(artistFields.artist, songTitle)) {
+    setPendingAutoDJTrack(null)
+    return
+  }
+
   await createStreamTrackLog({
-    artist: pending.artist,
-    songTitle: pending.songTitle,
-    album: pending.album,
-    label: pending.label,
-    trackLength: pending.duration,
+    ...artistFields,
+    songTitle,
+    album: pending.album || null,
+    label: pending.label || null,
+    trackLength: pending.duration || null,
   })
   setPendingAutoDJTrack(null)
 }
