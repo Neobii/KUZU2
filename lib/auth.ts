@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import FacebookProvider from 'next-auth/providers/facebook'
 import bcrypt from 'bcryptjs'
 import { getAppUrl } from '@/lib/app-url'
+import { applyUserRowToJwtToken } from '@/lib/jwt-role-sync'
 import { prisma } from '@/lib/prisma'
 import { getFirstUserFlags } from '@/lib/first-user'
 
@@ -112,20 +113,21 @@ export const authOptions: NextAuthOptions = {
         token.isManagingArtists = (user as { isManagingArtists?: boolean }).isManagingArtists
         token.producerProfile = (user as { producerProfile?: object }).producerProfile
       }
-      // Keep JWT in sync with DB (e.g. admin enables Producer — no re-login required)
+      // Keep JWT in sync with DB (e.g. admin enables Producer — no re-login required).
+      // If the user was deleted, strip id + roles so requireAdmin cannot trust a stale JWT.
       if (token.id) {
         const row = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { isAdmin: true, isProducer: true, isBoardMember: true, isFieldProducer: true, isManagingArtists: true, producerProfile: true },
+          select: {
+            isAdmin: true,
+            isProducer: true,
+            isBoardMember: true,
+            isFieldProducer: true,
+            isManagingArtists: true,
+            producerProfile: true,
+          },
         })
-        if (row) {
-          token.isAdmin = row.isAdmin
-          token.isProducer = row.isProducer
-          token.isBoardMember = row.isBoardMember
-          token.isFieldProducer = row.isFieldProducer
-          token.isManagingArtists = row.isManagingArtists
-          token.producerProfile = (row.producerProfile as object) ?? undefined
-        }
+        applyUserRowToJwtToken(token, row)
       }
       return token
     },
