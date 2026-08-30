@@ -37,6 +37,7 @@ const mocks = vi.hoisted(() => {
       update: vi.fn(),
       updateMany: vi.fn(),
       create: vi.fn(),
+      delete: vi.fn(),
       deleteMany: vi.fn(),
     },
     message: {
@@ -503,5 +504,57 @@ describe('deactivateShow', () => {
     expect(mocks.cron.cancelStopShowAtEnd).not.toHaveBeenCalled()
     expect(mocks.fillAutoDJTrack).not.toHaveBeenCalled()
     expect(mocks.prisma.show.update).not.toHaveBeenCalled()
+  })
+})
+
+describe('deleteTrackFromShow', () => {
+  it('detaches played songs so licensing export keeps the play', async () => {
+    mocks.prisma.tracklist.findUnique.mockResolvedValue({
+      ...mocks.baseTrack,
+      trackType: 'song',
+      playDate: new Date('2026-08-30T18:00:00.000Z'),
+      isHighlighted: true,
+      indexNumber: 3,
+    })
+    const { deleteTrackFromShow } = await import('@/lib/show-actions')
+
+    await deleteTrackFromShow('track-1')
+
+    expect(mocks.prisma.tracklist.update).toHaveBeenCalledWith({
+      where: { id: 'track-1' },
+      data: { showId: null, isHighlighted: false, indexNumber: null },
+    })
+    expect(mocks.prisma.tracklist.delete).not.toHaveBeenCalled()
+  })
+
+  it('hard-deletes unplayed playlist rows', async () => {
+    mocks.prisma.tracklist.findUnique.mockResolvedValue({
+      ...mocks.baseTrack,
+      trackType: 'song',
+      playDate: null,
+    })
+    const { deleteTrackFromShow } = await import('@/lib/show-actions')
+
+    await deleteTrackFromShow('track-1')
+
+    expect(mocks.prisma.tracklist.delete).toHaveBeenCalledWith({
+      where: { id: 'track-1' },
+    })
+    expect(mocks.prisma.tracklist.update).not.toHaveBeenCalled()
+  })
+
+  it('hard-deletes non-song cues even when they have a playDate', async () => {
+    mocks.prisma.tracklist.findUnique.mockResolvedValue({
+      ...mocks.baseTrack,
+      trackType: 'showMeta',
+      playDate: new Date('2026-08-30T18:00:00.000Z'),
+    })
+    const { deleteTrackFromShow } = await import('@/lib/show-actions')
+
+    await deleteTrackFromShow('track-1')
+
+    expect(mocks.prisma.tracklist.delete).toHaveBeenCalledWith({
+      where: { id: 'track-1' },
+    })
   })
 })

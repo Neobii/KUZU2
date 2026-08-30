@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireSession } from '@/lib/api-auth'
 import { requireTrackAccess } from '@/lib/show-access'
+import { deleteTrackFromShow } from '@/lib/show-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,6 +52,6 @@ export async function DELETE(
   const access = await requireTrackAccess(trackId, auth.userId)
   if ('error' in access) return access.error
 
-  await prisma.tracklist.delete({ where: { id: trackId } })
+  await deleteTrackFromShow(trackId)
   return NextResponse.json({ ok: true })
 }
