@@ -271,3 +271,22 @@ export async function getHighestTrackNumber(showId: string) {
   })
   return t?.indexNumber ?? -1
 }
+
+/**
+ * Remove a track from a show playlist. Played songs are detached (showId → null)
+ * so licensing export still sees them; unplayed rows and non-song cues are deleted.
+ */
+export async function deleteTrackFromShow(trackId: string) {
+  const track = await prisma.tracklist.findUnique({ where: { id: trackId } })
+  if (!track) return
+
+  if (track.playDate && track.trackType === 'song') {
+    await prisma.tracklist.update({
+      where: { id: trackId },
+      data: { showId: null, isHighlighted: false, indexNumber: null },
+    })
+    return
+  }
+
+  await prisma.tracklist.delete({ where: { id: trackId } })
+}
