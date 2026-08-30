@@ -24,7 +24,7 @@ export async function hasRecentStreamTrackPlay(
   // Only compare against stream/licensing rows (showId null). Show playlist
   // plays of the same song must not suppress the durable licensing log — e.g.
   // after a live show ends, Icecast often still shows the last track, and
-  // deleteShow removes show-attached rows.
+  // deleteShow detaches played songs (showId null) while removing unplayed rows.
   const recent = await prisma.tracklist.findMany({
     where: {
       showId: null,

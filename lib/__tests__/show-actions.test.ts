@@ -35,13 +35,14 @@ const mocks = vi.hoisted(() => {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       create: vi.fn(),
       deleteMany: vi.fn(),
     },
     message: {
       deleteMany: vi.fn(),
     },
-    $transaction: vi.fn(),
+    $transaction: vi.fn(async (ops: unknown) => ops),
   }
   const cron = {
     scheduleStopShowAtEnd: vi.fn(),
@@ -338,8 +339,16 @@ describe('deleteShow', () => {
     })
     expect(mocks.fillAutoDJTrack).toHaveBeenCalled()
     expect(mocks.cron.cancelAutoStartShow).toHaveBeenCalledWith('show-1')
+    expect(mocks.prisma.$transaction).toHaveBeenCalled()
+    expect(mocks.prisma.tracklist.updateMany).toHaveBeenCalledWith({
+      where: { showId: 'show-1', playDate: { not: null }, trackType: 'song' },
+      data: { showId: null, isHighlighted: false, indexNumber: null },
+    })
     expect(mocks.prisma.tracklist.deleteMany).toHaveBeenCalledWith({
-      where: { showId: 'show-1' },
+      where: {
+        showId: 'show-1',
+        OR: [{ playDate: null }, { trackType: { not: 'song' } }],
+      },
     })
     expect(mocks.prisma.message.deleteMany).toHaveBeenCalledWith({
       where: { showId: 'show-1' },
@@ -362,9 +371,29 @@ describe('deleteShow', () => {
     expect(mocks.fillAutoDJTrack).not.toHaveBeenCalled()
     expect(mocks.cron.cancelStopShowAtEnd).toHaveBeenCalledWith('show-1')
     expect(mocks.cron.cancelAutoStartShow).toHaveBeenCalledWith('show-1')
+    expect(mocks.prisma.tracklist.updateMany).toHaveBeenCalledWith({
+      where: { showId: 'show-1', playDate: { not: null }, trackType: 'song' },
+      data: { showId: null, isHighlighted: false, indexNumber: null },
+    })
     expect(mocks.prisma.show.delete).toHaveBeenCalledWith({
       where: { id: 'show-1' },
     })
+  })
+
+  it('preserves played songs for licensing instead of hard-deleting them', async () => {
+    mocks.prisma.show.findUnique.mockResolvedValue({
+      ...mocks.baseShow,
+      isActive: false,
+    })
+    const { deleteShow } = await import('@/lib/show-actions')
+
+    await deleteShow('show-1')
+
+    const updateCall = mocks.prisma.tracklist.updateMany.mock.calls[0][0]
+    expect(updateCall.where.playDate).toEqual({ not: null })
+    expect(updateCall.data.showId).toBeNull()
+    const deleteCall = mocks.prisma.tracklist.deleteMany.mock.calls[0][0]
+    expect(deleteCall.where.OR).toEqual([{ playDate: null }, { trackType: { not: 'song' } }])
   })
 })
 

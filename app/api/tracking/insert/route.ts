@@ -5,6 +5,7 @@ import { createStreamTrackLog } from '@/lib/stream-track-log'
 import { setPendingAutoDJTrack } from '@/lib/auto-dj-global'
 import { autoplayNextTrack, clearActiveShowRuntime } from '@/lib/show-actions'
 import { scheduleStopShowAtEnd } from '@/lib/cron'
+import { canActivateArmedShowFromTrackingInsert } from '@/lib/tracking-insert-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,6 +39,12 @@ export async function POST(req: NextRequest) {
       label: cleanLabel,
       trackLength: typeof duration === 'string' ? duration : null,
     })
+    // Go Live from this public CORS endpoint must be authenticated. Without a
+    // matching TRACKING_INSERT_SECRET Bearer, still log the track but do not
+    // displace the on-air show.
+    if (!canActivateArmedShowFromTrackingInsert(req.headers.get('authorization'))) {
+      return NextResponse.json({ ok: true, activated: false }, { headers })
+    }
     const nextArmed = await prisma.show.findFirst({
       where: { isArmedForAutoStart: true },
     })
