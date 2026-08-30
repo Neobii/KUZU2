@@ -92,15 +92,28 @@ export function streamTracksMatch(
   return true
 }
 
-/** Skip Icecast polls while status-json still shows the same song as the latest play. */
+/** Skip Icecast polls while the latest play is still the same song on the same station day. */
 export async function hasSameSongStillOnAir(
   artist: string | null,
   songTitle: string,
-  windowMs = ICECAST_SAME_TRACK_ON_AIR_MS,
+  _windowMs = ICECAST_SAME_TRACK_ON_AIR_MS,
+  db: Pick<typeof prisma, 'tracklist'> = prisma
+): Promise<boolean> {
+  return shouldSkipDuplicateStreamInsert(artist, songTitle, db)
+}
+
+/** True when this song should not be logged again (recent row or same as latest play today). */
+export async function shouldSkipDuplicateStreamInsert(
+  artist: string | null,
+  songTitle: string,
   db: Pick<typeof prisma, 'tracklist'> = prisma
 ): Promise<boolean> {
   const titleTrim = songTitle.trim()
-  if (!titleTrim) return false
+  if (!titleTrim) return true
+
+  if (await hasRecentStreamTrackPlay(artist, titleTrim, getStreamTrackDedupMs(), db)) {
+    return true
+  }
 
   const last = await db.tracklist.findFirst({
     where: { trackType: 'song', playDate: { not: null } },
@@ -108,8 +121,9 @@ export async function hasSameSongStillOnAir(
     select: { artist: true, songTitle: true, playDate: true },
   })
   if (!last?.playDate) return false
-  if (Date.now() - last.playDate.getTime() >= windowMs) return false
-  return streamTracksMatch(artist, titleTrim, last.artist, last.songTitle)
+  if (!tracksDuplicateForCleanup(artist, titleTrim, last.artist, last.songTitle)) return false
+
+  return formatStationCalendarDay(last.playDate) === formatStationCalendarDay(new Date())
 }
 
 /** Aggressive duplicate test for admin cleanup (metadata variants + exact keys). */
@@ -192,7 +206,7 @@ export async function createStreamTrackLog(
   const displayKey = normalizeStreamTrackKey(input.artist, songTitle)
 
   return prisma.$transaction(async (tx) => {
-    if (await hasRecentStreamTrackPlay(input.artist, songTitle, getStreamTrackDedupMs(), tx)) {
+    if (await shouldSkipDuplicateStreamInsert(input.artist, songTitle, tx)) {
       return { stored: false, track: displayKey }
     }
 

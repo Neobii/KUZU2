@@ -89,19 +89,20 @@ describe('recordIcecastTrackIfChanged', () => {
     expect(mocks.createStreamTrackLog).not.toHaveBeenCalled()
   })
 
-  it('still saves licensing log rows when the live show uses Radio Logik tracking', async () => {
+  it('does not save Icecast tracks when Radio Logik tracking is active on the live show', async () => {
     mocks.prisma.show.findFirst.mockResolvedValue({
       id: 'show-1',
       hasRadioLogikTracking: true,
     })
 
-    await recordIcecastTrackIfChanged({
+    const result = await recordIcecastTrackIfChanged({
       icestats: {
         source: { title: 'The Cure - Hot Hot Hot!!!', listeners: 3 },
       },
     })
 
-    expect(mocks.createStreamTrackLog).toHaveBeenCalledTimes(1)
+    expect(result.stored).toBe(false)
+    expect(mocks.createStreamTrackLog).not.toHaveBeenCalled()
   })
 
   it('skips logging when Icecast still shows the same song as the latest play', async () => {
