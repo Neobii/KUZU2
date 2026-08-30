@@ -1,8 +1,8 @@
 import schedule from 'node-schedule'
 import moment from 'moment'
 import { prisma } from '@/lib/prisma'
-import { getListenerPollIntervalMs } from '@/lib/icecast'
-import { pollListenerStats } from '@/lib/listeners'
+import { getIcecastTrackPollIntervalMs, getListenerPollIntervalMs } from '@/lib/icecast'
+import { pollIcecastTrackLog, pollListenerCount } from '@/lib/listeners'
 
 const scheduledJobs = new Map<string, schedule.Job>()
 
@@ -133,9 +133,9 @@ export async function stopDueCalendarEndShows(now = new Date()): Promise<{ stopp
   return { stopped: due.length }
 }
 
-/** Listener poll + durable show schedule catch-up (Vercel cron / local interval). */
+/** Listener stats + durable show schedule catch-up (Vercel cron / local interval). */
 export async function runScheduledMaintenance() {
-  const listeners = await pollListenerStats()
+  const listeners = await pollListenerCount()
   let autoStart = { armed: 0 }
   let calendarStop = { stopped: 0 }
   try {
@@ -148,24 +148,41 @@ export async function runScheduledMaintenance() {
   } catch (e) {
     console.error('[cron] stopDueCalendarEndShows', e)
   }
-  return { ...listeners, autoStart, calendarStop }
+  return {
+    stored: listeners.stored,
+    numListeners: listeners.numListeners,
+    autoStart,
+    calendarStop,
+  }
 }
 
+let icecastTrackInterval: NodeJS.Timeout | null = null
 let listenerInterval: NodeJS.Timeout | null = null
 
 export function startListenerPolling() {
-  if (listenerInterval) return
-  const intervalMs = getListenerPollIntervalMs()
-
-  void runScheduledMaintenance().catch(() => {
-    /* ignore — local dev convenience */
-  })
-
-  listenerInterval = setInterval(() => {
-    void runScheduledMaintenance().catch(() => {
-      /* ignore */
+  if (!icecastTrackInterval) {
+    void pollIcecastTrackLog().catch(() => {
+      /* ignore — local dev convenience */
     })
-  }, intervalMs)
+
+    icecastTrackInterval = setInterval(() => {
+      void pollIcecastTrackLog().catch(() => {
+        /* ignore */
+      })
+    }, getIcecastTrackPollIntervalMs())
+  }
+
+  if (!listenerInterval) {
+    void runScheduledMaintenance().catch(() => {
+      /* ignore — local dev convenience */
+    })
+
+    listenerInterval = setInterval(() => {
+      void runScheduledMaintenance().catch(() => {
+        /* ignore */
+      })
+    }, getListenerPollIntervalMs())
+  }
 }
 
 export async function rescheduleAllAutoStartShows() {

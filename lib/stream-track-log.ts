@@ -1,7 +1,13 @@
 import { prisma } from '@/lib/prisma'
+import { getIcecastTrackPollIntervalMs } from '@/lib/icecast'
 
-/** Ignore repeat stream logs for the same song within this window (metadata flicker / dual poll). */
+/** Minimum near-duplicate window for metadata flicker / dual poll. */
 export const STREAM_TRACK_DEDUP_MS = 4 * 60 * 1000
+
+/** Dedup window for stream/licensing logs — always longer than the listener poll interval. */
+export function getStreamTrackDedupMs(): number {
+  return Math.max(STREAM_TRACK_DEDUP_MS, getIcecastTrackPollIntervalMs() + 60_000)
+}
 
 function splitCombinedArtistTitle(combined: string): { artist: string; songTitle: string } {
   const idx = combined.indexOf(' - ')
@@ -63,26 +69,22 @@ export function streamTracksMatch(
 export async function hasRecentStreamTrackPlay(
   artist: string | null,
   songTitle: string,
-  windowMs = STREAM_TRACK_DEDUP_MS
+  windowMs = getStreamTrackDedupMs(),
+  db: Pick<typeof prisma, 'tracklist'> = prisma
 ): Promise<boolean> {
   const titleTrim = songTitle.trim()
   if (!titleTrim) return false
 
   const since = new Date(Date.now() - windowMs)
 
-  // Only compare against stream/licensing rows (showId null). Show playlist
-  // plays of the same song must not suppress the durable licensing log — e.g.
-  // after a live show ends, Icecast often still shows the last track, and
-  // deleteShow detaches played songs (showId null) while removing unplayed rows.
-  const recent = await prisma.tracklist.findMany({
+  const recent = await db.tracklist.findMany({
     where: {
-      showId: null,
       playDate: { gte: since },
       trackType: 'song',
     },
     select: { artist: true, songTitle: true },
     orderBy: { playDate: 'desc' },
-    take: 30,
+    take: 50,
   })
 
   return recent.some((row) => streamTracksMatch(artist, titleTrim, row.artist, row.songTitle))
@@ -105,24 +107,27 @@ export async function createStreamTrackLog(
   if (!songTitle) return { stored: false, track: null }
 
   const displayKey = normalizeStreamTrackKey(input.artist, songTitle)
-  if (await hasRecentStreamTrackPlay(input.artist, songTitle)) {
-    return { stored: false, track: displayKey }
-  }
 
-  await prisma.tracklist.create({
-    data: {
-      artist: input.artist?.trim() || null,
-      artistId: input.artistId ?? null,
-      songTitle,
-      album: input.album ?? null,
-      label: input.label ?? null,
-      trackLength: input.trackLength ?? null,
-      trackType: 'song',
-      playDate: new Date(),
-    },
+  return prisma.$transaction(async (tx) => {
+    if (await hasRecentStreamTrackPlay(input.artist, songTitle, getStreamTrackDedupMs(), tx)) {
+      return { stored: false, track: displayKey }
+    }
+
+    await tx.tracklist.create({
+      data: {
+        artist: input.artist?.trim() || null,
+        artistId: input.artistId ?? null,
+        songTitle,
+        album: input.album ?? null,
+        label: input.label ?? null,
+        trackLength: input.trackLength ?? null,
+        trackType: 'song',
+        playDate: new Date(),
+      },
+    })
+
+    return { stored: true, track: displayKey }
   })
-
-  return { stored: true, track: displayKey }
 }
 
 type KeptPlay = {
@@ -137,7 +142,7 @@ export async function cleanupNearDuplicateStreamTracks(options?: {
   since?: Date
   until?: Date
 }): Promise<{ deleted: number; scanned: number }> {
-  const windowMs = options?.windowMs ?? STREAM_TRACK_DEDUP_MS
+  const windowMs = options?.windowMs ?? getStreamTrackDedupMs()
   const since =
     options?.since ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 

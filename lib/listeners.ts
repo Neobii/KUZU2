@@ -44,15 +44,31 @@ export async function recordIcecastTrackIfChanged(
   })
 }
 
-export async function pollListenerStats(): Promise<{
-  stored: boolean
-  numListeners: number | null
+/** Poll Icecast status-json and log now-playing into tracklist (admin / licensing). */
+export async function pollIcecastTrackLog(): Promise<{
   trackStored: boolean
   track: string | null
 }> {
   const data = await fetchIcecastStats()
   if (!data || !isIcecastAvailable(data)) {
-    return { stored: false, numListeners: null, trackStored: false, track: null }
+    return { trackStored: false, track: null }
+  }
+
+  const trackResult = await recordIcecastTrackIfChanged(data)
+  return {
+    trackStored: trackResult.stored,
+    track: trackResult.track,
+  }
+}
+
+/** Poll Icecast listener count only (Kuzu Stats charts). */
+export async function pollListenerCount(): Promise<{
+  stored: boolean
+  numListeners: number | null
+}> {
+  const data = await fetchIcecastStats()
+  if (!data || !isIcecastAvailable(data)) {
+    return { stored: false, numListeners: null }
   }
 
   const numListeners = parseIcecastListeners(data)
@@ -66,12 +82,22 @@ export async function pollListenerStats(): Promise<{
     }
   }
 
-  const trackResult = await recordIcecastTrackIfChanged(data)
+  return { stored, numListeners }
+}
+
+export async function pollListenerStats(): Promise<{
+  stored: boolean
+  numListeners: number | null
+  trackStored: boolean
+  track: string | null
+}> {
+  const listeners = await pollListenerCount()
+  const track = await pollIcecastTrackLog()
 
   return {
-    stored,
-    numListeners,
-    trackStored: trackResult.stored,
-    track: trackResult.track,
+    stored: listeners.stored,
+    numListeners: listeners.numListeners,
+    trackStored: track.trackStored,
+    track: track.track,
   }
 }

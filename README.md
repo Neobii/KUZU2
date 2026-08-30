@@ -69,7 +69,7 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **Po
 | **Stats** | Highcharts (`/kuzu-stats`) + listener hours API |
 | **Track imports** | `/track-imports` — CSV via Papa Parse → `/api/import/reaper` |
 | **Banners** | Armed show, Radio Logik down, live show strip (`LayoutBanners` + `/api/layout/banners`) |
-| **Cron / polling** | Local dev: `instrumentation.ts` polls Icecast every 5 min. **Production (Vercel):** `vercel.json` cron hits `GET /api/cron/listeners` every 5 min. Set `CRON_SECRET` on Vercel. Set `ENABLE_CRON=false` to disable local polling. |
+| **Cron / polling** | Local dev: `instrumentation.ts` polls Icecast tracks every 1s and listener stats every 5 min. **Production (Vercel):** `vercel.json` cron hits `/api/cron/icecast-tracks` (1s self-chaining poll) and `/api/cron/listeners` every 5 min. Set `CRON_SECRET` on Vercel. Set `ENABLE_CRON=false` to disable local polling. |
 
 ### Environment (optional)
 
@@ -81,7 +81,8 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **Po
 | `BLOB_STORE_ID` | — | **Set automatically** when a Vercel Blob store is connected (OIDC auth). TipTap uploads use this in production. |
 | `BLOB_READ_WRITE_TOKEN` | — | Legacy Blob token (optional fallback). Not shown when OIDC is enabled. |
 | `ENABLE_CRON` | enabled | Set `false` to skip background jobs |
-| `LISTENER_POLL_MS` | `300000` | Listener poll interval (ms) |
+| `LISTENER_POLL_MS` | `300000` | Listener count poll interval (ms) for Kuzu Stats |
+| `ICECAST_TRACK_POLL_MS` | `1000` | Icecast status-json poll interval (ms) for admin/licensing track rows |
 
 ## Database Commands
 

@@ -1,31 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { isAuthorizedCron, cronFetchHeaders, getCronBaseUrl } from '@/lib/cron-auth'
 import { runScheduledMaintenance } from '@/lib/cron'
+import { pollIcecastTrackLog } from '@/lib/listeners'
 
 export const dynamic = 'force-dynamic'
 
-function isAuthorizedCron(req: NextRequest): boolean {
-  const cronSecret = process.env.CRON_SECRET?.trim()
-  // When CRON_SECRET is configured, only the Bearer token is trusted.
-  // `x-vercel-cron` is spoofable by any client and must not bypass the secret.
-  if (cronSecret) {
-    return req.headers.get('authorization') === `Bearer ${cronSecret}`
-  }
-  return req.headers.get('x-vercel-cron') === '1'
-}
-
 /**
  * Vercel Cron + manual trigger (every 5 min in production).
- * Polls Icecast listener/track stats and applies durable auto-start arming /
- * calendar-end stops (in-process node-schedule does not survive serverless).
+ * Polls listener stats, re-bootstraps the 1s Icecast track poll chain, and
+ * applies durable auto-start arming / calendar-end stops.
  */
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  if (process.env.ENABLE_CRON === 'false') {
+    return NextResponse.json({ ok: true, disabled: true })
+  }
+
   try {
     const result = await runScheduledMaintenance()
-    return NextResponse.json({ ok: true, ...result })
+    const track = await pollIcecastTrackLog()
+
+    // Re-bootstrap the 1s Icecast track poll chain on Vercel serverless.
+    if (process.env.VERCEL === '1') {
+      const baseUrl = getCronBaseUrl()
+      if (baseUrl) {
+        void fetch(`${baseUrl}/api/cron/icecast-tracks`, {
+          headers: cronFetchHeaders(),
+          cache: 'no-store',
+        }).catch(() => {})
+      }
+    }
+
+    return NextResponse.json({ ok: true, ...result, trackStored: track.trackStored, track: track.track })
   } catch (e) {
     console.error('[cron/listeners]', e)
     return NextResponse.json({ error: 'Poll failed' }, { status: 500 })

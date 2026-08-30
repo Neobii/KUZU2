@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/listeners",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/icecast-tracks",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

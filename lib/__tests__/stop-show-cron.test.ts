@@ -22,8 +22,14 @@ vi.mock('node-schedule', () => ({
 vi.mock('@/lib/show-actions', () => ({
   deactivateShow: mocks.deactivateShow,
 }))
-vi.mock('@/lib/icecast', () => ({ getListenerPollIntervalMs: () => 300000 }))
-vi.mock('@/lib/listeners', () => ({ pollListenerStats: vi.fn() }))
+vi.mock('@/lib/icecast', () => ({
+  getListenerPollIntervalMs: () => 300000,
+  getIcecastTrackPollIntervalMs: () => 1000,
+}))
+vi.mock('@/lib/listeners', () => ({
+  pollListenerCount: vi.fn(),
+  pollIcecastTrackLog: vi.fn(),
+}))
 
 beforeEach(() => {
   vi.clearAllMocks()

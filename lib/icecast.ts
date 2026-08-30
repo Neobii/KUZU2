@@ -104,6 +104,12 @@ export function getIcecastStatusUrl(): string {
 
 const ICECAST_FETCH_TIMEOUT_MS = 8000
 
+/** Poll interval for Icecast now-playing → admin/licensing track rows (default 1s). */
+export function getIcecastTrackPollIntervalMs(): number {
+  const parsed = parseInt(process.env.ICECAST_TRACK_POLL_MS ?? '1000', 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1000
+}
+
 export function getListenerPollIntervalMs(): number {
   const parsed = parseInt(process.env.LISTENER_POLL_MS ?? '300000', 10)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 300000

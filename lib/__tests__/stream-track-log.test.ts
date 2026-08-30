@@ -7,14 +7,21 @@ const mocks = vi.hoisted(() => ({
       create: vi.fn(),
       deleteMany: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }))
 
 vi.mock('@/lib/prisma', () => ({ prisma: mocks.prisma }))
 
+vi.mock('@/lib/icecast', () => ({
+  getListenerPollIntervalMs: vi.fn(() => 300_000),
+  getIcecastTrackPollIntervalMs: vi.fn(() => 1000),
+}))
+
 import {
   cleanupNearDuplicateStreamTracks,
   createStreamTrackLog,
+  getStreamTrackDedupMs,
   hasRecentStreamTrackPlay,
   normalizeStreamTrackKey,
   streamTracksMatch,
@@ -41,6 +48,12 @@ describe('streamTracksMatch', () => {
 
   it('does not match different songs with the same title and distinct artists', () => {
     expect(streamTracksMatch('Artist A', 'Love', 'Artist B', 'Love')).toBe(false)
+  })
+})
+
+describe('getStreamTrackDedupMs', () => {
+  it('is at least one minute longer than the Icecast track poll interval', () => {
+    expect(getStreamTrackDedupMs()).toBe(240_000)
   })
 })
 
@@ -73,17 +86,16 @@ describe('hasRecentStreamTrackPlay', () => {
     await expect(hasRecentStreamTrackPlay('The Cure', 'Hot Hot Hot!!!')).resolves.toBe(false)
   })
 
-  it('scopes the recent-play query to stream/licensing rows (showId null)', async () => {
-    mocks.prisma.tracklist.findMany.mockResolvedValue([])
+  it('includes show-attached plays when checking for recent duplicates', async () => {
+    mocks.prisma.tracklist.findMany.mockResolvedValue([
+      { artist: 'The Cure', songTitle: 'Hot Hot Hot!!!' },
+    ])
 
-    await hasRecentStreamTrackPlay('The Cure', 'Hot Hot Hot!!!')
+    await expect(hasRecentStreamTrackPlay('The Cure', 'Hot Hot Hot!!!')).resolves.toBe(true)
 
     expect(mocks.prisma.tracklist.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          showId: null,
-          trackType: 'song',
-        }),
+        where: expect.not.objectContaining({ showId: expect.anything() }),
       })
     )
   })
@@ -93,20 +105,23 @@ describe('createStreamTrackLog vs show playlist plays', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.prisma.tracklist.create.mockResolvedValue({ id: 'track-1' })
+    mocks.prisma.$transaction.mockImplementation(async (fn: (tx: typeof mocks.prisma) => unknown) =>
+      fn(mocks.prisma)
+    )
   })
 
-  it('still inserts a licensing row when only a show-attached play would have matched', async () => {
-    // hasRecentStreamTrackPlay queries showId: null, so show playlist rows are
-    // invisible here — findMany returns [] even if a live show just played it.
-    mocks.prisma.tracklist.findMany.mockResolvedValue([])
+  it('skips insert when the same song was recently played on a live show', async () => {
+    mocks.prisma.tracklist.findMany.mockResolvedValue([
+      { artist: 'The Cure', songTitle: 'Hot Hot Hot!!!' },
+    ])
 
     const result = await createStreamTrackLog({
       artist: 'The Cure',
       songTitle: 'Hot Hot Hot!!!',
     })
 
-    expect(result.stored).toBe(true)
-    expect(mocks.prisma.tracklist.create).toHaveBeenCalled()
+    expect(result.stored).toBe(false)
+    expect(mocks.prisma.tracklist.create).not.toHaveBeenCalled()
   })
 })
 
@@ -115,6 +130,9 @@ describe('createStreamTrackLog', () => {
     vi.clearAllMocks()
     mocks.prisma.tracklist.findMany.mockResolvedValue([])
     mocks.prisma.tracklist.create.mockResolvedValue({ id: 'track-1' })
+    mocks.prisma.$transaction.mockImplementation(async (fn: (tx: typeof mocks.prisma) => unknown) =>
+      fn(mocks.prisma)
+    )
   })
 
   it('skips insert when the same song was logged recently', async () => {

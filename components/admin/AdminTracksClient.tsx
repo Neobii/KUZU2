@@ -134,7 +134,7 @@ export function AdminTracksClient() {
     }
     if (
       !window.confirm(
-        `Remove duplicate track rows from ${dateFrom} through ${dateTo}? Keeps the earliest play when the same song was logged within 4 minutes.`
+        `Remove duplicate track rows from ${dateFrom} through ${dateTo}? Keeps the earliest play when the same song was logged within a few minutes.`
       )
     ) {
       return

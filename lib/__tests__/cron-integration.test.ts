@@ -26,6 +26,19 @@ it('returns default 300000 when no env var set', async () => {
   expect(getListenerPollIntervalMs()).toBe(300000)
 })
 
+it('returns default 1000 for Icecast track poll when no env var set', async () => {
+  const { getIcecastTrackPollIntervalMs } = await import('@/lib/icecast')
+  delete process.env.ICECAST_TRACK_POLL_MS
+  expect(getIcecastTrackPollIntervalMs()).toBe(1000)
+})
+
+it('respects ICECAST_TRACK_POLL_MS env var override', async () => {
+  const { getIcecastTrackPollIntervalMs } = await import('@/lib/icecast')
+  process.env.ICECAST_TRACK_POLL_MS = '2000'
+  expect(getIcecastTrackPollIntervalMs()).toBe(2000)
+  delete process.env.ICECAST_TRACK_POLL_MS
+})
+
 it('respects LISTENER_POLL_MS env var override', async () => {
   const { getListenerPollIntervalMs } = await import('@/lib/icecast')
   process.env.LISTENER_POLL_MS = '120000'
@@ -164,4 +177,23 @@ it('accepts x-vercel-cron when CRON_SECRET is unset', async () => {
   const res = await GET(req as any)
   // Auth passes → poll runs (may fail without Icecast) → not 401
   expect(res.status).not.toBe(401)
+})
+
+it('rejects unauthorized icecast track cron requests', async () => {
+  delete process.env.CRON_SECRET
+  const { GET } = await import('@/app/api/cron/icecast-tracks/route')
+  const req = new Request('http://localhost:3000/api/cron/icecast-tracks')
+  const res = await GET(req as any)
+  expect(res.status).toBe(401)
+})
+
+it('accepts authorized icecast track cron requests', async () => {
+  process.env.CRON_SECRET = 'test-cron-secret'
+  const { GET } = await import('@/app/api/cron/icecast-tracks/route')
+  const req = new Request('http://localhost:3000/api/cron/icecast-tracks', {
+    headers: { Authorization: 'Bearer test-cron-secret' },
+  })
+  const res = await GET(req as any)
+  expect(res.status).toBe(200)
+  delete process.env.CRON_SECRET
 })
