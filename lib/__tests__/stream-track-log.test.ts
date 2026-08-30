@@ -27,6 +27,7 @@ import {
   hasSameSongStillOnAir,
   normalizeStreamTrackKey,
   streamTracksMatch,
+  tracksDuplicateForCleanup,
 } from '@/lib/stream-track-log'
 
 describe('normalizeStreamTrackKey', () => {
@@ -54,6 +55,14 @@ describe('streamTracksMatch', () => {
 
   it('matches titles that differ only by punctuation', () => {
     expect(streamTracksMatch('The Cure', 'Hot Hot Hot!!!', 'The Cure', 'Hot Hot Hot')).toBe(true)
+  })
+})
+
+describe('tracksDuplicateForCleanup', () => {
+  it('matches combined title text against split artist and title fields', () => {
+    expect(
+      tracksDuplicateForCleanup(null, 'Wilco - ELT', 'Wilco', 'ELT')
+    ).toBe(true)
   })
 })
 

@@ -1,11 +1,12 @@
 import { prisma } from '@/lib/prisma'
+import { formatStationCalendarDay } from '@/lib/datetime-local'
 import { getIcecastTrackPollIntervalMs } from '@/lib/icecast'
 
 /** Minimum near-duplicate window for metadata flicker / dual poll. */
 export const STREAM_TRACK_DEDUP_MS = 4 * 60 * 1000
 
 /** Admin cleanup window — collapses repeat logs from polling / dual sources (keep earliest). */
-export const CLEANUP_NEAR_DUPLICATE_MS = 60 * 60 * 1000
+export const CLEANUP_NEAR_DUPLICATE_MS = 2 * 60 * 60 * 1000
 
 /** While Icecast still reports the same song, do not log again (typical song length + buffer). */
 export const ICECAST_SAME_TRACK_ON_AIR_MS = 20 * 60 * 1000
@@ -106,6 +107,19 @@ export async function hasSameSongStillOnAir(
   return streamTracksMatch(artist, titleTrim, last.artist, last.songTitle)
 }
 
+/** Aggressive duplicate test for admin cleanup (metadata variants + exact keys). */
+export function tracksDuplicateForCleanup(
+  artistA: string | null,
+  songTitleA: string,
+  artistB: string | null,
+  songTitleB: string
+): boolean {
+  if (streamTracksMatch(artistA, songTitleA, artistB, songTitleB)) return true
+  const keyA = normalizeStreamTrackKey(artistA, songTitleA)
+  const keyB = normalizeStreamTrackKey(artistB, songTitleB)
+  return Boolean(keyA && keyB && keyA === keyB)
+}
+
 export async function hasRecentStreamTrackPlay(
   artist: string | null,
   songTitle: string,
@@ -170,12 +184,28 @@ export async function createStreamTrackLog(
   })
 }
 
-type KeptPlay = {
+type CleanupTrack = {
   id: string
   showId: string | null
   playDate: Date
   artist: string | null
   songTitle: string
+}
+
+type CleanupKeeper = CleanupTrack & {
+  stationDay: string
+}
+
+function preferCleanupKeeper(current: CleanupKeeper, candidate: CleanupTrack): CleanupKeeper {
+  if (candidate.showId && !current.showId) {
+    return { ...candidate, stationDay: current.stationDay }
+  }
+  if (current.showId && !candidate.showId) {
+    return current
+  }
+  return candidate.playDate.getTime() < current.playDate.getTime()
+    ? { ...candidate, stationDay: current.stationDay }
+    : current
 }
 
 /** Remove near-duplicate licensing rows (same song within `windowMs`), keeping earliest play. */
@@ -201,51 +231,61 @@ export async function cleanupNearDuplicateStreamTracks(options?: {
     select: { id: true, showId: true, artist: true, songTitle: true, playDate: true },
   })
 
-  const keptPlays: KeptPlay[] = []
-  const toDelete: string[] = []
+  const keepers: CleanupKeeper[] = []
+  const toDelete = new Set<string>()
 
   for (const track of tracks) {
     if (!track.playDate) continue
     const playTime = track.playDate.getTime()
+    const stationDay = formatStationCalendarDay(track.playDate)
+    const row: CleanupTrack = {
+      id: track.id,
+      showId: track.showId,
+      playDate: track.playDate,
+      artist: track.artist,
+      songTitle: track.songTitle,
+    }
 
-    let matchedKept: KeptPlay | undefined
-    for (let i = keptPlays.length - 1; i >= 0; i--) {
-      const kept = keptPlays[i]
-      if (playTime - kept.playDate.getTime() >= windowMs) continue
-      if (streamTracksMatch(track.artist, track.songTitle, kept.artist, kept.songTitle)) {
-        matchedKept = kept
+    let matchedKeeper: CleanupKeeper | undefined
+    for (const keeper of keepers) {
+      if (keeper.stationDay !== stationDay) continue
+      if (playTime - keeper.playDate.getTime() >= windowMs) continue
+      if (
+        tracksDuplicateForCleanup(
+          row.artist,
+          row.songTitle,
+          keeper.artist,
+          keeper.songTitle
+        )
+      ) {
+        matchedKeeper = keeper
         break
       }
     }
 
-    if (matchedKept) {
-      if (track.showId && !matchedKept.showId) {
-        toDelete.push(matchedKept.id)
-        const idx = keptPlays.indexOf(matchedKept)
-        keptPlays[idx] = {
-          id: track.id,
-          showId: track.showId,
-          playDate: track.playDate,
-          artist: track.artist,
-          songTitle: track.songTitle,
-        }
+    if (matchedKeeper) {
+      const preferred = preferCleanupKeeper(matchedKeeper, row)
+      if (preferred.id === row.id) {
+        toDelete.add(matchedKeeper.id)
+        const idx = keepers.indexOf(matchedKeeper)
+        keepers[idx] = { ...row, stationDay }
       } else {
-        toDelete.push(track.id)
+        toDelete.add(row.id)
       }
     } else {
-      keptPlays.push({
-        id: track.id,
-        showId: track.showId,
-        playDate: track.playDate,
-        artist: track.artist,
-        songTitle: track.songTitle,
+      keepers.push({ ...row, stationDay })
+    }
+  }
+
+  const deleteIds = [...toDelete]
+  if (deleteIds.length > 0) {
+    const chunkSize = 500
+    for (let i = 0; i < deleteIds.length; i += chunkSize) {
+      await prisma.tracklist.deleteMany({
+        where: { id: { in: deleteIds.slice(i, i + chunkSize) } },
       })
     }
   }
 
-  if (toDelete.length > 0) {
-    await prisma.tracklist.deleteMany({ where: { id: { in: toDelete } } })
-  }
-
-  return { deleted: toDelete.length, scanned: tracks.length, windowMs }
+  return { deleted: deleteIds.length, scanned: tracks.length, windowMs }
 }

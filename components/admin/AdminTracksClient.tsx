@@ -134,7 +134,7 @@ export function AdminTracksClient() {
     }
     if (
       !window.confirm(
-        `Remove duplicate track rows from ${dateFrom} through ${dateTo}? Keeps the earliest play when the same song was logged within 60 minutes.`
+        `Remove duplicate track rows from ${dateFrom} through ${dateTo}? Keeps the earliest play when the same song repeats within 2 hours on the same day.`
       )
     ) {
       return
@@ -144,6 +144,7 @@ export function AdminTracksClient() {
     try {
       const res = await fetch('/api/admin/tracks/cleanup-duplicates', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dateFrom, dateTo }),
       })
@@ -155,7 +156,7 @@ export function AdminTracksClient() {
       setCleanupMessage(
         body.deleted
           ? `Removed ${body.deleted} duplicate row(s) from ${body.scanned ?? '?'} scanned.`
-          : `No duplicates found in ${body.scanned ?? '?'} track(s) (same song within 60 minutes).`
+          : `No duplicates found in ${body.scanned ?? '?'} track(s) (same song within 2 hours on the same day).`
       )
       await mutate()
     } finally {
