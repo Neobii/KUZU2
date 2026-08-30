@@ -78,18 +78,91 @@ export function cancelStopShowAtEnd(showId: string) {
   }
 }
 
+/** Minutes before showStart when auto-start becomes armed (matches scheduleAutoStartShow). */
+export const AUTO_START_ARM_MINUTES = 5
+
+/**
+ * How far past showStart we still arm. Prevents permanently re-arming abandoned
+ * autoStartEnd rows from months ago when the durable cron runs.
+ */
+export const AUTO_START_ARM_LOOKBACK_MS = 24 * 60 * 60 * 1000
+
+/**
+ * Durable arming for Vercel (and any host where in-process node-schedule jobs
+ * die with the isolate). Same predicate as scheduleAutoStartShow's job callback:
+ * autoStartEnd still true and arm time (showStart − 5m) has been reached.
+ */
+export async function armDueAutoStartShows(now = new Date()): Promise<{ armed: number }> {
+  const armHorizon = new Date(now.getTime() + AUTO_START_ARM_MINUTES * 60 * 1000)
+  const lookback = new Date(now.getTime() - AUTO_START_ARM_LOOKBACK_MS)
+  const result = await prisma.show.updateMany({
+    where: {
+      autoStartEnd: true,
+      isArmedForAutoStart: false,
+      // Do not arm a show that is already live (null/false both mean not live).
+      isActive: { not: true },
+      showStart: {
+        lte: armHorizon,
+        gte: lookback,
+      },
+    },
+    data: { isArmedForAutoStart: true },
+  })
+  return { armed: result.count }
+}
+
+/**
+ * Durable calendar-end stop for serverless. Mirrors scheduleStopShowAtEnd's job:
+ * live shows with stopOnCalendarEnd whose showEnd is past are deactivated.
+ */
+export async function stopDueCalendarEndShows(now = new Date()): Promise<{ stopped: number }> {
+  const due = await prisma.show.findMany({
+    where: {
+      stopOnCalendarEnd: true,
+      isActive: true,
+      showEnd: { lte: now },
+    },
+    select: { id: true },
+  })
+  if (due.length === 0) return { stopped: 0 }
+
+  const { deactivateShow } = await import('@/lib/show-actions')
+  for (const show of due) {
+    await deactivateShow(show.id)
+  }
+  return { stopped: due.length }
+}
+
+/** Listener poll + durable show schedule catch-up (Vercel cron / local interval). */
+export async function runScheduledMaintenance() {
+  const listeners = await pollListenerStats()
+  let autoStart = { armed: 0 }
+  let calendarStop = { stopped: 0 }
+  try {
+    autoStart = await armDueAutoStartShows()
+  } catch (e) {
+    console.error('[cron] armDueAutoStartShows', e)
+  }
+  try {
+    calendarStop = await stopDueCalendarEndShows()
+  } catch (e) {
+    console.error('[cron] stopDueCalendarEndShows', e)
+  }
+  return { ...listeners, autoStart, calendarStop }
+}
+
 let listenerInterval: NodeJS.Timeout | null = null
 
 export function startListenerPolling() {
   if (listenerInterval) return
   const intervalMs = getListenerPollIntervalMs()
 
-  void pollListenerStats().catch(() => {
+  void runScheduledMaintenance().catch(() => {
     /* ignore — local dev convenience */
   })
 
   listenerInterval = setInterval(() => {
-    void pollListenerStats().catch(() => {
+    void runScheduledMaintenance().catch(() => {
       /* ignore */
     })
   }, intervalMs)

@@ -130,3 +130,57 @@ describe('scheduleStopShowAtEnd', () => {
     expect(mocks.scheduleJob).not.toHaveBeenCalled()
   })
 })
+
+describe('armDueAutoStartShows', () => {
+  it('arms shows whose showStart is within the 5-minute arm window', async () => {
+    const now = new Date('2026-08-28T16:00:00.000Z')
+    mocks.prisma.show.updateMany.mockResolvedValue({ count: 2 })
+    const { armDueAutoStartShows, AUTO_START_ARM_MINUTES, AUTO_START_ARM_LOOKBACK_MS } =
+      await import('@/lib/cron')
+
+    const result = await armDueAutoStartShows(now)
+
+    expect(result).toEqual({ armed: 2 })
+    expect(mocks.prisma.show.updateMany).toHaveBeenCalledWith({
+      where: {
+        autoStartEnd: true,
+        isArmedForAutoStart: false,
+        isActive: { not: true },
+        showStart: {
+          lte: new Date(now.getTime() + AUTO_START_ARM_MINUTES * 60 * 1000),
+          gte: new Date(now.getTime() - AUTO_START_ARM_LOOKBACK_MS),
+        },
+      },
+      data: { isArmedForAutoStart: true },
+    })
+  })
+})
+
+describe('stopDueCalendarEndShows', () => {
+  it('deactivates live shows past showEnd with stopOnCalendarEnd', async () => {
+    const now = new Date('2026-08-28T18:00:00.000Z')
+    mocks.prisma.show.findMany.mockResolvedValue([{ id: 'show-a' }, { id: 'show-b' }])
+    const { stopDueCalendarEndShows } = await import('@/lib/cron')
+
+    const result = await stopDueCalendarEndShows(now)
+
+    expect(mocks.prisma.show.findMany).toHaveBeenCalledWith({
+      where: {
+        stopOnCalendarEnd: true,
+        isActive: true,
+        showEnd: { lte: now },
+      },
+      select: { id: true },
+    })
+    expect(mocks.deactivateShow).toHaveBeenCalledWith('show-a')
+    expect(mocks.deactivateShow).toHaveBeenCalledWith('show-b')
+    expect(result).toEqual({ stopped: 2 })
+  })
+
+  it('returns zero when no shows are due', async () => {
+    mocks.prisma.show.findMany.mockResolvedValue([])
+    const { stopDueCalendarEndShows } = await import('@/lib/cron')
+    await expect(stopDueCalendarEndShows()).resolves.toEqual({ stopped: 0 })
+    expect(mocks.deactivateShow).not.toHaveBeenCalled()
+  })
+})
