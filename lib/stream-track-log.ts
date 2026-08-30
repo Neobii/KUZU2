@@ -5,7 +5,10 @@ import { getIcecastTrackPollIntervalMs } from '@/lib/icecast'
 export const STREAM_TRACK_DEDUP_MS = 4 * 60 * 1000
 
 /** Admin cleanup window — collapses repeat logs from polling / dual sources (keep earliest). */
-export const CLEANUP_NEAR_DUPLICATE_MS = 30 * 60 * 1000
+export const CLEANUP_NEAR_DUPLICATE_MS = 60 * 60 * 1000
+
+/** While Icecast still reports the same song, do not log again (typical song length + buffer). */
+export const ICECAST_SAME_TRACK_ON_AIR_MS = 20 * 60 * 1000
 
 /** Dedup window for stream/licensing logs — always longer than the listener poll interval. */
 export function getStreamTrackDedupMs(): number {
@@ -56,6 +59,16 @@ export function normalizeStreamTrackKey(artist: string | null, songTitle: string
   return t || a
 }
 
+function looseSongTitleMatch(a: string, b: string): boolean {
+  if (a === b) return true
+  const loose = (s: string) =>
+    s
+      .replace(/[^\p{L}\p{N}\s]/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  return loose(a) === loose(b)
+}
+
 /** True when two logged rows represent the same on-air song (metadata may omit artist). */
 export function streamTracksMatch(
   artistA: string | null,
@@ -68,9 +81,29 @@ export function streamTracksMatch(
   if (!a.songTitle || !b.songTitle) {
     return normalizeStreamTrackKey(artistA, songTitleA) === normalizeStreamTrackKey(artistB, songTitleB)
   }
-  if (a.songTitle !== b.songTitle) return false
+  if (a.songTitle !== b.songTitle && !looseSongTitleMatch(a.songTitle, b.songTitle)) return false
   if (a.artist && b.artist) return a.artist === b.artist
   return true
+}
+
+/** Skip Icecast polls while status-json still shows the same song as the latest play. */
+export async function hasSameSongStillOnAir(
+  artist: string | null,
+  songTitle: string,
+  windowMs = ICECAST_SAME_TRACK_ON_AIR_MS,
+  db: Pick<typeof prisma, 'tracklist'> = prisma
+): Promise<boolean> {
+  const titleTrim = songTitle.trim()
+  if (!titleTrim) return false
+
+  const last = await db.tracklist.findFirst({
+    where: { trackType: 'song', playDate: { not: null } },
+    orderBy: { playDate: 'desc' },
+    select: { artist: true, songTitle: true, playDate: true },
+  })
+  if (!last?.playDate) return false
+  if (Date.now() - last.playDate.getTime() >= windowMs) return false
+  return streamTracksMatch(artist, titleTrim, last.artist, last.songTitle)
 }
 
 export async function hasRecentStreamTrackPlay(
@@ -138,6 +171,8 @@ export async function createStreamTrackLog(
 }
 
 type KeptPlay = {
+  id: string
+  showId: string | null
   playDate: Date
   artist: string | null
   songTitle: string
@@ -163,7 +198,7 @@ export async function cleanupNearDuplicateStreamTracks(options?: {
       },
     },
     orderBy: { playDate: 'asc' },
-    select: { id: true, artist: true, songTitle: true, playDate: true },
+    select: { id: true, showId: true, artist: true, songTitle: true, playDate: true },
   })
 
   const keptPlays: KeptPlay[] = []
@@ -184,9 +219,23 @@ export async function cleanupNearDuplicateStreamTracks(options?: {
     }
 
     if (matchedKept) {
-      toDelete.push(track.id)
+      if (track.showId && !matchedKept.showId) {
+        toDelete.push(matchedKept.id)
+        const idx = keptPlays.indexOf(matchedKept)
+        keptPlays[idx] = {
+          id: track.id,
+          showId: track.showId,
+          playDate: track.playDate,
+          artist: track.artist,
+          songTitle: track.songTitle,
+        }
+      } else {
+        toDelete.push(track.id)
+      }
     } else {
       keptPlays.push({
+        id: track.id,
+        showId: track.showId,
         playDate: track.playDate,
         artist: track.artist,
         songTitle: track.songTitle,

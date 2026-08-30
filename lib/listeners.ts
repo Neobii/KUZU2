@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { streamTrackArtistFields } from '@/lib/artist-resolve'
-import { createStreamTrackLog } from '@/lib/stream-track-log'
+import { createStreamTrackLog, hasSameSongStillOnAir } from '@/lib/stream-track-log'
 import {
   fetchIcecastStats,
   getIcecastSource,
@@ -37,6 +37,10 @@ export async function recordIcecastTrackIfChanged(
   }
 
   const artistFields = await streamTrackArtistFields(parts.artist)
+
+  if (await hasSameSongStillOnAir(artistFields.artist, parts.songTitle)) {
+    return { stored: false, track: displayKey }
+  }
 
   return createStreamTrackLog({
     ...artistFields,

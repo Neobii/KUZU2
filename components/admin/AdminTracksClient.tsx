@@ -134,7 +134,7 @@ export function AdminTracksClient() {
     }
     if (
       !window.confirm(
-        `Remove duplicate track rows from ${dateFrom} through ${dateTo}? Keeps the earliest play when the same song was logged within 30 minutes.`
+        `Remove duplicate track rows from ${dateFrom} through ${dateTo}? Keeps the earliest play when the same song was logged within 60 minutes.`
       )
     ) {
       return
@@ -155,7 +155,7 @@ export function AdminTracksClient() {
       setCleanupMessage(
         body.deleted
           ? `Removed ${body.deleted} duplicate row(s) from ${body.scanned ?? '?'} scanned.`
-          : `No duplicates found in ${body.scanned ?? '?'} track(s) (same song within 30 minutes).`
+          : `No duplicates found in ${body.scanned ?? '?'} track(s) (same song within 60 minutes).`
       )
       await mutate()
     } finally {

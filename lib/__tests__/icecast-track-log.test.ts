@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     },
   },
   createStreamTrackLog: vi.fn(),
+  hasSameSongStillOnAir: vi.fn(),
   streamTrackArtistFields: vi.fn(),
 }))
 
@@ -14,6 +15,7 @@ vi.mock('@/lib/prisma', () => ({ prisma: mocks.prisma }))
 
 vi.mock('@/lib/stream-track-log', () => ({
   createStreamTrackLog: mocks.createStreamTrackLog,
+  hasSameSongStillOnAir: mocks.hasSameSongStillOnAir,
 }))
 
 vi.mock('@/lib/artist-resolve', () => ({
@@ -52,6 +54,7 @@ describe('recordIcecastTrackIfChanged', () => {
       artistId: 'artist-1',
     })
     mocks.createStreamTrackLog.mockResolvedValue({ stored: true, track: 'Sarah Jaffe - Clementine' })
+    mocks.hasSameSongStillOnAir.mockResolvedValue(false)
   })
 
   it('stores a new track when Icecast now-playing changes', async () => {
@@ -99,5 +102,18 @@ describe('recordIcecastTrackIfChanged', () => {
     })
 
     expect(mocks.createStreamTrackLog).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips logging when Icecast still shows the same song as the latest play', async () => {
+    mocks.hasSameSongStillOnAir.mockResolvedValue(true)
+
+    const result = await recordIcecastTrackIfChanged({
+      icestats: {
+        source: { title: 'Sarah Jaffe - Clementine', listeners: 3 },
+      },
+    })
+
+    expect(result.stored).toBe(false)
+    expect(mocks.createStreamTrackLog).not.toHaveBeenCalled()
   })
 })

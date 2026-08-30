@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   prisma: {
     tracklist: {
       findMany: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn(),
       deleteMany: vi.fn(),
     },
@@ -23,6 +24,7 @@ import {
   createStreamTrackLog,
   getStreamTrackDedupMs,
   hasRecentStreamTrackPlay,
+  hasSameSongStillOnAir,
   normalizeStreamTrackKey,
   streamTracksMatch,
 } from '@/lib/stream-track-log'
@@ -48,6 +50,10 @@ describe('streamTracksMatch', () => {
 
   it('does not match different songs with the same title and distinct artists', () => {
     expect(streamTracksMatch('Artist A', 'Love', 'Artist B', 'Love')).toBe(false)
+  })
+
+  it('matches titles that differ only by punctuation', () => {
+    expect(streamTracksMatch('The Cure', 'Hot Hot Hot!!!', 'The Cure', 'Hot Hot Hot')).toBe(true)
   })
 })
 
@@ -178,8 +184,8 @@ describe('cleanupNearDuplicateStreamTracks', () => {
     const t0 = new Date('2026-08-13T19:01:01.223Z')
     const t1 = new Date('2026-08-13T19:01:01.545Z')
     mocks.prisma.tracklist.findMany.mockResolvedValue([
-      { id: 'keep-1', artist: 'AMPARO OCHOA', songTitle: 'LA CALACA', playDate: t0 },
-      { id: 'drop-1', artist: 'AMPARO OCHOA', songTitle: 'LA CALACA', playDate: t1 },
+      { id: 'keep-1', showId: null, artist: 'AMPARO OCHOA', songTitle: 'LA CALACA', playDate: t0 },
+      { id: 'drop-1', showId: null, artist: 'AMPARO OCHOA', songTitle: 'LA CALACA', playDate: t1 },
     ])
 
     const result = await cleanupNearDuplicateStreamTracks()
@@ -194,8 +200,8 @@ describe('cleanupNearDuplicateStreamTracks', () => {
     const t0 = new Date('2026-08-13T19:01:01.223Z')
     const t1 = new Date('2026-08-13T19:01:01.545Z')
     mocks.prisma.tracklist.findMany.mockResolvedValue([
-      { id: 'keep-1', artist: 'The Cure', songTitle: 'Hot Hot Hot!!!', playDate: t0 },
-      { id: 'drop-1', artist: null, songTitle: 'Hot Hot Hot!!!', playDate: t1 },
+      { id: 'keep-1', showId: null, artist: 'The Cure', songTitle: 'Hot Hot Hot!!!', playDate: t0 },
+      { id: 'drop-1', showId: null, artist: null, songTitle: 'Hot Hot Hot!!!', playDate: t1 },
     ])
 
     const result = await cleanupNearDuplicateStreamTracks()
@@ -210,8 +216,8 @@ describe('cleanupNearDuplicateStreamTracks', () => {
     const t0 = new Date('2026-08-13T19:00:00.000Z')
     const t1 = new Date('2026-08-13T19:05:00.000Z')
     mocks.prisma.tracklist.findMany.mockResolvedValue([
-      { id: 'keep-1', artist: 'Wilco', songTitle: 'ELT', playDate: t0 },
-      { id: 'drop-1', artist: 'Wilco', songTitle: 'ELT', playDate: t1 },
+      { id: 'keep-1', showId: null, artist: 'Wilco', songTitle: 'ELT', playDate: t0 },
+      { id: 'drop-1', showId: null, artist: 'Wilco', songTitle: 'ELT', playDate: t1 },
     ])
 
     const result = await cleanupNearDuplicateStreamTracks()
@@ -224,15 +230,47 @@ describe('cleanupNearDuplicateStreamTracks', () => {
 
   it('keeps a later play when the same song airs again after the cleanup window', async () => {
     const t0 = new Date('2026-08-13T19:00:00.000Z')
-    const t1 = new Date('2026-08-13T20:00:00.000Z')
+    const t1 = new Date('2026-08-13T21:00:00.000Z')
     mocks.prisma.tracklist.findMany.mockResolvedValue([
-      { id: 'keep-1', artist: 'Wilco', songTitle: 'ELT', playDate: t0 },
-      { id: 'keep-2', artist: 'Wilco', songTitle: 'ELT', playDate: t1 },
+      { id: 'keep-1', showId: null, artist: 'Wilco', songTitle: 'ELT', playDate: t0 },
+      { id: 'keep-2', showId: null, artist: 'Wilco', songTitle: 'ELT', playDate: t1 },
     ])
 
     const result = await cleanupNearDuplicateStreamTracks()
 
     expect(result.deleted).toBe(0)
     expect(mocks.prisma.tracklist.deleteMany).not.toHaveBeenCalled()
+  })
+
+  it('drops a stream duplicate when a show-attached row exists for the same song', async () => {
+    const t0 = new Date('2026-08-13T19:00:00.000Z')
+    const t1 = new Date('2026-08-13T19:00:05.000Z')
+    mocks.prisma.tracklist.findMany.mockResolvedValue([
+      { id: 'stream-1', showId: null, artist: 'Wilco', songTitle: 'ELT', playDate: t0 },
+      { id: 'show-1', showId: 'show-1', artist: 'Wilco', songTitle: 'ELT', playDate: t1 },
+    ])
+
+    const result = await cleanupNearDuplicateStreamTracks()
+
+    expect(result.deleted).toBe(1)
+    expect(mocks.prisma.tracklist.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ['stream-1'] } },
+    })
+  })
+})
+
+describe('hasSameSongStillOnAir', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns true when the latest play matches within the on-air window', async () => {
+    mocks.prisma.tracklist.findFirst.mockResolvedValue({
+      artist: 'Wilco',
+      songTitle: 'ELT',
+      playDate: new Date(Date.now() - 60_000),
+    })
+
+    await expect(hasSameSongStillOnAir('Wilco', 'ELT')).resolves.toBe(true)
   })
 })
