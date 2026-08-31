@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   },
   streamTrackArtistFields: vi.fn(),
   createStreamTrackLog: vi.fn(),
-  shouldSkipDuplicateStreamInsert: vi.fn(),
+  hasSameSongStillOnAir: vi.fn(),
   getPendingAutoDJTrack: vi.fn(),
   setPendingAutoDJTrack: vi.fn(),
 }))
@@ -19,7 +19,7 @@ vi.mock('@/lib/artist-resolve', () => ({
 }))
 vi.mock('@/lib/stream-track-log', () => ({
   createStreamTrackLog: mocks.createStreamTrackLog,
-  shouldSkipDuplicateStreamInsert: mocks.shouldSkipDuplicateStreamInsert,
+  hasSameSongStillOnAir: mocks.hasSameSongStillOnAir,
 }))
 vi.mock('@/lib/auto-dj-global', () => ({
   getPendingAutoDJTrack: mocks.getPendingAutoDJTrack,
@@ -33,7 +33,7 @@ describe('fillAutoDJTrack', () => {
     vi.clearAllMocks()
     mocks.prisma.show.findFirst.mockResolvedValue(null)
     mocks.streamTrackArtistFields.mockResolvedValue({ artist: 'Wilco', artistId: 'artist-1' })
-    mocks.shouldSkipDuplicateStreamInsert.mockResolvedValue(false)
+    mocks.hasSameSongStillOnAir.mockResolvedValue(false)
     mocks.createStreamTrackLog.mockResolvedValue({ stored: true, track: 'wilco - elt' })
     mocks.getPendingAutoDJTrack.mockReturnValue({
       artist: 'Wilco',
@@ -46,7 +46,7 @@ describe('fillAutoDJTrack', () => {
   })
 
   it('clears pending without inserting when the song already exists in the log', async () => {
-    mocks.shouldSkipDuplicateStreamInsert.mockResolvedValue(true)
+    mocks.hasSameSongStillOnAir.mockResolvedValue(true)
 
     await fillAutoDJTrack()
 
