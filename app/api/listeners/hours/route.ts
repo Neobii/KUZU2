@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getListenerPollIntervalMs } from '@/lib/icecast'
-import {
-  parseLocalDateInputValue,
-  parseLocalDateRangeEndExclusive,
-} from '@/lib/datetime-local'
+import { parseStationExportDateRange } from '@/lib/datetime-local'
 import { requireStatsAccess } from '@/lib/require-admin'
 
 export const dynamic = 'force-dynamic'
@@ -14,11 +11,16 @@ export async function POST(req: NextRequest) {
   if ('error' in auth) return auth.error
 
   const body = await req.json()
-  const start = parseLocalDateInputValue(String(body.startDate ?? ''))
-  const end = parseLocalDateRangeEndExclusive(String(body.endDate ?? ''))
-  if (!start || !end) {
+  // Calendar picks are station days (America/Chicago), same as licensing export.
+  // Server-local midnight (UTC on Vercel) would drop evening Central listenership.
+  const range = parseStationExportDateRange(
+    String(body.startDate ?? ''),
+    String(body.endDate ?? '')
+  )
+  if (!range) {
     return NextResponse.json({ error: 'startDate and endDate required' }, { status: 400 })
   }
+  const { from: start, toExclusive: end } = range
   if (start >= end) {
     return NextResponse.json({ error: 'endDate must be on or after startDate' }, { status: 400 })
   }
