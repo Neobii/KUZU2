@@ -189,11 +189,15 @@ it('rejects unauthorized icecast track cron requests', async () => {
 
 it('accepts authorized icecast track cron requests', async () => {
   process.env.CRON_SECRET = 'test-cron-secret'
+  delete process.env.VERCEL
   const { GET } = await import('@/app/api/cron/icecast-tracks/route')
   const req = new Request('http://localhost:3000/api/cron/icecast-tracks', {
     headers: { Authorization: 'Bearer test-cron-secret' },
   })
   const res = await GET(req as any)
   expect(res.status).toBe(200)
+  const body = await res.json()
+  expect(body.ok).toBe(true)
+  expect(body.polling).toBeUndefined()
   delete process.env.CRON_SECRET
 })

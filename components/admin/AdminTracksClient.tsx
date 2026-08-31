@@ -49,6 +49,7 @@ function formatPlayDate(iso: string | null): string {
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    second: '2-digit',
   })
 }
 
@@ -81,8 +82,12 @@ export function AdminTracksClient() {
     return `/api/export/tracks?${params}`
   }, [dateFrom, dateTo])
 
-  const { data: tracks, error, isLoading, mutate } = useSWR<Track[]>(listUrl, fetcher)
-  const { data: preview } = useSWR<{ count: number }>(previewUrl, fetcher)
+  const { data: tracks, error, isLoading, mutate } = useSWR<Track[]>(listUrl, fetcher, {
+    refreshInterval: 2000,
+  })
+  const { data: preview } = useSWR<{ count: number }>(previewUrl, fetcher, {
+    refreshInterval: 2000,
+  })
 
   async function exportLicensingCsv() {
     setExportError('')

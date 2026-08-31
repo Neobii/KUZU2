@@ -1,35 +1,20 @@
-import { after, NextRequest, NextResponse } from 'next/server'
-import { cronFetchHeaders, getCronBaseUrl, isAuthorizedCron } from '@/lib/cron-auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { holdIcecastTrackPolling } from '@/lib/cron'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 import { getIcecastTrackPollIntervalMs } from '@/lib/icecast'
 import { pollIcecastTrackLog } from '@/lib/listeners'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+/** Pin this isolate for a Vercel cron window so setInterval(1s) can keep firing. */
+export const maxDuration = 300
 
-function scheduleNextIcecastTrackPoll() {
-  if (process.env.ENABLE_CRON === 'false') return
-  if (process.env.VERCEL !== '1') return
-
-  const baseUrl = getCronBaseUrl()
-  if (!baseUrl) return
-
-  after(async () => {
-    await new Promise((resolve) => setTimeout(resolve, getIcecastTrackPollIntervalMs()))
-    try {
-      await fetch(`${baseUrl}/api/cron/icecast-tracks`, {
-        headers: cronFetchHeaders(),
-        cache: 'no-store',
-      })
-    } catch {
-      /* next Vercel cron hit will restart the chain */
-    }
-  })
-}
+const HOLD_BUFFER_SEC = 20
 
 /**
- * Poll Icecast status-json every ICECAST_TRACK_POLL_MS (default 1s) and log
- * now-playing into tracklist for /admin/tracks. On Vercel, each invocation
- * schedules the next poll via after(); /api/cron/listeners re-bootstraps if
- * the chain breaks.
+ * Production: start a 1s setInterval and keep the isolate awake until just
+ * before maxDuration. vercel.json re-invokes this every 5 minutes.
+ * Local/tests: one-shot poll (instrumentation already runs the interval).
  */
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCron(req)) {
@@ -40,13 +25,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, disabled: true })
   }
 
+  const intervalMs = getIcecastTrackPollIntervalMs()
+
   try {
+    if (process.env.VERCEL === '1') {
+      await holdIcecastTrackPolling((maxDuration - HOLD_BUFFER_SEC) * 1000)
+      return NextResponse.json({ ok: true, polling: true, intervalMs })
+    }
+
     const result = await pollIcecastTrackLog()
-    scheduleNextIcecastTrackPoll()
     return NextResponse.json({ ok: true, ...result })
   } catch (e) {
     console.error('[cron/icecast-tracks]', e)
-    scheduleNextIcecastTrackPoll()
     return NextResponse.json({ error: 'Icecast track poll failed' }, { status: 500 })
   }
 }

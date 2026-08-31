@@ -159,17 +159,39 @@ export async function runScheduledMaintenance() {
 let icecastTrackInterval: NodeJS.Timeout | null = null
 let listenerInterval: NodeJS.Timeout | null = null
 
-export function startListenerPolling() {
-  if (!icecastTrackInterval) {
-    void pollIcecastTrackLog().catch(() => {
-      /* ignore — local dev convenience */
-    })
+function tickIcecastTrackLog() {
+  void pollIcecastTrackLog().catch(() => {
+    /* ignore — next tick retries */
+  })
+}
 
-    icecastTrackInterval = setInterval(() => {
-      void pollIcecastTrackLog().catch(() => {
-        /* ignore */
-      })
-    }, getIcecastTrackPollIntervalMs())
+/** 1s Icecast now-playing → /admin/tracks. Local instrumentation, or the production worker. */
+export function startIcecastTrackPolling() {
+  if (icecastTrackInterval) return
+  tickIcecastTrackLog()
+  icecastTrackInterval = setInterval(tickIcecastTrackLog, getIcecastTrackPollIntervalMs())
+}
+
+export function stopIcecastTrackPolling() {
+  if (!icecastTrackInterval) return
+  clearInterval(icecastTrackInterval)
+  icecastTrackInterval = null
+}
+
+/** Keep this isolate's event loop alive so the 1s setInterval can fire (Vercel). */
+export function holdIcecastTrackPolling(holdMs: number): Promise<void> {
+  startIcecastTrackPolling()
+  if (holdMs <= 0) return Promise.resolve()
+  return new Promise((resolve) => {
+    setTimeout(resolve, holdMs)
+  })
+}
+
+export function startListenerPolling() {
+  // On Vercel the Icecast 1s timer lives in /api/cron/icecast-tracks so random
+  // request isolates don't each start their own interval and then freeze.
+  if (process.env.VERCEL !== '1') {
+    startIcecastTrackPolling()
   }
 
   if (!listenerInterval) {
@@ -183,6 +205,13 @@ export function startListenerPolling() {
       })
     }, getListenerPollIntervalMs())
   }
+}
+
+export function stopListenerPolling() {
+  stopIcecastTrackPolling()
+  if (!listenerInterval) return
+  clearInterval(listenerInterval)
+  listenerInterval = null
 }
 
 export async function rescheduleAllAutoStartShows() {

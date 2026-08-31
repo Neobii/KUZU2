@@ -69,7 +69,7 @@ Migrated from [KUZU Meteor](https://github.com/Neobii/KUZU) to Next.js with **Po
 | **Stats** | Highcharts (`/kuzu-stats`) + listener hours API |
 | **Track imports** | `/track-imports` — CSV via Papa Parse → `/api/import/reaper` |
 | **Banners** | Armed show, Radio Logik down, live show strip (`LayoutBanners` + `/api/layout/banners`) |
-| **Cron / polling** | Local dev: `instrumentation.ts` polls Icecast tracks every 1s and listener stats every 5 min. **Production (Vercel):** `vercel.json` cron hits `/api/cron/icecast-tracks` (1s self-chaining poll) and `/api/cron/listeners` every 5 min. Set `CRON_SECRET` on Vercel. Set `ENABLE_CRON=false` to disable local polling. |
+| **Cron / polling** | Local dev: `instrumentation.ts` `setInterval` polls Icecast tracks every 1s and listener stats every 5 min. **Production (Vercel):** `/api/cron/icecast-tracks` starts a 1s `setInterval` (not used locally) and stays awake for ~5 min so the timer can fire; vercel.json re-invokes it every 5 min. `/api/cron/listeners` still runs every 5 min for listener stats. Set `CRON_SECRET` on Vercel. Set `ENABLE_CRON=false` to disable local polling. |
 
 ### Environment (optional)
 
