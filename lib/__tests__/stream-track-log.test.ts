@@ -123,33 +123,27 @@ describe('shouldSkipDuplicateStreamInsert', () => {
     mocks.prisma.tracklist.findMany.mockResolvedValue([])
   })
 
-  it('returns true when the latest play is the same song on the same station day', async () => {
-    mocks.prisma.tracklist.findFirst.mockResolvedValue({
-      artist: 'Wilco',
-      songTitle: 'ELT',
-      playDate: new Date(),
-    })
+  it('returns true when the same song was logged inside the near-duplicate window', async () => {
+    mocks.prisma.tracklist.findMany.mockResolvedValue([
+      { artist: 'Wilco', songTitle: 'ELT' },
+    ])
 
     await expect(shouldSkipDuplicateStreamInsert('Wilco', 'ELT')).resolves.toBe(true)
-    expect(mocks.prisma.tracklist.findFirst).toHaveBeenCalled()
+    expect(mocks.prisma.tracklist.findFirst).not.toHaveBeenCalled()
   })
 
-  it('returns false when the latest play is the same song on a previous station day', async () => {
-    mocks.prisma.tracklist.findFirst.mockResolvedValue({
-      artist: 'Wilco',
-      songTitle: 'ELT',
-      playDate: new Date('2026-08-13T12:00:00.000Z'),
-    })
+  it('returns false when the same song is still latest but outside the near-duplicate window', async () => {
+    // Radio Logik re-airs after talk/PSA must not be blocked by "latest today".
+    mocks.prisma.tracklist.findMany.mockResolvedValue([])
 
     await expect(shouldSkipDuplicateStreamInsert('Wilco', 'ELT')).resolves.toBe(false)
+    expect(mocks.prisma.tracklist.findFirst).not.toHaveBeenCalled()
   })
 
-  it('returns false when the latest play is a different song', async () => {
-    mocks.prisma.tracklist.findFirst.mockResolvedValue({
-      artist: 'Wilco',
-      songTitle: 'ELT',
-      playDate: new Date(),
-    })
+  it('returns false when only a different song was logged recently', async () => {
+    mocks.prisma.tracklist.findMany.mockResolvedValue([
+      { artist: 'Wilco', songTitle: 'ELT' },
+    ])
 
     await expect(shouldSkipDuplicateStreamInsert('The Cure', 'Hot Hot Hot!!!')).resolves.toBe(false)
   })
@@ -202,6 +196,23 @@ describe('createStreamTrackLog', () => {
 
     expect(result.stored).toBe(false)
     expect(mocks.prisma.tracklist.create).not.toHaveBeenCalled()
+  })
+
+  it('inserts a later re-air when the same song is still latest but not recent', async () => {
+    mocks.prisma.tracklist.findMany.mockResolvedValue([])
+    mocks.prisma.tracklist.findFirst.mockResolvedValue({
+      artist: 'Wilco',
+      songTitle: 'ELT',
+      playDate: new Date(Date.now() - 30 * 60 * 1000),
+    })
+
+    const result = await createStreamTrackLog({
+      artist: 'Wilco',
+      songTitle: 'ELT',
+    })
+
+    expect(result.stored).toBe(true)
+    expect(mocks.prisma.tracklist.create).toHaveBeenCalled()
   })
 
   it('inserts when no recent matching row exists', async () => {
@@ -343,5 +354,25 @@ describe('hasSameSongStillOnAir', () => {
     })
 
     await expect(hasSameSongStillOnAir('Wilco', 'ELT')).resolves.toBe(true)
+  })
+
+  it('returns false when the latest play is the same song on a previous station day', async () => {
+    mocks.prisma.tracklist.findFirst.mockResolvedValue({
+      artist: 'Wilco',
+      songTitle: 'ELT',
+      playDate: new Date('2026-08-13T12:00:00.000Z'),
+    })
+
+    await expect(hasSameSongStillOnAir('Wilco', 'ELT')).resolves.toBe(false)
+  })
+
+  it('returns false when the latest play is a different song', async () => {
+    mocks.prisma.tracklist.findFirst.mockResolvedValue({
+      artist: 'Wilco',
+      songTitle: 'ELT',
+      playDate: new Date(),
+    })
+
+    await expect(hasSameSongStillOnAir('The Cure', 'Hot Hot Hot!!!')).resolves.toBe(false)
   })
 })

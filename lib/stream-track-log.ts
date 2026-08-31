@@ -93,20 +93,16 @@ export function streamTracksMatch(
   return true
 }
 
-/** Skip Icecast polls while the latest play is still the same song on the same station day. */
+/**
+ * Icecast / Auto DJ handoff: skip while the latest play is still this song today.
+ * Continuous polls keep reporting the same title for the whole spin; without this
+ * guard a long track would be re-logged after the near-duplicate window.
+ * Do NOT use for discrete Radio Logik events — those must allow later re-airs.
+ */
 export async function hasSameSongStillOnAir(
   artist: string | null,
   songTitle: string,
   _windowMs = ICECAST_SAME_TRACK_ON_AIR_MS,
-  db: Pick<typeof prisma, 'tracklist'> = prisma
-): Promise<boolean> {
-  return shouldSkipDuplicateStreamInsert(artist, songTitle, db)
-}
-
-/** True when this song should not be logged again (recent row or same as latest play today). */
-export async function shouldSkipDuplicateStreamInsert(
-  artist: string | null,
-  songTitle: string,
   db: Pick<typeof prisma, 'tracklist'> = prisma
 ): Promise<boolean> {
   const titleTrim = songTitle.trim()
@@ -125,6 +121,22 @@ export async function shouldSkipDuplicateStreamInsert(
   if (!tracksDuplicateForCleanup(artist, titleTrim, last.artist, last.songTitle)) return false
 
   return formatStationCalendarDay(last.playDate) === formatStationCalendarDay(new Date())
+}
+
+/**
+ * Discrete play inserts (Radio Logik tracking, stream log writes): only skip
+ * near-duplicates inside the poll/flicker window. A later re-air of the same
+ * song after talk/PSA (or when it is still the latest play) must be stored.
+ */
+export async function shouldSkipDuplicateStreamInsert(
+  artist: string | null,
+  songTitle: string,
+  db: Pick<typeof prisma, 'tracklist'> = prisma
+): Promise<boolean> {
+  const titleTrim = songTitle.trim()
+  if (!titleTrim) return true
+
+  return hasRecentStreamTrackPlay(artist, titleTrim, getStreamTrackDedupMs(), db)
 }
 
 /** Aggressive duplicate test for admin cleanup (metadata variants + exact keys). */
